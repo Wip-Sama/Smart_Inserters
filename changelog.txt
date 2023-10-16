@@ -1,0 +1,107 @@
+---------------------------------------------------------------------------------------------------
+Version: 1.0.9
+Date: 2023-10-16
+  Added:
+    - Hotkeys for pickup-offset
+  Bugfixes:
+    - distance adjust hotkeys (if you know a way to read minds to implement the other diagonals tell me)
+    - rotation adjust hotkeys
+  Changes:
+    - Configuration UI is now disabled for miniloader and RenaiTramsportation mods
+    - Pick-Drop ui is now centred
+    - Slim inserter settings are now hidden if none are detected (sorta, it only checks if known slim inserter mod are present due to factorio limitation)
+    - Corrected some part of my terrible english in the changelog
+    - Small optimizations to the disable-long-inserter script
+  Planned:
+    - Compatibility with RenaiTramsportation (this is going to be a headache...)
+  Notes:
+    - hotkeys are disabled in slim/big inserter due to mental health limitations, the support will come in the next update hopefully (too much math for my poor brain)
+    - If arrow inserter and RenaiTramsportation are installed, RenaiTramsportation will crash and Smart_inserter will appear in the crash log, it's NOT smart_inserter fault (smart inserter does not affect the distance of the inserter in the data phase)
+---------------------------------------------------------------------------------------------------
+Version: 1.0.8
+Date: 2023-10-04
+  Added:
+    - 2x2 inserters support
+  Bugfixes:
+    - drop offset when switching position didn't update... now it does...  
+  Changes:
+    - New disable-long-inserter script
+  Planned:
+    - Hide slim inserters settings if none are detected (kinda DONE)
+---------------------------------------------------------------------------------------------------
+Version: 1.0.7
+Date: 2023-09-27
+  Bugfixes:
+    - Crash due to missing texture in 1.0.6 (sorry)
+---------------------------------------------------------------------------------------------------
+Version: 1.0.6
+Date: 2023-09-27
+  Added:
+    - Offset technologies
+    - Settings to enable offsets technologies
+  Changes:
+    - Changelog changes 
+    - Better localization for some settings (again)
+    - Removed the separator between pick/drop offset and centred pickup/drop offset
+  Migrations:
+    - Now when migrating from bob some technologies will be migrated to Smart inserter tech
+  Bugfixes:
+    - Crash when clicking on the ui with pick/drop offset disabled
+  Maybe:
+    - Centre the ui for pick/drop position (DONE)
+---------------------------------------------------------------------------------------------------
+Version: 1.0.5
+Date: 2023-09-21
+  Added:
+    - Ability to change pickup offset
+    - Setting to enable/disable offset selector (on by default)
+    - Added "Inserter_Config" to the incompatible mods
+  Changes:
+    - Better localization for some settings
+  Planned:
+    - Offset technology (DONE)
+    - Rewrite of the code to disable long inserters (DONE)
+---------------------------------------------------------------------------------------------------
+Version: 1.0.4
+Date: 2023-09-20
+  Changes:
+    - Disabled cells now show the pick/drop icon
+  Maybe:
+    - Support for 2x2 inserters (DONE)
+---------------------------------------------------------------------------------------------------
+Version: 1.0.3
+Date: 2023-09-02
+  Changes:
+    - Slim inserter now appear as a rounded square to avoid misleading direction by the arrow
+    - Now the offset is set to be the farthest position from the inserter to maintain vanilla item placement on belt (also I like it aesthetically)
+    - Directional slim inserter is not true by default
+  Bugfixes:
+    - Slim inserter position swap was wrong in some specific case (I hope this is the last time I need to fix this)
+---------------------------------------------------------------------------------------------------
+Version: 1.0.2
+Date: 2023-08-20
+  Added:
+    - Technology to unlock inserters range (off by default)
+    - Technology to unlock inserters diagonals (off by default)
+    - Setting to enable single lane in slim inserters (on by default, this is how slim inserters should work with this mod for its creator)
+  Bugfixes:
+    - Some ui problems while using slim inserters
+---------------------------------------------------------------------------------------------------
+Version: 1.0.1
+Date: 2023-08-15
+  Changes:
+    - Lowered the max inserter range to 1 instead of 2
+    - Lowered the default max inserter range to 3 instead of 4
+    - Some localizations
+  Added:
+    - Compatibility with "Kuxynator's Slim Inserters" and "Arrow inserter"
+    - Setting to disable long inserter recipes
+    - Setting to enable directional inserters
+---------------------------------------------------------------------------------------------------
+Version: 1.0.0
+Date: 2023-08-12
+  Notes:
+    - First release
+    - This is a fork of "Inserter_Config" to fix a bug and to add some (+-QOL) features
+  Maybe:
+    - Technology to unlock different grid size (DONE)
