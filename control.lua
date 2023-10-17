@@ -1293,20 +1293,19 @@ end
 -- Hotkey Events
 local function on_rotation_adjust(event)
     local player = game.players[event.player_index]
-
-    local slim = inserter_utils.is_slim(player.selected)
-    local size = inserter_utils.get_inserter_size(player.selected)
-    if slim then
-        game.print("Not supported on slim inserters")
-        return
-    end
-    if size.z > 1 then
-        game.print("Not supported on big inserters")
-        return
-    end
-
     if inserter_utils.is_inserter(player.selected) then
         local inserter = player.selected
+
+        local slim = inserter_utils.is_slim(inserter)
+        local size = inserter_utils.get_inserter_size(inserter)
+        if slim then
+            game.print("Not supported on slim inserters")
+            return
+        end
+        if size.z > 1 then
+            game.print("Not supported on big inserters")
+            return
+        end
 
         local is_drop = string.find(event.input_name, "drop", 17) and true or false
         local direction = string.find(event.input_name, "reverse", -7) and -1 or 1
@@ -1346,20 +1345,19 @@ end
 
 local function on_distance_adjust(event)
     local player = game.players[event.player_index]
-
-    local slim = inserter_utils.is_slim(player.selected)
-    local size = inserter_utils.get_inserter_size(player.selected)
-    if slim then
-        game.print("Not supported on slim inserters")
-        return
-    end
-    if size.z > 1 then
-        game.print("Not supported on big inserters")
-        return
-    end
-
     if inserter_utils.is_inserter(player.selected) then
         local inserter = player.selected
+
+        local slim = inserter_utils.is_slim(inserter)
+        local size = inserter_utils.get_inserter_size(inserter)
+        if slim then
+            game.print("Not supported on slim inserters")
+            return
+        end
+        if size.z > 1 then
+            game.print("Not supported on big inserters")
+            return
+        end
 
         local is_drop = string.find(event.input_name, "drop", 17) and true or false
 
@@ -1389,7 +1387,6 @@ local function on_distance_adjust(event)
     end
 end
 
---sistemare questa
 local function on_drop_offset_adjust(event)
     local player = game.players[event.player_index]
     if inserter_utils.is_inserter(player.selected) then
