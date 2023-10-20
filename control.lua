@@ -1,4 +1,9 @@
 -- ------------------------------
+-- Database
+-- ------------------------------
+local Storage = {}
+
+-- ------------------------------
 -- Settings
 -- ------------------------------
 local inserters_range = settings.startup["si-max-inserters-range"].value
@@ -8,7 +13,6 @@ local range_technologies = settings.startup["si-range-technologies"].value
 local offset_selector_technologies = settings.startup["si-offset-technologies"].value
 local single_line_slim_inserter = settings.startup["si-single-line-slim-inserter"].value
 local offset_selector = settings.startup["si-offset-selector"].value
-
 
 -- ------------------------------
 -- Blacklist
@@ -65,12 +69,6 @@ end
 
 math2d.direction = {}
 
-function math2d.direction.from_vector(vec, range)
-    range = range or 1
-    vec = math2d.position.ensure_xy(vec)
-    return math.floor(math.atan2(vec.x, -vec.y) * ((4 * range) / math.pi) + 0.5) % (8 * range)
-end
-
 --TODO maybe implement the generation in a single loop
 local function to_vector_table_generator(range)
     local posizioni = {}
@@ -113,14 +111,20 @@ for i = 1, 5, 1 do
     math2d.direction["vectors" .. tostring(i)] = to_vector_table_generator(i)
 end
 
+function math2d.direction.from_vector(vec, range)
+    range = range or 1
+    vec = math2d.position.ensure_xy(vec)
+    return math.floor(math.atan2(vec.x, -vec.y) * ((4 * range) / math.pi) + 0.5) % (8 * range)
+end
+
 function math2d.direction.to_vector(dir, range)
     range = range or 1
     return math2d.direction["vectors" .. tostring(range)][(dir % (8 * range)) + 1]
 end
 
-function math2d.direction.to_vector1(dir, range)
+function math2d.direction.transform_to_vector1(position, range)
     local check = range * 4
-    local pos = math2d.direction.from_vector(dir, range)
+    local pos = math2d.direction.from_vector(position, range)
     local mod = pos / check
 
     if mod == 0 then
@@ -142,14 +146,49 @@ function math2d.direction.to_vector1(dir, range)
     end
 end
 
-function math2d.direction.from_vector1(vec1_pos, range)
+function math2d.direction.upscale_vec1(vec1_pos, range)
     return (vec1_pos - 1) * range
+end
+
+function math2d.round(vec)
+    vec = math2d.position.ensure_xy(vec)
+    local out = { x = vec.x, y = vec.y }
+    if out.x < 0 then
+        out.x = math.ceil(out.x)
+    else
+        out.x = math.ceil(out.x)
+    end
+    if out.y < 0 then
+        out.y = math.ceil(out.y)
+    else
+        out.y = math.ceil(out.y)
+    end
+    return out
+end
+
+function math2d.invert(vec)
+    vec = math2d.position.ensure_xy(vec)
+    vec.x = vec.x * -1
+    vec.y = vec.y * -1
+    return vec
 end
 
 -- ------------------------------
 -- Tech
 -- ------------------------------
 local tech = {}
+
+function tech.check_offset_tech(force)
+    if not offset_selector_technologies then
+        return true
+    end
+
+    if force.technologies["si-unlock-offsets"].researched then
+        return true
+    end
+
+    return false
+end
 
 function tech.check_diagonal_tech(force, cell_position)
     if not diagonal_technologies then
@@ -176,6 +215,7 @@ function tech.check_range_tech(force, cell_position)
         return true
     end
 
+    cell_position = math2d.position.ensure_xy(cell_position)
     local distance = math.max(math.abs(cell_position.x), math.abs(cell_position.y))
 
     if distance <= 1 then
@@ -457,17 +497,13 @@ function inserter_utils.calc_rotated_offset(inserter, new_position, direction, t
 
     local position = math2d.direction.from_vector(old_positions[target .. "_offset"])
 
-    local old_sector = math2d.direction.to_vector1(old_positions[target], range)
-    local new_sector = math2d.direction.to_vector1(new_position, range)
+    local old_sector = math2d.direction.transform_to_vector1(old_positions[target], range)
+    local new_sector = math2d.direction.transform_to_vector1(new_position, range)
 
     if old_sector ~= new_sector then
-        if math.abs(direction) > 1 then
-            position = position + (direction * 1.5)
-        else
-            position = position + (direction * 2)
-        end
-        position = position % 9
-        if position == 0 then position = 1 end
+        local spostamento = (8 - old_sector) - (8 - new_sector)
+        position = position + spostamento
+        position = (position % 8) + 1
         return math2d.direction["vectors1"][position]
     end
 
@@ -705,6 +741,7 @@ function gui.should_cell_be_enabled(position, inserter_range, force, slimv, slim
     --button.enabled = math.min(math.abs(x), math.abs(y)) == 0 and math.max(math.abs(x), math.abs(y)) <= inserter_range
     --button.enabled = ((math.min(math.abs(x), math.abs(y)) == 0 or math.abs(x) == math.abs(y) ) and math.max(math.abs(x), math.abs(y)) <= inserter_range)
     --button.enabled = math.max(math.abs(x), math.abs(y)) <= table_range
+    position = math2d.position.ensure_xy(position)
     if math.max(math.abs(position.x), math.abs(position.y)) <= inserter_range and tech.check_tech(force, position) then
         if slim then
             if single_line_slim_inserter then
@@ -728,37 +765,24 @@ function gui.should_cell_be_enabled(position, inserter_range, force, slimv, slim
 end
 
 function gui.update(player, inserter)
-    local gui_instance                                                                           = player.gui.relative
-        .inserter_config.frame_content
-        .flow_content
+    local gui_instance = player.gui.relative.inserter_config.frame_content.flow_content
 
-    local table_range                                                                            = (gui_instance.pick_drop_flow.pick_drop_housing.table_position.column_count - 1) /
-        2
-    local inserter_range                                                                         = inserter_utils
-        .get_max_range(inserter)
-    local arm_positions                                                                          = inserter_utils
-        .get_arm_positions(inserter)
-    local orientation                                                                            = inserter_utils
-        .get_inserter_orientation(inserter)
-    local slim                                                                                   = inserter_utils
-        .is_slim(inserter)
-    local inserter_size                                                                          = inserter_utils
-        .get_inserter_size(inserter)
-    local slimn                                                                                  = slim and
-        orientation == "N"
-    local slime                                                                                  = slim and
-        orientation == "E"
-    local slims                                                                                  = slim and
-        orientation == "S"
-    local slimo                                                                                  = slim and
-        orientation == "O"
+    local table_range = (gui_instance.pick_drop_flow.pick_drop_housing.table_position.column_count - 1) / 2
+    local inserter_range = inserter_utils.get_max_range(inserter)
+    local arm_positions = inserter_utils.get_arm_positions(inserter)
+    local orientation = inserter_utils.get_inserter_orientation(inserter)
+    local slim = inserter_utils.is_slim(inserter)
+    local inserter_size = inserter_utils.get_inserter_size(inserter)
+    local slimn = slim and orientation == "N"
+    local slime = slim and orientation == "E"
+    local slims = slim and orientation == "S"
+    local slimo = slim and orientation == "O"
 
-    player.gui.relative.inserter_config.visible                                                  = gui.should_show(
-        inserter)
+    player.gui.relative.inserter_config.visible = gui.should_show(inserter)
     gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position.allow_none_state = false
-    gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position.visible          = false
+    gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position.visible = false
     gui_instance.pick_drop_flow.pick_drop_housing.inserter_drop_switch_position.allow_none_state = false
-    gui_instance.pick_drop_flow.pick_drop_housing.inserter_drop_switch_position.visible          = false
+    gui_instance.pick_drop_flow.pick_drop_housing.inserter_drop_switch_position.visible = false
 
     if slim then                                                   -- adjust position
         if (slims or slimn) and arm_positions.drop.y >= 0 then     -- parte bassa / lower half
@@ -897,10 +921,7 @@ function gui.update(player, inserter)
         return
     end
 
-    local offset_tech_unlocked = not offset_selector_technologies
-    if player.force.technologies["si-unlock-offsets"].researched then
-        offset_tech_unlocked = true
-    end
+    local offset_tech_unlocked = tech.check_offset_tech(player.force)
 
     local idx = 0
     for y = -1, 1, 1 do
@@ -933,6 +954,7 @@ end
 
 function gui.update_all(inserter)
     for idx, player in pairs(game.players) do
+        -- TODO if player function -> inserter. selected then world_editor.draw_positions(player, player.selected) update inserter display.
         if (inserter and player.opened == inserter) or (not inserter and player.opened and player.opened.type == "inserter") then
             gui.update(player, player.opened)
         end
@@ -1226,10 +1248,96 @@ function gui.should_show(entity)
 end
 
 -- ------------------------------
+-- In world editor
+-- ------------------------------
+
+local world_editor = {}
+
+function world_editor.draw_positions(player, inserter)
+    local colors        = {}
+    colors.can_select   = { 30, 30, 30, 5 }
+    colors.cant_select  = { 207, 31, 60, 5 }
+    colors.drop         = { 77, 15, 15, 2 }
+    colors.pickup       = { 15, 74, 13, 2 }
+
+    local range         = inserter_utils.get_max_range(inserter)
+    local arm_positions = inserter_utils.get_arm_positions(inserter)
+    local enabled_cell, is_drop, is_pickup
+
+    rendering.clear("Smart_Inserters")
+
+    for px = -range, range, 1 do
+        for py = -range, range, 1 do
+            enabled_cell = gui.should_cell_be_enabled({ px, py }, range, player.force)
+
+            is_drop = arm_positions.drop.x == px and arm_positions.drop.y == py
+            is_pickup = arm_positions.pickup.x == px and arm_positions.pickup.y == py
+
+            rendering.draw_rectangle {
+                color = colors
+                    [is_drop and "drop" or is_pickup and "pickup" or enabled_cell and "can_select" or "cant_select"],
+                filled = true,
+                left_top = { inserter.position.x + px - 0.5, inserter.position.y + py - 0.5 },
+                right_bottom = { inserter.position.x + px + 0.5, inserter.position.y + py + 0.5 },
+                surface = player.surface,
+                forces = { player.force },
+                players = { player },
+                visible = true,
+                draw_on_ground = false,
+                only_in_alt_mode = false
+            }
+        end
+    end
+end
+
+-- ------------------------------
+-- players functions
+-- ------------------------------
+
+local player_functions = {}
+
+function player_functions.save_data(player_index, inserter, status)
+    if not Storage[player_index] then
+        Storage[player_index] = {}
+    end
+    Storage[player_index]["selected_inserter"] = {}
+    Storage[player_index].selected_inserter["is_selected"] = status
+    Storage[player_index].selected_inserter["position"] = { x = inserter.position.x, y = inserter.position.y }
+    Storage[player_index].selected_inserter["name"] = inserter.name
+end
+
+function player_functions.get_data(player_index)
+    if not Storage[player_index] then
+        Storage[player_index] = {}
+    end
+    return Storage[player_index]
+end
+
+function player_functions.clear_all_data()
+    Storage = {}
+end
+
+function player_functions.safely_change_cursor(player, item)
+    player.cursor_stack.clear()
+    return player.cursor_stack.set_stack(item)
+end
+
+function player_functions.configure_pickup_drop_changher(player, is_drop)
+    if player.cursor_stack.is_blueprint then --and player.cursor_stack.name == "si-in-world-pikcup-drop-changer"
+        player.cursor_stack.set_blueprint_entities({ {
+            name = "si-in-world-" .. is_drop .. "-entity",
+            entity_number = 1,
+            position = { 0, 0 }
+        } })
+        player.cursor_stack.blueprint_absolute_snapping = true
+        player.cursor_stack.blueprint_snap_to_grid      = { 1, 0 }
+    end
+end
+
+-- ------------------------------
 -- Event Handlers
 -- ------------------------------
 -- Mod init
-
 local function on_init()
     print(
         "[Smart Inserters] Remember to check the mod settings if you want to disable technoly for range and diagonals!")
@@ -1257,7 +1365,6 @@ end
 
 
 -- Gui Events
-
 local function on_gui_opened(event)
     local player = game.players[event.player_index]
 
@@ -1299,11 +1406,21 @@ local function on_rotation_adjust(event)
         local slim = inserter_utils.is_slim(inserter)
         local size = inserter_utils.get_inserter_size(inserter)
         if slim then
-            game.print("Not supported on slim inserters")
+            player.surface.create_entity({
+                name = "flying-text",
+                position = inserter.position,
+                text = "hotkey not supported on slim inserter",
+                color = { 0.8, 0.8, 0.8 }
+            })
             return
         end
         if size.z > 1 then
-            game.print("Not supported on big inserters")
+            player.surface.create_entity({
+                name = "flying-text",
+                position = inserter.position,
+                text = "hotkey supported on big inserters",
+                color = { 0.8, 0.8, 0.8 }
+            })
             return
         end
 
@@ -1318,17 +1435,21 @@ local function on_rotation_adjust(event)
         local range = math.max(math.abs(arm_positions[target].x), math.abs(arm_positions[target].y))
 
         local old_direction = math2d.direction.from_vector(arm_positions[target], range)
-        local new_direction = (old_direction + direction) % (8 * range)
 
+        local new_direction = (old_direction + direction) % (8 * range)
         local new_tile = math2d.direction.to_vector(new_direction, range)
+
+        while not tech.check_diagonal_tech(player.force, new_tile) do
+            new_direction = (new_direction + direction) % (8 * range)
+            new_tile = math2d.direction.to_vector(new_direction, range)
+        end
 
         if math2d.position.equal(new_tile, arm_positions[check]) then
             new_direction = (new_direction + direction) % (8 * range)
             new_tile = math2d.direction.to_vector(new_direction, range)
-            if direction < 0 then
-                direction = direction - 1
-            else
-                direction = direction + 1
+            while not tech.check_diagonal_tech(player.force, new_tile) do
+                new_direction = (new_direction + direction) % (8 * range)
+                new_tile = math2d.direction.to_vector(new_direction, range)
             end
         end
 
@@ -1350,12 +1471,23 @@ local function on_distance_adjust(event)
 
         local slim = inserter_utils.is_slim(inserter)
         local size = inserter_utils.get_inserter_size(inserter)
+
         if slim then
-            game.print("Not supported on slim inserters")
+            player.surface.create_entity({
+                name = "flying-text",
+                position = inserter.position,
+                text = "hotkey not supported on slim inserter",
+                color = { 0.8, 0.8, 0.8 }
+            })
             return
         end
         if size.z > 1 then
-            game.print("Not supported on big inserters")
+            player.surface.create_entity({
+                name = "flying-text",
+                position = inserter.position,
+                text = "hotkey supported on big inserters",
+                color = { 0.8, 0.8, 0.8 }
+            })
             return
         end
 
@@ -1368,18 +1500,25 @@ local function on_distance_adjust(event)
 
         local range = math.max(math.abs(arm_positions[target].x), math.abs(arm_positions[target].y))
         local max_range = inserter_utils.get_max_range(inserter)
-        local dir = math2d.direction.to_vector1(arm_positions[target], range)
+        local dir = math2d.direction.transform_to_vector1(arm_positions[target], range)
 
         local new_range = (range % max_range) + 1
 
         local new_positions = {}
 
-        local pos = math2d.direction.from_vector1(dir, new_range)
+        local pos = math2d.direction.upscale_vec1(dir, new_range)
 
         new_positions[target] = math2d.direction.to_vector(pos, new_range)
 
+        if not tech.check_range_tech(player.force, new_positions[target]) then
+            pos = math2d.direction.upscale_vec1(dir, 1)
+            new_positions[target] = math2d.direction.to_vector(pos, 1)
+        end
+
         if new_positions[target].x == arm_positions[check].x and new_positions[target].y == arm_positions[check].y then
-            new_positions[check] = arm_positions[target]
+            new_range = (range % max_range) + 1
+            pos = math2d.direction.upscale_vec1(dir, new_range)
+            new_positions[target] = math2d.direction.to_vector(pos, new_range)
         end
 
         inserter_utils.set_arm_positions(inserter, new_positions)
@@ -1390,11 +1529,21 @@ end
 local function on_drop_offset_adjust(event)
     local player = game.players[event.player_index]
     if inserter_utils.is_inserter(player.selected) then
+        local inserter = player.selected
+
+        if not tech.check_offset_tech(player.force) then
+            player.surface.create_entity({
+                name = "flying-text",
+                position = inserter.position,
+                text = "Required technology not unlocked",
+                color = { 0.8, 0.8, 0.8 }
+            })
+            return
+        end
+
         local is_drop       = string.find(event.input_name, "drop", 17) and true or false
 
         local target        = is_drop and "drop" or "pickup"
-
-        local inserter      = player.selected
 
         local lateral       = string.find(event.input_name, "lateral", -7) ~= nil
 
@@ -1415,6 +1564,91 @@ local function on_drop_offset_adjust(event)
     end
 end
 
+local function on_in_world_editor(event)
+    local player = game.players[event.player_index]
+    if player.selected and inserter_utils.is_inserter(player.selected) and player.selected.position then
+        local is_drop = string.find(event.input_name, "drop", 31) and "drop" or "pickup"
+
+        world_editor.draw_positions(player, player.selected)
+
+        player_functions.safely_change_cursor(player, "si-in-world-".. is_drop.."-changer")
+
+        player_functions.configure_pickup_drop_changher(player, is_drop)
+
+        player_functions.save_data(event.player_index, player.selected, true)
+    end
+end
+
+
+-- World events
+local function on_built_entity(event)
+    local player = game.players[event.player_index]
+    local entity = event.created_entity
+    if entity.name ~= "entity-ghost" then return end
+    if entity.ghost_name ~= "si-in-world-drop-entity" and entity.ghost_name ~= "si-in-world-pickup-entity" then
+        return
+    end
+    local is_drop = string.find(entity.ghost_name, "drop", 11) and "drop" or "pickup"
+
+    local position = entity.position
+
+    local storage = player_functions.get_data(event.player_index)
+    if storage == {} then
+        player.surface.create_entity({
+            name = "flying-text",
+            position = position,
+            text = "selected inserter not found",
+            color = { 0.8, 0.8, 0.8 }
+        })
+        rendering.clear("Smart_Inserters")
+        return
+    end
+
+    local inserter = player.surface.find_entity(storage.selected_inserter.name, storage.selected_inserter.position)
+    local arm_positions = inserter_utils.get_arm_positions(inserter)
+    local max_range = inserter_utils.get_max_range(inserter)
+
+    local diff = math2d.position.subtract(storage.selected_inserter.position, position)
+    diff = math2d.round(diff)
+    diff = math2d.invert(diff)
+    local range = math.max(math.abs(diff.x), math.abs(diff.y))
+
+    if math2d.position.equal(arm_positions[is_drop], diff) then
+        entity.destroy()
+        return
+    end
+
+    if range <= max_range then
+        if tech.check_tech(player.force, diff) then
+            math2d.direction.from_vector(diff, range)
+            local set = {}
+            set[is_drop] = diff
+            inserter_utils.set_arm_positions(inserter, set)
+            world_editor.draw_positions(player, inserter)
+        else
+            player.surface.create_entity({
+                name = "flying-text",
+                position = position,
+                text = "Posizion not unlocked",
+                color = { 0.8, 0.8, 0.8 }
+            })
+        end
+    else
+        player.surface.create_entity({
+            name = "flying-text",
+            position = position,
+            text = "Too far",
+            color = { 0.8, 0.8, 0.8 }
+        })
+    end
+
+    entity.destroy()
+end
+
+
+local function clear_mess(event)
+    --rendering.clear("Smart_Inserters")
+end
 
 -- ------------------------------
 -- Eventhandler registration
@@ -1441,3 +1675,9 @@ script.on_event("inserter-config-drop-offset-adjust-lateral", on_drop_offset_adj
 script.on_event("inserter-config-drop-offset-adjust-distance", on_drop_offset_adjust)
 script.on_event("inserter-config-pickup-offset-adjust-lateral", on_drop_offset_adjust)
 script.on_event("inserter-config-pickup-offset-adjust-distance", on_drop_offset_adjust)
+
+script.on_event("inserter-config-in-world-inserter-configurator-pointer", on_in_world_editor)
+script.on_event("inserter-config-in-world-inserter-configurator-pickup", on_in_world_editor)
+script.on_event("inserter-config-in-world-inserter-configurator-drop", on_in_world_editor)
+script.on_event(defines.events.on_built_entity, on_built_entity)
+script.on_event(defines.events.on_player_cursor_stack_changed, clear_mess)

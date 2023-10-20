@@ -1,6 +1,95 @@
 local pickup_tint = { r = 1 / 255, g = 165 / 255, b = 53 / 255 }
 local drop_tint = { r = 155 / 255, g = 19 / 255, b = 7 / 255 }
 
+local chr = data.raw.character.character
+
+data:extend({
+	{
+		type = "blueprint",
+		name = "si-in-world-pickup-changer",
+		icon = "__Smart_Inserters__/graphics/technology/unlock_offsets.png",
+		icon_size = 256,
+		flags = { "hidden", "not-stackable", "only-in-cursor" },
+		stack_size = 1,
+		selection_color = { 0, 1, 0 },
+		alt_selection_color = { 0, 1, 0 },
+		selection_mode = { "blueprint" },
+		alt_selection_mode = { "blueprint" },
+		selection_cursor_box_type = "logistics",
+		alt_selection_cursor_box_type = "logistics"
+	},
+	{
+		type = "blueprint",
+		name = "si-in-world-drop-changer",
+		icon = "__Smart_Inserters__/graphics/technology/unlock_offsets.png",
+		icon_size = 256,
+		flags = { "hidden", "not-stackable", "only-in-cursor" },
+		stack_size = 1,
+		selection_color = { 0, 1, 0 },
+		alt_selection_color = { 0, 1, 0 },
+		selection_mode = { "blueprint" },
+		alt_selection_mode = { "blueprint" },
+		selection_cursor_box_type = "logistics",
+		alt_selection_cursor_box_type = "logistics"
+	},
+	{
+		type = "item",
+		name = "si-in-world-pickup-selector",
+		icon = "__Smart_Inserters__/graphics/technology/unlock_offsets.png",
+		icon_size = 256,
+		order = "a-b",
+		flags = { "hidden" },
+		place_result = "si-in-world-pickup-entity",
+		stack_size = 1
+	},
+	{
+		type = "item",
+		name = "si-in-world-drop-selector",
+		icon = "__Smart_Inserters__/graphics/technology/unlock_offsets.png",
+		icon_size = 256,
+		order = "a-b",
+		flags = { "hidden" },
+		place_result = "si-in-world-drop-entity",
+		stack_size = 1
+	},
+	{
+		type = "simple-entity-with-owner",
+		name = "si-in-world-pickup-entity",
+		icon = "__Smart_Inserters__/graphics/technology/unlock_offsets.png",
+		icon_size = 256,
+		flags = { "hidden", "not-on-map", "player-creation" },
+		collision_mask = {},
+		collision_box = { { -1, -1 }, { 0, 0 } },
+		selection_box = { { -1, -1 }, { 0, 0 } },
+		placeable_by = {
+			item = "si-in-world-pickup-selector",
+			count = 1
+		},
+		picture = {
+			filename = "__Smart_Inserters__/graphics/technology/unlock_offsets.png",
+			size = { 32, 32 }
+		}
+	},
+	{
+		type = "simple-entity-with-owner",
+		name = "si-in-world-drop-entity",
+		icon = "__Smart_Inserters__/graphics/technology/unlock_offsets.png",
+		icon_size = 256,
+		flags = { "hidden", "not-on-map", "player-creation" },
+		collision_mask = {},
+		collision_box = { { -1, -1 }, { 0, 0 } },
+		selection_box = { { -1, -1 }, { 0, 0 } },
+		placeable_by = {
+			item = "si-in-world-drop-selector",
+			count = 1
+		},
+		picture = {
+			filename = "__Smart_Inserters__/graphics/technology/unlock_offsets.png",
+			size = { 32, 32 }
+		}
+	}
+})
+
 data:extend({
 	{
 		type = "sprite",
@@ -159,6 +248,27 @@ data:extend({
 		key_sequence = "",
 		consuming = "none",
 		order = "9"
+	},
+	{
+		type = "custom-input",
+		name = "inserter-config-in-world-inserter-configurator-pickup",
+		key_sequence = "CONTROL + P",
+		consuming = "none",
+		order = "10"
+	},
+	{
+		type = "custom-input",
+		name = "inserter-config-in-world-inserter-configurator-drop",
+		key_sequence = "CONTROL + D",
+		consuming = "none",
+		order = "11"
+	},
+	{
+		type = "custom-input",
+		name = "inserter-config-in-world-inserter-configurator-pointer",
+		key_sequence = " F15",
+		consuming = "none",
+		order = "12"
 	}
 })
 
@@ -167,7 +277,6 @@ data:extend({
 		type = "technology",
 		name = "si-unlock-offsets",
 		icon_size = 256,
-		icon_mipmaps = 4,
 		icon = "__Smart_Inserters__/graphics/technology/unlock_offsets.png",
 		hidden = false,
 		effects = {
@@ -190,7 +299,6 @@ data:extend({
 		type = "technology",
 		name = "si-unlock-cross",
 		icon_size = 256,
-		icon_mipmaps = 4,
 		icon = "__Smart_Inserters__/graphics/technology/unlock_cross.png",
 		hidden = false,
 		effects = {
@@ -213,7 +321,6 @@ data:extend({
 		type = "technology",
 		name = "si-unlock-x-diagonals",
 		icon_size = 256,
-		icon_mipmaps = 4,
 		icon = "__Smart_Inserters__/graphics/technology/unlock_x_diagonals.png",
 		hidden = false,
 		effects = {
@@ -237,7 +344,6 @@ data:extend({
 		type = "technology",
 		name = "si-unlock-all-diagonals",
 		icon_size = 256,
-		icon_mipmaps = 4,
 		icon = "__Smart_Inserters__/graphics/technology/unlock_all_diagonals.png",
 		hidden = false,
 		effects = {
@@ -262,7 +368,6 @@ data:extend({
 		type = "technology",
 		name = "si-unlock-range-1",
 		icon_size = 256,
-		icon_mipmaps = 4,
 		icon = "__Smart_Inserters__/graphics/technology/unlock_range_2.png",
 		hidden = false,
 		effects = {
@@ -285,7 +390,6 @@ data:extend({
 		type = "technology",
 		name = "si-unlock-range-2",
 		icon_size = 256,
-		icon_mipmaps = 4,
 		icon = "__Smart_Inserters__/graphics/technology/unlock_range_3.png",
 		hidden = false,
 		effects = {
@@ -309,7 +413,6 @@ data:extend({
 		type = "technology",
 		name = "si-unlock-range-3",
 		icon_size = 256,
-		icon_mipmaps = 4,
 		icon = "__Smart_Inserters__/graphics/technology/unlock_range_4.png",
 		hidden = false,
 		effects = {
@@ -334,7 +437,6 @@ data:extend({
 		type = "technology",
 		name = "si-unlock-range-4",
 		icon_size = 256,
-		icon_mipmaps = 4,
 		icon = "__Smart_Inserters__/graphics/technology/unlock_range_5.png",
 		hidden = false,
 		effects = {

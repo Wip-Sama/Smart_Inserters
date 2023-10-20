@@ -1,4 +1,15 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.0.11
+Date: 2023-??-??
+  Added:
+    - a new way to change inserter drop/pickup without opening it's gui (to change the offset you need to use the shortcut)
+  Bugfixes:
+    - Locked shortcut (hotkeys) behind technologies
+  Planned:
+    - a shortcut (hotkey) to switch between the near and far side of the belt
+  Changes:
+    - compatibility with rendai trasportation not planned anymore, if you have any idea about how to implement it contace me on telegram t.me/smastermega
+---------------------------------------------------------------------------------------------------
 Version: 1.0.10
 Date: 2023-10-17
   Bugfixes:
@@ -17,7 +28,7 @@ Date: 2023-10-16
     - Slim inserter settings are now hidden if none are detected (sorta, it only checks if known slim inserter mod are present due to factorio limitation)
     - Corrected some part of my terrible english in the changelog
     - Small optimizations to the disable-long-inserter script
-  Planned:
+  Maybe:
     - Compatibility with RenaiTramsportation (this is going to be a headache...)
   Notes:
     - hotkeys are disabled in slim/big inserter due to mental health limitations, the support will come in the next update hopefully (too much math for my poor brain)
@@ -32,7 +43,7 @@ Date: 2023-10-04
   Changes:
     - New disable-long-inserter script
   Planned:
-    - Hide slim inserters settings if none are detected (kinda DONE)
+    - Hide slim inserters settings if none are detected
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.7
 Date: 2023-09-27
@@ -53,7 +64,7 @@ Date: 2023-09-27
   Bugfixes:
     - Crash when clicking on the ui with pick/drop offset disabled
   Maybe:
-    - Centre the ui for pick/drop position (DONE)
+    - Centre the ui for pick/drop position
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.5
 Date: 2023-09-21
@@ -64,15 +75,15 @@ Date: 2023-09-21
   Changes:
     - Better localization for some settings
   Planned:
-    - Offset technology (DONE)
-    - Rewrite of the code to disable long inserters (DONE)
+    - Offset technology
+    - Rewrite of the code to disable long inserters
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.4
 Date: 2023-09-20
   Changes:
     - Disabled cells now show the pick/drop icon
   Maybe:
-    - Support for 2x2 inserters (DONE)
+    - Support for 2x2 inserters
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.3
 Date: 2023-09-02
@@ -109,4 +120,4 @@ Date: 2023-08-12
     - First release
     - This is a fork of "Inserter_Config" to fix a bug and to add some (+-QOL) features
   Maybe:
-    - Technology to unlock different grid size (DONE)
+    - Technology to unlock different grid size
