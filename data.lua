@@ -262,13 +262,6 @@ data:extend({
 		key_sequence = "CONTROL + D",
 		consuming = "none",
 		order = "11"
-	},
-	{
-		type = "custom-input",
-		name = "inserter-config-in-world-inserter-configurator-pointer",
-		key_sequence = " F15",
-		consuming = "none",
-		order = "12"
 	}
 })
 
