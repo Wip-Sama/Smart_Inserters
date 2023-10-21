@@ -1,14 +1,20 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.11
-Date: 2023-??-??
+Date: 2023-10-??
   Added:
     - a new way to change inserter drop/pickup without opening it's gui (to change the offset you need to use the shortcut)
   Bugfixes:
     - Locked shortcut (hotkeys) behind technologies
-  Planned:
-    - a shortcut (hotkey) to switch between the near and far side of the belt
   Changes:
     - compatibility with rendai trasportation not planned anymore, if you have any idea about how to implement it contace me on telegram t.me/smastermega
+  Planned:
+    - a shortcut (hotkey) to switch between the near and far side of the belt
+    - Support for Slim/arrow inserter in the new positioning mode
+    - Support for big inserter in the new positioning mode
+  Known Issues:
+    - With size 5 grid you may experience performance issue in the world selector ( I need to optimeze the code to fix this so this will take quite a while )
+  Notes:
+    - Since I have no friends (maybe) the world selector is not tested in multiplayer, expect bugs
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.10
 Date: 2023-10-17
