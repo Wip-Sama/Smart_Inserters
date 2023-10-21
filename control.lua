@@ -1,8 +1,30 @@
+-- ------------------------------
+-- Dependencies
+-- ------------------------------
+local math2d = require("math2d")
+
+function deepcopy(obj)
+    if type(obj) ~= 'table' then return obj end
+    local res = {}
+    for k, v in pairs(obj) do res[deepcopy(k)] = deepcopy(v) end
+    return res
+end
+
+-- ------------------------------
+-- Functions Group
+-- ------------------------------
 local gui = {}
+local tech = {}
+local inserter_utils = {}
+local world_editor = {}
+local player_functions = {}
+
+
 -- ------------------------------
 -- Database
 -- ------------------------------
-local Storage = {}
+SI_Storage = {}
+
 
 -- ------------------------------
 -- Settings
@@ -15,6 +37,7 @@ local offset_selector_technologies = settings.startup["si-offset-technologies"].
 local single_line_slim_inserter = settings.startup["si-single-line-slim-inserter"].value
 local offset_selector = settings.startup["si-offset-selector"].value
 
+
 -- ------------------------------
 -- Blacklist
 -- ------------------------------
@@ -22,10 +45,6 @@ local blacklist = {}
 blacklist.mods = { "miniloader", "RenaiTransportation" }
 blacklist.entities = {}
 
--- ------------------------------
--- Dependencies
--- ------------------------------
-local math2d = require("math2d")
 
 -- ------------------------------
 -- Math library additions
@@ -174,11 +193,16 @@ function math2d.invert(vec)
     return vec
 end
 
+function math2d.no_minus_0(vec)
+    vec = math2d.position.ensure_xy(vec)
+    if vec.x == -0 then vec.x = 0 end
+    if vec.y == -0 then vec.y = 0 end
+    return vec
+end
+
 -- ------------------------------
 -- Tech
 -- ------------------------------
-local tech = {}
-
 function tech.check_offset_tech(force)
     if not offset_selector_technologies then
         return true
@@ -267,8 +291,6 @@ end
 -- ------------------------------
 -- Inserter utils
 -- ------------------------------
-local inserter_utils = {}
-
 function inserter_utils.get_prototype(inserter)
     if inserter.type == "entity-ghost" then
         return inserter.ghost_prototype
@@ -537,21 +559,18 @@ end
 -- ------------------------------
 -- In world editor
 -- ------------------------------
+local colors       = {}
+colors.can_select  = { 30, 30, 30, 5 }
+colors.cant_select = { 207, 31, 60, 5 }
+colors.drop        = { 77, 15, 15, 2 }
+colors.pickup      = { 15, 74, 13, 2 }
 
-local world_editor = {}
-
-function world_editor.draw_positions(player, inserter)
-    local colors        = {}
-    colors.can_select   = { 30, 30, 30, 5 }
-    colors.cant_select  = { 207, 31, 60, 5 }
-    colors.drop         = { 77, 15, 15, 2 }
-    colors.pickup       = { 15, 74, 13, 2 }
-
+function world_editor.draw_positions(player_index, inserter)
+    local player        = game.players[player_index]
     local range         = inserter_utils.get_max_range(inserter)
     local arm_positions = inserter_utils.get_arm_positions(inserter)
     local enabled_cell, is_drop, is_pickup
-
-    rendering.clear("Smart_Inserters")
+    SI_Storage.ensure_data(player_index)
 
     for px = -range, range, 1 do
         for py = -range, range, 1 do
@@ -560,7 +579,7 @@ function world_editor.draw_positions(player, inserter)
             is_drop = arm_positions.drop.x == px and arm_positions.drop.y == py
             is_pickup = arm_positions.pickup.x == px and arm_positions.pickup.y == py
 
-            rendering.draw_rectangle {
+            local render_id = rendering.draw_rectangle {
                 color = colors
                     [is_drop and "drop" or is_pickup and "pickup" or enabled_cell and "can_select" or "cant_select"],
                 filled = true,
@@ -573,6 +592,125 @@ function world_editor.draw_positions(player, inserter)
                 draw_on_ground = false,
                 only_in_alt_mode = false
             }
+
+            SI_Storage[player_index].selected_inserter.position_grid[tostring(px)][tostring(py)] = {
+                loaded = true,
+                render_id = render_id
+            }
+        end
+    end
+end
+
+function world_editor.update_positions(player_index, inserter, changes)
+    local player = game.players[player_index]
+    local arm_positions = inserter_utils.get_arm_positions(inserter)
+    local render_id, enabled_cell
+    SI_Storage.ensure_data(player_index)
+
+    if changes.pickup then
+        if changes.pickup.old then
+            render_id = SI_Storage[player_index].selected_inserter.position_grid[tostring(changes.pickup.old.x)]
+                [tostring(changes.pickup.old.y)].render_id
+            rendering.destroy(render_id)
+            enabled_cell = tech.check_tech(player.force, changes.pickup.old)
+            render_id = rendering.draw_rectangle {
+                color = colors[enabled_cell and "can_select" or "cant_select"],
+                filled = true,
+                left_top = { arm_positions.base.x + changes.pickup.old.x, arm_positions.base.y + changes.pickup.old.y },
+                right_bottom = { arm_positions.base.x + changes.pickup.old.x + 1, arm_positions.base.y + changes.pickup.old.y + 1 },
+                surface = player.surface,
+                forces = { player.force },
+                players = { player },
+                visible = true,
+                draw_on_ground = false,
+                only_in_alt_mode = false
+            }
+            SI_Storage[player_index].selected_inserter.position_grid[tostring(changes.pickup.old.x)][tostring(changes.pickup.old.y)] = {
+                loaded = true,
+                render_id = render_id
+            }
+        end
+        if changes.pickup.new then
+            render_id = SI_Storage[player_index].selected_inserter.position_grid[tostring(changes.pickup.new.x)]
+                [tostring(changes.pickup.new.y)].render_id
+            rendering.destroy(render_id)
+            render_id = rendering.draw_rectangle {
+                color = colors["pickup"],
+                filled = true,
+                left_top = { arm_positions.base.x + changes.pickup.new.x, arm_positions.base.y + changes.pickup.new.y },
+                right_bottom = { arm_positions.base.x +changes.pickup.new.x + 1, arm_positions.base.y + changes.pickup.new.y + 1 },
+                surface = player.surface,
+                forces = { player.force },
+                players = { player },
+                visible = true,
+                draw_on_ground = false,
+                only_in_alt_mode = false
+            }
+            SI_Storage[player_index].selected_inserter.position_grid[tostring(changes.pickup.new.x)][tostring(changes.pickup.new.y)] = {
+                loaded = true,
+                render_id = render_id
+            }
+        end
+    end
+
+    if changes.drop then
+        if changes.drop.old then
+            render_id = SI_Storage[player_index].selected_inserter.position_grid[tostring(changes.drop.old.x)][tostring(changes.drop.old.y)].render_id
+            rendering.destroy(render_id)
+            enabled_cell = tech.check_tech(player.force, changes.drop.old)
+            render_id = rendering.draw_rectangle {
+                color = colors[enabled_cell and "can_select" or "cant_select"],
+                filled = true,
+                left_top = { arm_positions.base.x + changes.drop.old.x, arm_positions.base.y + changes.drop.old.y},
+                right_bottom = { arm_positions.base.x + changes.drop.old.x + 1, arm_positions.base.y + changes.drop.old.y + 1 },
+                surface = player.surface,
+                forces = { player.force },
+                players = { player },
+                visible = true,
+                draw_on_ground = false,
+                only_in_alt_mode = false
+            }
+            SI_Storage[player_index].selected_inserter.position_grid[tostring(changes.drop.old.x)][tostring(changes.drop.old.y)] = {
+                loaded = true,
+                render_id = render_id
+            }
+        end
+        if changes.drop.new then
+            render_id = SI_Storage[player_index].selected_inserter.position_grid[tostring(changes.drop.new.x)]
+            [tostring(changes.drop.new.y)].render_id
+            rendering.destroy(render_id)
+            render_id = rendering.draw_rectangle {
+                color = colors["drop"],
+                filled = true,
+                left_top = { arm_positions.base.x + changes.drop.new.x, arm_positions.base.y + changes.drop.new.y},
+                right_bottom = { arm_positions.base.x + changes.drop.new.x + 1, arm_positions.base.y + changes.drop.new.y + 1 },
+                surface = player.surface,
+                forces = { player.force },
+                players = { player },
+                visible = true,
+                draw_on_ground = false,
+                only_in_alt_mode = false
+            }
+            SI_Storage[player_index].selected_inserter.position_grid[tostring(changes.drop.new.x)][tostring(changes.drop.new.y)] = {
+                loaded = true,
+                render_id = render_id
+            }
+        end
+    end
+
+    if changes.tech == true then
+        world_editor.draw_positions(player_index, inserter)
+    end
+end
+
+function del_coord()
+    for _0, x in pairs(SI_Storage[1].selected_inserter.position_grid) do 
+        for _1, y in pairs(x) do 
+            if y.loaded then
+                rendering.destroy(y.render_id)
+                print(y.render_id)
+                y.loaded = false
+            end
         end
     end
 end
@@ -580,7 +718,6 @@ end
 -- ------------------------------
 -- Gui
 -- ------------------------------
-
 function gui.create_pick_drop_editor(flow_content)
     -- Pickup/Drop label
     flow_content.add({
@@ -1022,9 +1159,10 @@ function gui.on_button_position(player, event)
     local slime = slim and orientation == "E"
     local slims = slim and orientation == "S"
     local slimo = slim and orientation == "O"
+    local new_positions
 
     if event.button == defines.mouse_button_type.left and not event.control and not event.shift then
-        local new_positions = { drop = new_pos }
+        new_positions = { drop = new_pos }
 
         if event.element.sprite == "drop" then
             return
@@ -1068,7 +1206,7 @@ function gui.on_button_position(player, event)
             return
         end
     elseif event.button == defines.mouse_button_type.right or (event.button == defines.mouse_button_type.left and (event.control or event.shift)) then
-        local new_positions = { pickup = new_pos }
+        new_positions = { pickup = new_pos }
 
         if event.element.sprite == "pickup" then
             return
@@ -1126,8 +1264,31 @@ function gui.on_button_position(player, event)
     end
 
     gui.update_all(inserter)
-    if Storage[event.player_index].is_selected and math2d.position.equal(player.opened.position, Storage[event.player_index].selected_inserter.position) then
-        world_editor.draw_positions(player, player.opened)
+    if SI_Storage[event.player_index].is_selected and math2d.position.equal(player.opened.position, SI_Storage[event.player_index].selected_inserter.position) then
+        local changes = {
+            drop = {
+                old = {
+                    x = inserter_positions.drop.x,
+                    y = inserter_positions.drop.y,
+                },
+                new = {
+                    x = new_positions.drop.x,
+                    y = new_positions.drop.y,
+                },
+            },
+            pickup = {
+                old = {
+                    x = inserter_positions.pickup.x,
+                    y = inserter_positions.pickup.y,
+                },
+                new = {
+                    x = new_positions.pickup.x,
+                    y = new_positions.pickup.y,
+                },
+            },
+            tech = false,
+        }
+        world_editor.update_positions(event.player_index, player.opened, changes)
     end
 end
 
@@ -1136,8 +1297,8 @@ function gui.on_button_drop_offset(player, event)
     inserter_utils.set_arm_positions(player.opened, { drop_offset = new_drop_offset })
 
     gui.update(player, player.opened)
-    if Storage[event.player_index].is_selected and math2d.position.equal(player.opened.position, Storage[event.player_index].selected_inserter.position) then
-        world_editor.draw_positions(player, player.opened)
+    if SI_Storage[event.player_index].is_selected and math2d.position.equal(player.opened.position, SI_Storage[event.player_index].selected_inserter.position) then
+        world_editor.update_positions(event.player_index, player.opened)
     end
 end
 
@@ -1146,8 +1307,8 @@ function gui.on_button_pick_offset(player, event)
     inserter_utils.set_arm_positions(player.opened, { pickup_offset = new_pickup_offset })
 
     gui.update(player, player.opened)
-    if Storage[event.player_index].is_selected and math2d.position.equal(player.opened.position, Storage[event.player_index].selected_inserter.position) then
-        world_editor.draw_positions(player, player.opened)
+    if SI_Storage[event.player_index].is_selected and math2d.position.equal(player.opened.position, SI_Storage[event.player_index].selected_inserter.position) then
+        world_editor.update_positions(event.player_index, player.opened)
     end
 end
 
@@ -1191,8 +1352,8 @@ function gui.on_switch_drop_position(player, event)
 
     inserter_utils.set_arm_positions(inserter, { drop_adjust = drop_adjust })
     gui.update(player, inserter)
-    if Storage[event.player_index].is_selected and math2d.position.equal(player.opened.position, Storage[event.player_index].selected_inserter.position) then
-        world_editor.draw_positions(player, player.opened)
+    if SI_Storage[event.player_index].is_selected and math2d.position.equal(player.opened.position, SI_Storage[event.player_index].selected_inserter.position) then
+        world_editor.update_positions(event.player_index, player.opened)
     end
 end
 
@@ -1236,8 +1397,8 @@ function gui.on_switch_pick_position(player, event)
 
     inserter_utils.set_arm_positions(inserter, { pickup_adjust = pickup_adjust })
     gui.update(player, inserter)
-    if Storage[event.player_index].is_selected and math2d.position.equal(player.opened.position, Storage[event.player_index].selected_inserter.position) then
-        world_editor.draw_positions(player, player.opened)
+    if SI_Storage[event.player_index].is_selected and math2d.position.equal(player.opened.position, SI_Storage[event.player_index].selected_inserter.position) then
+        world_editor.update_positions(event.player_index, player.opened)
     end
 end
 
@@ -1306,42 +1467,67 @@ function gui.should_show(entity)
 end
 
 -- ------------------------------
--- players functions
+-- SI_Storage
 -- ------------------------------
+function SI_Storage.populate_storage()
+    for player_index, player in pairs(game.players) do
+        SI_Storage[player_index] = {}
+        SI_Storage[player_index]["is_selected"] = false
+        SI_Storage[player_index]["selected_inserter"] = {}
 
-local player_functions = {}
+        SI_Storage[player_index].selected_inserter["position"] = { x = "", y = "" }
+        SI_Storage[player_index].selected_inserter["name"] = ""
+        SI_Storage[player_index].selected_inserter["drop"] = { x = "", y = "" }
+        SI_Storage[player_index].selected_inserter["pickup"] = { x = "", y = "" }
 
-function player_functions.save_data(player_index, inserter, status)
-    if not Storage[player_index] then
-        Storage[player_index] = {}
-        Storage[player_index]["is_selected"] = false
-    end
-    Storage[player_index]["is_selected"] = status
-    Storage[player_index]["selected_inserter"] = {}
-    if status then
-        local arm_positions = inserter_utils.get_arm_positions(inserter)
-        Storage[player_index].selected_inserter["position"] = { x = inserter.position.x, y = inserter.position.y }
-        Storage[player_index].selected_inserter["name"] = inserter.name
-        Storage[player_index].selected_inserter["drop"] = arm_positions.drop
-        Storage[player_index].selected_inserter["pickup"] = arm_positions.pickup
-    end
-end
-
-function player_functions.get_data(player_index)
-    if not Storage[player_index] then
-        Storage[player_index] = {}
-        Storage[player_index]["is_selected"] = false
-    end
-    return Storage[player_index]
-end
-
-function player_functions.clear_all_data()
-    for _, v in pairs(Storage) do
-        v = {}
-        v["is_selected"] = false
+        SI_Storage[player_index].selected_inserter["position_grid"] = {}
+        local tmp = {}
+        local x_string
+        for x = -5, 5, 1 do
+            x_string = tostring(x)
+            SI_Storage[player_index].selected_inserter["position_grid"][x_string] = {}
+            tmp[x_string] = { loaded = false }
+        end
+        for y = -5, 5, 1 do
+            SI_Storage[player_index].selected_inserter["position_grid"][tostring(y)] = deepcopy(tmp)
+        end
+        rendering.clear("Smart_Inserters")
     end
 end
 
+function SI_Storage.add_player(player_index)
+    SI_Storage[player_index] = {}
+    SI_Storage[player_index]["is_selected"] = false
+    SI_Storage[player_index]["selected_inserter"] = {}
+
+    SI_Storage[player_index].selected_inserter["position"] = { x = "", y = "" }
+    SI_Storage[player_index].selected_inserter["name"] = ""
+    SI_Storage[player_index].selected_inserter["drop"] = { x = "", y = "" }
+    SI_Storage[player_index].selected_inserter["pickup"] = { x = "", y = "" }
+
+    SI_Storage[player_index].selected_inserter["position_grid"] = {}
+    local tmp = {}
+    local x_string
+    for x = -5, 5, 1 do
+        x_string = tostring(x)
+        SI_Storage[player_index].selected_inserter["position_grid"][x_string] = {}
+        tmp[x_string] = { loaded = false }
+    end
+    for y = -5, 5, 1 do
+        SI_Storage[player_index].selected_inserter["position_grid"][tostring(y)] = deepcopy(tmp)
+    end
+end
+
+function SI_Storage.ensure_data(player_index)
+    if not SI_Storage[player_index] then
+        SI_Storage.add_player(player_index)
+    end
+    return SI_Storage[player_index]
+end
+
+-- ------------------------------
+-- player_functions
+-- ------------------------------
 function player_functions.safely_change_cursor(player, item)
     item = item or false
     player.cursor_stack.clear()
@@ -1361,12 +1547,6 @@ function player_functions.configure_pickup_drop_changher(player, is_drop)
     end
 end
 
-function player_functions.populate_storage()
-    for idx, player in pairs(game.players) do
-        Storage[idx] = {}
-        Storage[idx]["status"] = false
-    end
-end
 -- ------------------------------
 -- Event Handlers
 -- ------------------------------
@@ -1374,7 +1554,7 @@ end
 local function on_init()
     print(
         "[Smart Inserters] Remember to check the mod settings if you want to disable technoly for range and diagonals!")
-    player_functions.populate_storage()
+    SI_Storage.populate_storage()
     gui.create_all()
 end
 
@@ -1382,20 +1562,20 @@ local function on_configuration_changed(cfg_changed_data)
     gui.create_all()
     gui.update_all()
     tech.update_all()
-    player_functions.populate_storage()
+    SI_Storage.populate_storage()
 end
 
 local function on_player_created(event)
     local player = game.players[event.player_index]
     gui.create(player)
-    Storage[event.player_index] = {}
-    Storage[event.player_index]["status"] = false
+    SI_Storage.add_player(event.player_index)
 end
 
 local function on_entity_settings_pasted(event)
     if event.destination.type == "inserter" then
         event.destination.direction = event.source.direction
         inserter_utils.enforce_max_range(event.destination)
+        SI_Storage.populate_storage()
         gui.update_all(event.destination)
     end
 end
@@ -1604,7 +1784,7 @@ end
 local function on_in_world_editor(event)
     local player = game.players[event.player_index]
     local is_drop = string.find(event.input_name, "drop", 31) and "drop" or "pickup"
-
+    SI_Storage.ensure_data(event.player_index)
     if player.cursor_stack.is_blueprint then
         local is_drop_changer = (player.cursor_stack.name == "si-in-world-drop-changer")
         local is_pickup_changer = (player.cursor_stack.name == "si-in-world-pickup-changer")
@@ -1613,7 +1793,7 @@ local function on_in_world_editor(event)
             player_functions.configure_pickup_drop_changher(player, is_drop)
             return
         elseif is_drop_changer and is_drop == "drop" then
-            Storage[event.player_index]["is_selected"] = false
+            SI_Storage[event.player_index]["is_selected"] = false
             player_functions.safely_change_cursor(player)
             rendering.clear("Smart_Inserters")
             return
@@ -1622,17 +1802,22 @@ local function on_in_world_editor(event)
             player_functions.configure_pickup_drop_changher(player, is_drop)
             return
         elseif is_pickup_changer and is_drop == "pickup" then
-            Storage[event.player_index]["is_selected"] = false
+            SI_Storage[event.player_index]["is_selected"] = false
             player_functions.safely_change_cursor(player)
             rendering.clear("Smart_Inserters")
             return
         end
     end
     if player.selected and inserter_utils.is_inserter(player.selected) and player.selected.position then
-        world_editor.draw_positions(player, player.selected)
+        local arm_positions = inserter_utils.get_arm_positions(player.selected)
+        SI_Storage[event.player_index].is_selected = true
+        SI_Storage[event.player_index].selected_inserter.name = player.selected.name
+        SI_Storage[event.player_index].selected_inserter.position = math2d.position.ensure_xy(player.selected.position)
+        SI_Storage[event.player_index].selected_inserter.drop = arm_positions.drop
+        SI_Storage[event.player_index].selected_inserter.pickup = arm_positions.pickup
+        world_editor.draw_positions(event.player_index, player.selected)
         player_functions.safely_change_cursor(player, "si-in-world-" .. is_drop .. "-changer")
         player_functions.configure_pickup_drop_changher(player, is_drop)
-        player_functions.save_data(event.player_index, player.selected, true)
     end
 end
 
@@ -1649,7 +1834,7 @@ local function on_built_entity(event)
 
     local is_drop = string.find(entity.ghost_name, "drop", 11) and "drop" or "pickup"
     local position = entity.position
-    local storage = player_functions.get_data(event.player_index)
+    local storage = SI_Storage.ensure_data(event.player_index)
     if storage.is_selected == false then
         ---@diagnostic disable-next-line: missing-fields
         player.surface.create_entity({
@@ -1664,25 +1849,40 @@ local function on_built_entity(event)
 
     local inserter = player.surface.find_entity(storage.selected_inserter.name, storage.selected_inserter.position)
     local arm_positions = inserter_utils.get_arm_positions(inserter)
-    local max_range = inserter_utils.get_max_range(inserter)
 
     local diff = math2d.position.subtract(storage.selected_inserter.position, position)
     diff = math2d.round(diff)
-    diff = math2d.invert(diff)
-    local range = math.max(math.abs(diff.x), math.abs(diff.y))
+    diff = math2d.position.multiply_scalar(diff, -1)
 
     if math2d.position.equal(arm_positions[is_drop], diff) then
         entity.destroy()
         return
     end
 
+    local max_range = inserter_utils.get_max_range(inserter)
+    local range = math.max(math.abs(diff.x), math.abs(diff.y))
     if range <= max_range then
         if tech.check_tech(player.force, diff) then
             math2d.direction.from_vector(diff, range)
             local set = {}
             set[is_drop] = diff
             inserter_utils.set_arm_positions(inserter, set)
-            world_editor.draw_positions(player, inserter)
+
+            local changes = {}
+            arm_positions[is_drop] = math2d.no_minus_0(arm_positions[is_drop])
+            diff = math2d.no_minus_0(diff)
+            changes[is_drop] = {
+                old = {
+                    x = arm_positions[is_drop].x,
+                    y = arm_positions[is_drop].y
+                },
+                new = {
+                    x = diff.x,
+                    y = diff.y
+                }
+            }
+
+            world_editor.update_positions(event.player_index, inserter, changes)
             gui.update(player, inserter)
         else
             ---@diagnostic disable-next-line: missing-fields
@@ -1702,10 +1902,8 @@ local function on_built_entity(event)
             color = { 0.8, 0.8, 0.8 }
         })
     end
-
     entity.destroy()
 end
-
 
 local function on_player_cursor_stack_changed(event)
     local player = game.players[event.player_index]
@@ -1718,17 +1916,14 @@ local function on_player_cursor_stack_changed(event)
     else
         rendering.clear("Smart_Inserters")
     end
-
 end
 
 -- ------------------------------
 -- Eventhandler registration
 -- ------------------------------
-
 script.on_init(on_init)
 script.on_configuration_changed(on_configuration_changed)
 script.on_event(defines.events.on_player_created, on_player_created)
-
 script.on_event(defines.events.on_gui_opened, on_gui_opened)
 script.on_event(defines.events.on_gui_click, on_gui_click)
 script.on_event(defines.events.on_player_rotated_entity, on_player_rotated_entity)
@@ -1749,5 +1944,5 @@ script.on_event("inserter-config-pickup-offset-adjust-distance", on_drop_offset_
 
 script.on_event("inserter-config-in-world-inserter-configurator-pickup", on_in_world_editor)
 script.on_event("inserter-config-in-world-inserter-configurator-drop", on_in_world_editor)
-script.on_event(defines.events.on_built_entity, on_built_entity)
 script.on_event(defines.events.on_player_cursor_stack_changed, on_player_cursor_stack_changed)
+script.on_event(defines.events.on_built_entity, on_built_entity)
