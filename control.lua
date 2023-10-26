@@ -1561,6 +1561,7 @@ end
 
 local function welcome()
     game.print({ "smart-inserters.welcome" })
+    game.print("The in world selector is experimental, bugs are to be expected, if you find some please report them to me on the mod portal!")
 end
 
 local function on_configuration_changed(cfg_changed_data)
@@ -2063,20 +2064,6 @@ script.on_event("smart-inserters-in-world-inserter-configurator-pickup", on_in_w
 script.on_event("smart-inserters-in-world-inserter-configurator-drop", on_in_world_editor)
 script.on_event(defines.events.on_player_cursor_stack_changed, on_player_cursor_stack_changed)
 script.on_event(defines.events.on_built_entity, on_built_entity)
-
-
-local function test_built(event)
-    print(event.name)
-    print("Event built called")
-end
-
-local function test_destroy(event)
-    print(event.name)
-    print("Event destroy called")
-end
-
-script.on_event(defines.events.script_raised_built, test_built)
-script.on_event(defines.events.script_raised_destroy, test_destroy)
 
 --script.on_event(defines.events.script_raised_built, on_built_entity)
 --script.on_event(defines.events.script_raised_destroy, on_entity_destroyed)
