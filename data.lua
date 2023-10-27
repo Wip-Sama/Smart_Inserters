@@ -127,8 +127,8 @@ data:extend({
 		icon_size = 40,
 		flags = { "hidden", "not-on-map", "player-creation" },
 		collision_mask = {},
-		collision_box = { { -1, -1 }, { 0, 0 } },
-		selection_box = { { -1, -1 }, { 0, 0 } },
+		collision_box = { { -0.5, -0.5 }, { 0.5, 0.5 } },
+		selection_box = { { -0.5, -0.5 }, { 0.5, 0.5 } },
 		placeable_by = {
 			item = "si-in-world-pickup-selector",
 			count = 1
@@ -175,8 +175,8 @@ data:extend({
 		icon_size = 40,
 		flags = { "hidden", "not-on-map", "player-creation" },
 		collision_mask = {},
-		collision_box = { { -1, -1 }, { 0, 0 } },
-		selection_box = { { -1, -1 }, { 0, 0 } },
+		collision_box = { { -0.5, -0.5 }, { 0.5, 0.5 } },
+		selection_box = { { -0.5, -0.5 }, { 0.5, 0.5 } },
 		placeable_by = {
 			item = "si-in-world-drop-selector",
 			count = 1

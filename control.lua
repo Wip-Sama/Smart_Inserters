@@ -1532,6 +1532,17 @@ end
 -- ------------------------------
 function player_functions.safely_change_cursor(player, item)
     item = item or false
+    local inventory = player.get_main_inventory()
+    if player.cursor_stack.valid_for_read then
+        local available_space = inventory.get_insertable_count(player.cursor_stack.name)
+        if available_space >= player.cursor_stack.count*2 then
+            inventory.insert({ name = player.cursor_stack.name, count = player.cursor_stack.count })
+        else
+            player.force.character_inventory_slots_bonus = player.force.character_inventory_slots_bonus + 1
+            inventory.insert(player.cursor_stack)
+            player.force.character_inventory_slots_bonus = player.force.character_inventory_slots_bonus - 1
+        end
+    end
     player.cursor_stack.clear()
     if item == false then return end
     return player.cursor_stack.set_stack(item)
@@ -1561,7 +1572,7 @@ end
 
 local function welcome()
     game.print({ "smart-inserters.welcome" })
-    game.print("The in world selector is experimental, bugs are to be expected, if you find some please report them to me on the mod portal!")
+    game.print("The in-world selector is experimental, bugs are to be expected, if you find some please report them to me on the mod portal!")
 end
 
 local function on_configuration_changed(cfg_changed_data)
@@ -1570,6 +1581,7 @@ local function on_configuration_changed(cfg_changed_data)
     tech.update_all()
     storage_functions.ensure_data()
     storage_functions.populate_storage()
+    game.print("The in-world selector is experimental, bugs are to be expected, if you find some please report them to me on the mod portal!")
 end
 
 local function on_player_created(event)
@@ -1821,7 +1833,7 @@ local function on_in_world_editor(event)
             return
         end
     end
-    if player.selected and inserter_utils.is_inserter(player.selected) and player.selected.position then
+    if player.selected and inserter_utils.is_inserter(player.selected) and player.selected.position and gui.should_show(player.selected) then
         local slim = inserter_utils.is_slim(player.selected)
         local size = inserter_utils.get_inserter_size(player.selected)
         if slim then
@@ -1850,7 +1862,7 @@ local function on_in_world_editor(event)
         global.SI_Storage[event.player_index].selected_inserter.name = player.selected.name
         global.SI_Storage[event.player_index].selected_inserter.surface = player.selected.surface
         global.SI_Storage[event.player_index].selected_inserter.position = math2d.position.ensure_xy(player.selected
-        .position)
+            .position)
         global.SI_Storage[event.player_index].selected_inserter.drop = arm_positions.drop
         global.SI_Storage[event.player_index].selected_inserter.pickup = arm_positions.pickup
         world_editor.draw_positions(event.player_index, player.selected)

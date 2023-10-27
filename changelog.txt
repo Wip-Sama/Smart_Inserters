@@ -1,4 +1,12 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.1
+Date: 2023-10-27
+  Changes:
+    - Item placed by the in-world selector are now centered on the tile
+  Bugfixes:
+    - Now instead of destroying the item in your cursor it will be placed inside your inventory or dropped on the floor while using the in-world selector
+    - Fixed mod crash when using in world editor on miniloader (this feature is now disabled)
+---------------------------------------------------------------------------------------------------
 Version: 1.1.0
 Date: 2023-10-26
   Added:
