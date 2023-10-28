@@ -231,7 +231,7 @@ function tech.check_range_tech(force, cell_position, distance_offset)
 
     cell_position = math2d.position.ensure_xy(cell_position)
     local distance_offset = distance_offset or 0
-    local distance = math.max(math.abs(cell_position.x), math.abs(cell_position.y))-distance_offset
+    local distance = math.max(math.abs(cell_position.x), math.abs(cell_position.y)) - distance_offset
 
     if distance <= 1 then
         return true
@@ -568,26 +568,25 @@ function inserter_utils.get_inserter_size_old(inserter)
 end
 
 function inserter_utils.inseter_default_range(inserter)
-	local collision_box_toal = 0.2
+    local collision_box_toal = 0.2
 
-	if inserter.collision_box ~= nil then
-		local collision_box_1 = math2d.position.ensure_xy(inserter.collision_box.left_top)
-		local collision_box_2 = math2d.position.ensure_xy(inserter.collision_box.right_bottom)
-		local collision_box_1_max = math.max(math.abs(collision_box_1.x), math.abs(collision_box_1.y))
-		local collision_box_2_max = math.max(math.abs(collision_box_2.x), math.abs(collision_box_2.y))
-		collision_box_toal = collision_box_1_max+collision_box_2_max
-	end
+    if inserter.collision_box ~= nil then
+        local collision_box_1 = math2d.position.ensure_xy(inserter.collision_box.left_top)
+        local collision_box_2 = math2d.position.ensure_xy(inserter.collision_box.right_bottom)
+        local collision_box_1_max = math.max(math.abs(collision_box_1.x), math.abs(collision_box_1.y))
+        local collision_box_2_max = math.max(math.abs(collision_box_2.x), math.abs(collision_box_2.y))
+        collision_box_toal = collision_box_1_max + collision_box_2_max
+    end
 
-	local biggest = { x = 0, y = 0, z = 0 }
-	local pickup_position = math2d.position.ensure_xy(inserter.inserter_pickup_position)
-	local insert_position = math2d.position.ensure_xy(inserter.inserter_drop_position)
-	biggest.x = math.max(math.abs(pickup_position.x), math.abs(insert_position.x))
-	biggest.y = math.max(math.abs(pickup_position.y), math.abs(insert_position.y))
-	biggest.z = math.max(biggest.x, biggest.y)-collision_box_toal
+    local biggest = { x = 0, y = 0, z = 0 }
+    local pickup_position = math2d.position.ensure_xy(inserter.inserter_pickup_position)
+    local insert_position = math2d.position.ensure_xy(inserter.inserter_drop_position)
+    biggest.x = math.max(math.abs(pickup_position.x), math.abs(insert_position.x))
+    biggest.y = math.max(math.abs(pickup_position.y), math.abs(insert_position.y))
+    biggest.z = math.max(biggest.x, biggest.y) - collision_box_toal
 
-	return biggest.z
+    return biggest.z
 end
-
 
 -- ------------------------------
 -- In world editor
@@ -1644,7 +1643,7 @@ end
 local function welcome()
     game.print({ "smart-inserters.welcome" })
     game.print(
-        "The in-world selector is experimental, bugs are to be expected, if you find some please report them to me on the mod portal!")
+        "[Smart Inserters] The in-world selector is experimental, bugs are to be expected, if you find some please report them to me on the mod portal!")
 end
 
 local function on_configuration_changed(cfg_changed_data)
@@ -1654,7 +1653,7 @@ local function on_configuration_changed(cfg_changed_data)
     storage_functions.ensure_data()
     storage_functions.populate_storage()
     game.print(
-        "The in-world selector is experimental, bugs are to be expected, if you find some please report them to me on the mod portal!")
+        "[Smart Inserters] The in-world selector is experimental, bugs are to be expected, if you find some please report them to me on the mod portal!")
 end
 
 local function on_player_created(event)

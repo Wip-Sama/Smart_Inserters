@@ -1,6 +1,6 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.2
-Date: 2023-10-??
+Date: 2023-10-28
   Added:
     - Italian localization
     - tech difficulty selector (starting settings)
@@ -8,6 +8,7 @@ Date: 2023-10-??
   Bugfixes:
     - Item would dron on the floor when activating the in-world selector if you had a single slot available
     - pickup/drop selector items are no longer put into the player inventory when swapping them
+    - technologies were defined with 4 mipmaps while having 1
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.1
 Date: 2023-10-27

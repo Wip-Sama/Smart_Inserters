@@ -52,6 +52,14 @@ data:extend({
         order         = "cd"
     },
     {
+        type           = "string-setting",
+        setting_type   = "startup",
+        name           = "si-technologies-difficulty",
+        default_value  = "normal",
+        allowed_values = { "normal", "hard" },
+        order          = "ce"
+    },
+    {
         type          = "bool-setting",
         setting_type  = "startup",
         name          = "si-disable-long-inserters",
