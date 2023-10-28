@@ -224,13 +224,14 @@ function tech.check_diagonal_tech(force, cell_position)
     return false
 end
 
-function tech.check_range_tech(force, cell_position)
+function tech.check_range_tech(force, cell_position, distance_offset)
     if not range_technologies then
         return true
     end
 
     cell_position = math2d.position.ensure_xy(cell_position)
-    local distance = math.max(math.abs(cell_position.x), math.abs(cell_position.y))
+    local distance_offset = distance_offset or 0
+    local distance = math.max(math.abs(cell_position.x), math.abs(cell_position.y))-distance_offset
 
     if distance <= 1 then
         return true
@@ -249,8 +250,9 @@ function tech.check_range_tech(force, cell_position)
     return false
 end
 
-function tech.check_tech(force, cell_position)
-    if tech.check_range_tech(force, cell_position) and tech.check_diagonal_tech(force, cell_position) then
+function tech.check_tech(force, cell_position, distance_offset)
+    local distance_offset = distance_offset or 0
+    if tech.check_range_tech(force, cell_position, distance_offset) and tech.check_diagonal_tech(force, cell_position) then
         return true
     end
     return false
@@ -462,8 +464,8 @@ function inserter_utils.set_arm_positions(inserter, positions)
     end
 end
 
-function inserter_utils.get_max_range(inserter)
-    if settings.startup["si-uniform-range"].value then
+function inserter_utils.get_max_range(inserter, force)
+    if settings.startup["si-range-adder"].value == "equal" then
         return inserters_range
     end
 
@@ -471,15 +473,35 @@ function inserter_utils.get_max_range(inserter)
     if prototype.object_name == "LuaEntity" then
         prototype = inserter_utils.get_prototype(prototype)
     end
-
     local pickup_pos = math2d.position.tilepos(math2d.position.add(prototype.inserter_pickup_position, { 0.5, 0.5 }))
     local drop_pos = math2d.position.tilepos(math2d.position.add(prototype.inserter_drop_position, { 0.5, 0.5 }))
-    return math.max(math.abs(pickup_pos.x), math.abs(pickup_pos.y), math.abs(drop_pos.x), math.abs(drop_pos.y))
+    local inserter_range = math.max(math.abs(pickup_pos.x), math.abs(pickup_pos.y), math.abs(drop_pos.x),
+        math.abs(drop_pos.y))
+
+    if settings.startup["si-range-adder"].value == "inserter" then
+        return inserter_range
+    elseif settings.startup["si-range-adder"].value == "incremental" then
+        local added = 0
+        if force.technologies["si-unlock-range-1"].researched then
+            added = added + 1
+        end
+        if force.technologies["si-unlock-range-2"].researched then
+            added = added + 1
+        end
+        if force.technologies["si-unlock-range-3"].researched then
+            added = added + 1
+        end
+        if force.technologies["si-unlock-range-4"].researched then
+            added = added + 1
+        end
+
+        return math.min(inserter_range + added, inserters_range)
+    end
 end
 
-function inserter_utils.enforce_max_range(inserter)
+function inserter_utils.enforce_max_range(inserter, force)
     local arm_positions = inserter_utils.get_arm_positions(inserter)
-    local max_range = inserter_utils.get_max_range(inserter)
+    local max_range = inserter_utils.get_max_range(inserter, force)
 
     if math.max(math.abs(arm_positions.drop.x), math.abs(arm_positions.drop.y)) > max_range then
         arm_positions.drop = math2d.position.multiply_scalar(
@@ -545,6 +567,28 @@ function inserter_utils.get_inserter_size_old(inserter)
     return count
 end
 
+function inserter_utils.inseter_default_range(inserter)
+	local collision_box_toal = 0.2
+
+	if inserter.collision_box ~= nil then
+		local collision_box_1 = math2d.position.ensure_xy(inserter.collision_box.left_top)
+		local collision_box_2 = math2d.position.ensure_xy(inserter.collision_box.right_bottom)
+		local collision_box_1_max = math.max(math.abs(collision_box_1.x), math.abs(collision_box_1.y))
+		local collision_box_2_max = math.max(math.abs(collision_box_2.x), math.abs(collision_box_2.y))
+		collision_box_toal = collision_box_1_max+collision_box_2_max
+	end
+
+	local biggest = { x = 0, y = 0, z = 0 }
+	local pickup_position = math2d.position.ensure_xy(inserter.inserter_pickup_position)
+	local insert_position = math2d.position.ensure_xy(inserter.inserter_drop_position)
+	biggest.x = math.max(math.abs(pickup_position.x), math.abs(insert_position.x))
+	biggest.y = math.max(math.abs(pickup_position.y), math.abs(insert_position.y))
+	biggest.z = math.max(biggest.x, biggest.y)-collision_box_toal
+
+	return biggest.z
+end
+
+
 -- ------------------------------
 -- In world editor
 -- ------------------------------
@@ -557,7 +601,7 @@ colors.pickup      = { 15, 74, 13, 2 }
 
 function world_editor.draw_positions(player_index, inserter)
     local player        = game.players[player_index]
-    local range         = inserter_utils.get_max_range(inserter)
+    local range         = inserter_utils.get_max_range(inserter, player.force)
     local arm_positions = inserter_utils.get_arm_positions(inserter)
     local enabled_cell, is_drop, is_pickup
     storage_functions.ensure_data(player_index)
@@ -566,7 +610,7 @@ function world_editor.draw_positions(player_index, inserter)
         for py = -range, range, 1 do
             if px == py and py == 0 then goto continue end
 
-            enabled_cell = gui.should_cell_be_enabled({ px, py }, range, player.force)
+            enabled_cell = gui.should_cell_be_enabled({ px, py }, range, player.force, inserter)
             is_drop = arm_positions.drop.x == px and arm_positions.drop.y == py
             is_pickup = arm_positions.pickup.x == px and arm_positions.pickup.y == py
             if not enabled_cell and not (is_pickup or is_pickup) then goto continue end
@@ -595,8 +639,9 @@ function world_editor.draw_positions(player_index, inserter)
 end
 
 function world_editor.update_positions(player_index, inserter, changes)
-    local player = game.players[player_index]
+    local player        = game.players[player_index]
     local arm_positions = inserter_utils.get_arm_positions(inserter)
+    local range         = inserter_utils.get_max_range(inserter, player.force)
     local render_id, enabled_cell
     storage_functions.ensure_data(player_index)
 
@@ -605,7 +650,7 @@ function world_editor.update_positions(player_index, inserter, changes)
             render_id = global.SI_Storage[player_index].selected_inserter.position_grid[tostring(changes.pickup.old.x)]
                 [tostring(changes.pickup.old.y)].render_id
             rendering.destroy(render_id)
-            enabled_cell = tech.check_tech(player.force, changes.pickup.old)
+            enabled_cell = gui.should_cell_be_enabled(changes.pickup.old, range, player.force, inserter)
             render_id = rendering.draw_rectangle {
                 color = colors[enabled_cell and "can_select" or "cant_select"],
                 filled = true,
@@ -653,7 +698,7 @@ function world_editor.update_positions(player_index, inserter, changes)
             render_id = global.SI_Storage[player_index].selected_inserter.position_grid[tostring(changes.drop.old.x)]
                 [tostring(changes.drop.old.y)].render_id
             rendering.destroy(render_id)
-            enabled_cell = tech.check_tech(player.force, changes.drop.old)
+            enabled_cell = gui.should_cell_be_enabled(changes.drop.old, range, player.force, inserter)
             render_id = rendering.draw_rectangle {
                 color = colors[enabled_cell and "can_select" or "cant_select"],
                 filled = true,
@@ -727,6 +772,7 @@ end
 -- ------------------------------
 -- Gui
 -- ------------------------------
+--fix force
 function gui.create_pick_drop_editor(flow_content)
     -- Pickup/Drop label
     flow_content.add({
@@ -737,11 +783,13 @@ function gui.create_pick_drop_editor(flow_content)
     })
 
     local table_range = inserters_range
-    local inserter_prototyes = game.get_filtered_entity_prototypes({ { filter = "type", type = "inserter" } })
-    for name, prototype in pairs(inserter_prototyes) do
-        local range = inserter_utils.get_max_range(prototype)
-        table_range = math.max(table_range, range)
-    end
+
+    --PROBABLY NOT NEEDED
+    --local inserter_prototyes = game.get_filtered_entity_prototypes({ { filter = "type", type = "inserter" } })
+    --for name, prototype in pairs(inserter_prototyes) do
+    --    local range = inserter_utils.get_max_range(prototype)
+    --    table_range = math.max(table_range, range)
+    --end
 
     -- Pickup/Drop Grid
     local table_position = flow_content.add({
@@ -926,12 +974,24 @@ function gui.create_all()
     end
 end
 
-function gui.should_cell_be_enabled(position, inserter_range, force, slimv, slimo, slim)
+function gui.should_cell_be_enabled(position, inserter_range, force, inserter, slimv, slimo, slim)
     --button.enabled = math.min(math.abs(x), math.abs(y)) == 0 and math.max(math.abs(x), math.abs(y)) <= inserter_range
     --button.enabled = ((math.min(math.abs(x), math.abs(y)) == 0 or math.abs(x) == math.abs(y) ) and math.max(math.abs(x), math.abs(y)) <= inserter_range)
     --button.enabled = math.max(math.abs(x), math.abs(y)) <= table_range
     position = math2d.position.ensure_xy(position)
-    if math.max(math.abs(position.x), math.abs(position.y)) <= inserter_range and tech.check_tech(force, position) then
+
+    local default_range = 0 -- equal
+    local in_inserter_range = true
+
+    if settings.startup["si-range-adder"].value == "inserter" and inserter.prototype then
+        in_inserter_range = math.max(math.abs(position.x), math.abs(position.y)) <= inserter_range
+    end
+
+    if settings.startup["si-range-adder"].value == "incremental" and inserter.prototype then
+        default_range = inserter_utils.inseter_default_range(inserter.prototype)
+    end
+
+    if in_inserter_range and tech.check_tech(force, position, default_range) then
         if slim then
             if single_line_slim_inserter then
                 if slimv and position.x == 0 then
@@ -955,13 +1015,13 @@ end
 
 function gui.update(player, inserter)
     local gui_instance = player.gui.relative.inserter_config.frame_content.flow_content
-
+    local inserter = inserter
     local table_range = (gui_instance.pick_drop_flow.pick_drop_housing.table_position.column_count - 1) / 2
-    local inserter_range = inserter_utils.get_max_range(inserter)
+    local inserter_range = inserter_utils.get_max_range(inserter, player.force)
     local arm_positions = inserter_utils.get_arm_positions(inserter)
     local orientation = inserter_utils.get_inserter_orientation(inserter)
-    local slim = inserter_utils.is_slim(inserter)
     local inserter_size = inserter_utils.get_inserter_size(inserter)
+    local slim = inserter_utils.is_slim(inserter)
     local slimn = slim and orientation == "N"
     local slime = slim and orientation == "E"
     local slims = slim and orientation == "S"
@@ -1054,8 +1114,9 @@ function gui.update(player, inserter)
             idx = idx + 1
             local button = gui_instance.pick_drop_flow.pick_drop_housing.table_position.children[idx]
             if button.type == "sprite-button" then
-                button.enabled = gui.should_cell_be_enabled({ x = x, y = y }, inserter_range, player.force,
-                    (slimn or slims), (slimo or slime), slim)
+                button.enabled = gui.should_cell_be_enabled({ x = x, y = y }, inserter_range, player.force, inserter,
+                    (slimn or slims), (slimo or slime), slim
+                )
 
                 if math2d.position.equal(arm_positions.drop, { x, y }) then
                     if directional_slim_inserter and slim then
@@ -1535,14 +1596,24 @@ function player_functions.safely_change_cursor(player, item)
     local inventory = player.get_main_inventory()
     if player.cursor_stack.valid_for_read then
         local available_space = inventory.get_insertable_count(player.cursor_stack.name)
-        if available_space >= player.cursor_stack.count*2 then
+        local skip = false
+        if player.cursor_stack.prototype.flags then
+            skip = player.cursor_stack.prototype.flags["only-in-cursor"] and true or false
+        end
+        if skip then goto skip_change end
+
+        if available_space >= player.cursor_stack.count * 2 then
             inventory.insert({ name = player.cursor_stack.name, count = player.cursor_stack.count })
         else
             player.force.character_inventory_slots_bonus = player.force.character_inventory_slots_bonus + 1
             inventory.insert(player.cursor_stack)
+            player.cursor_stack.clear()
             player.force.character_inventory_slots_bonus = player.force.character_inventory_slots_bonus - 1
         end
+
+        ::skip_change::
     end
+
     player.cursor_stack.clear()
     if item == false then return end
     return player.cursor_stack.set_stack(item)
@@ -1572,7 +1643,8 @@ end
 
 local function welcome()
     game.print({ "smart-inserters.welcome" })
-    game.print("The in-world selector is experimental, bugs are to be expected, if you find some please report them to me on the mod portal!")
+    game.print(
+        "The in-world selector is experimental, bugs are to be expected, if you find some please report them to me on the mod portal!")
 end
 
 local function on_configuration_changed(cfg_changed_data)
@@ -1581,7 +1653,8 @@ local function on_configuration_changed(cfg_changed_data)
     tech.update_all()
     storage_functions.ensure_data()
     storage_functions.populate_storage()
-    game.print("The in-world selector is experimental, bugs are to be expected, if you find some please report them to me on the mod portal!")
+    game.print(
+        "The in-world selector is experimental, bugs are to be expected, if you find some please report them to me on the mod portal!")
 end
 
 local function on_player_created(event)
@@ -1593,7 +1666,7 @@ end
 local function on_entity_settings_pasted(event)
     if event.destination.type == "inserter" then
         event.destination.direction = event.source.direction
-        inserter_utils.enforce_max_range(event.destination)
+        inserter_utils.enforce_max_range(event.destination, game.players[event.player_index].force)
         storage_functions.populate_storage()
         gui.update_all(event.destination)
     end
@@ -1740,7 +1813,7 @@ local function on_distance_adjust(event)
         local arm_positions = inserter_utils.get_arm_positions(inserter)
 
         local range = math.max(math.abs(arm_positions[target].x), math.abs(arm_positions[target].y))
-        local max_range = inserter_utils.get_max_range(inserter)
+        local max_range = inserter_utils.get_max_range(inserter, player.force)
         local dir = math2d.direction.transform_to_vector1(arm_positions[target], range)
 
         local new_range = (range % max_range) + 1
@@ -1926,10 +1999,10 @@ local function on_built_entity(event)
         return
     end
 
-    local max_range = inserter_utils.get_max_range(inserter)
+    local max_range = inserter_utils.get_max_range(inserter, player.force)
     local range = math.max(math.abs(diff.x), math.abs(diff.y))
     if range <= max_range then
-        if tech.check_tech(player.force, diff) then
+        if gui.should_cell_be_enabled(diff, max_range, player.force, inserter) then
             math2d.direction.from_vector(diff, range)
             local set = {}
             local changes = {}
@@ -2085,4 +2158,6 @@ script.on_event(defines.events.on_robot_mined_entity, on_entity_destroyed)
 --script.on_event(defines.events.on_entity_died, on_entity_destroyed)
 --script.on_event(defines.events.on_entity_destroyed, on_entity_destroyed)
 
--- TODO optimize tech check (valid position checking)
+-- TODO optimize cell check
+-- Store technolgy instead of checking each time
+-- store valid cell positions (maybe)

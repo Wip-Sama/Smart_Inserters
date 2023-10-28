@@ -27,7 +27,7 @@ local function inserter_in_results(results, long_inserters)
 	return false
 end
 
-local function is_inserter_long(inserter)
+local function inseter_default_range(inserter)
 	local collision_box_toal = 0.2
 	if inserter.collision_box ~= nil then
 		local collision_box_1 = math2d.position.ensure_xy(inserter.collision_box[1])
@@ -44,7 +44,11 @@ local function is_inserter_long(inserter)
 	biggest.y = math.max(math.abs(pickup_position.y), math.abs(insert_position.y))
 	biggest.z = math.max(biggest.x, biggest.y)-collision_box_toal
 
-	if biggest.z > 1 then
+	return biggest.z
+end
+
+local function is_inserter_long(inserter)
+	if inseter_default_range(inserter) > 1 then
 		return true
 	end
 	return false
@@ -60,6 +64,7 @@ end
 return {
     is_inserter_long = is_inserter_long;
     is_inserter_mini = is_inserter_mini;
+	inseter_default_range = inseter_default_range;
 	inserter_in_result = inserter_in_result;
 	inserter_in_results = inserter_in_results;
 }

@@ -9,11 +9,12 @@ data:extend({
         order         = "a"
     },
     {
-        type          = "bool-setting",
-        setting_type  = "startup",
-        name          = "si-uniform-range",
-        default_value = true,
-        order         = "ba"
+        type           = "string-setting",
+        setting_type   = "startup",
+        name           = "si-range-adder",
+        default_value  = "equal",
+        allowed_values = { "inserter", "incremental", "equal" },
+        order          = "ba"
     },
     {
         type          = "bool-setting",
