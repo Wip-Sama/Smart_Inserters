@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.2
+Date: 2023-??-??
+  Added:
+    - Ability to toggle pikup/drop/pickup offset/drop offsets/rotation when copy pasting inserters (check player settings)
+  Changes:
+    - Better integration of the in-world selector with the copy paste
+---------------------------------------------------------------------------------------------------
 Version: 1.1.2
 Date: 2023-10-28
   Added:
