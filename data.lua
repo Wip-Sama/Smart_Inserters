@@ -1,6 +1,7 @@
 local pickup_tint = { r = 1 / 255, g = 165 / 255, b = 53 / 255 }
 local drop_tint = { r = 155 / 255, g = 19 / 255, b = 7 / 255 }
 require("prototypes.technology")
+require("prototypes.style")
 
 --sprites
 data:extend({

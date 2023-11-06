@@ -2,6 +2,7 @@
 -- Dependencies
 -- ------------------------------
 local math2d = require("math2d")
+local mod_gui = require("mod-gui")
 
 -- ------------------------------
 -- Utilites
@@ -92,6 +93,7 @@ local function to_vector_table_generator(range)
     local check = range * 4
 
     local max = 8 * range - 1
+    max = range >= 0 and max or 4
     for i = 0, max, 1 do
         table.insert(posizioni, i)
     end
@@ -124,7 +126,7 @@ local function to_vector_table_generator(range)
     return merged
 end
 
-for i = 1, 5, 1 do
+for i = 0, 5, 1 do
     math2d.direction["vectors" .. tostring(i)] = to_vector_table_generator(i)
 end
 
@@ -139,7 +141,7 @@ function math2d.direction.to_vector(dir, range)
     return math2d.direction["vectors" .. tostring(range)][(dir % (8 * range)) + 1]
 end
 
-function math2d.direction.transform_to_vector1(position, range)
+function math2d.direction.vector_to_vec1_position(position, range)
     local check = range * 4
     local pos = math2d.direction.from_vector(position, range)
     local mod = pos / check
@@ -523,7 +525,23 @@ function inserter_utils.enforce_max_range(inserter, force)
     inserter_utils.set_arm_positions(inserter, arm_positions)
 end
 
-function inserter_utils.calc_rotated_offset(inserter, new_position, direction, target)
+function inserter_utils.calc_rotated_position(inserter, new_position, new_direction)
+    new_direction = new_direction == 0 and 8 or new_direction
+    local spostamento = (8 - inserter.direction) - (8 - new_direction)
+    if spostamento < 0 then spostamento = 8 + spostamento end
+    local tmp_pos = 0
+
+    while spostamento ~= 0 do
+        tmp_pos = new_position.y * -1
+        new_position.y = new_position.x
+        new_position.x = tmp_pos
+        spostamento = spostamento - 2
+    end
+
+    return new_position
+end
+
+function inserter_utils.calc_rotated_offset(inserter, new_position, target)
     local old_positions = inserter_utils.get_arm_positions(inserter)
 
     if old_positions[target .. "_offset"].x == 0 and old_positions[target .. "_offset"].y == 0 then
@@ -534,8 +552,11 @@ function inserter_utils.calc_rotated_offset(inserter, new_position, direction, t
 
     local position = math2d.direction.from_vector(old_positions[target .. "_offset"])
 
-    local old_sector = math2d.direction.transform_to_vector1(old_positions[target], range)
-    local new_sector = math2d.direction.transform_to_vector1(new_position, range)
+    local old_sector = math2d.direction.vector_to_vec1_position(old_positions[target], range)
+    if type(new_position) == "number" then
+        new_position = inserter_utils.calc_rotated_position(inserter, old_positions[target .. "_offset"], new_position)
+    end
+    local new_sector = math2d.direction.vector_to_vec1_position(new_position, range)
 
     if old_sector ~= new_sector then
         local spostamento = (8 - old_sector) - (8 - new_sector)
@@ -772,9 +793,241 @@ function world_editor.update_all_positions(inserter)
 end
 
 -- ------------------------------
+-- Copy Gui
+-- ------------------------------
+
+function copy_gui.delete(player)
+    if player.gui.relative.smart_inserters then
+        player.gui.relative.smart_inserters.destroy()
+    end
+end
+
+function copy_gui.create(player)
+    local button_flow = mod_gui.get_button_flow(player)
+    if button_flow.si_configurator_toggle then return end
+    button_flow.add {
+        type = "sprite-button",
+        name = "si_configurator_toggle",
+        sprite = "circle"
+    }
+end
+
+function copy_gui.create_all()
+    for idx, player in pairs(game.players) do
+        --copy_gui.delete(player)
+        copy_gui.create(player)
+    end
+end
+
+function copy_gui.remove_gui(player)
+    player.gui.screen.si_copypaste_configurator.destroy()
+end
+
+function copy_gui.add_gui(player)
+    local si_copypaste_configurator = player.gui.screen.add {
+        type = "frame",
+        direction = "vertical",
+        name = "si_copypaste_configurator",
+    }
+
+    local hotbar = si_copypaste_configurator.add {
+        type = "flow",
+        direction = "horizontal",
+        style = "si_hotbar_flow"
+    }
+    hotbar.drag_target = si_copypaste_configurator
+
+    hotbar.add { -- Sprite
+        type = "sprite",
+        sprite = "circle",
+        ignored_by_interaction = true,
+        style = "si_hotbar_sprite"
+    }
+    hotbar.add { -- Title
+        type = "label",
+        caption = { "gui-copy-smart-inserters.si-hotbar-title" },
+        ignored_by_interaction = true,
+        style = "frame_title"
+    }
+    hotbar.add { -- handle
+        type = "empty-widget",
+        ignored_by_interaction = true,
+        style = "si_drag_handle"
+    }
+    hotbar.add { -- Close
+        type = "sprite-button",
+        name = "si-close-button",
+        sprite = "utility/close_white",
+        hovered_sprite = "utility/close_black",
+        clicked_sprite = "utility/close_black",
+        caption = "",
+        style = "close_button"
+    }
+
+    local copypaste_down_frame = si_copypaste_configurator.add({
+        type = "frame",
+        name = "copypaste_down_frame",
+        style = "inside_deep_frame_for_tabs",
+    })
+
+    local tab_pane = copypaste_down_frame.add({
+        type = "tabbed-pane",
+        name = "si_config_tab_pane",
+    })
+
+    storage_functions.ensure_data(player.index)
+
+    -- Basic
+    local basic_tab = tab_pane.add({
+        type = "tab",
+        name = "basic_tab",
+        caption = "Basic"
+    })
+    local basic_flow = tab_pane.add({
+        type = "flow",
+        name = "basic_flow",
+        direction = "vertical",
+        style = "vertical_flow_with_extra_margins"
+    })
+    tab_pane.add_tab(basic_tab, basic_flow)
+    basic_flow.add({
+        type = "checkbox",
+        name = "drop",
+        caption = "Drop",
+        state = global.SI_Storage[player.index].copy_settings.drop
+    })
+    basic_flow.add({
+        type = "checkbox",
+        name = "drop_offset",
+        caption = "Drop Offset",
+        state = global.SI_Storage[player.index].copy_settings.drop_offset
+    })
+    basic_flow.add({
+        type = "checkbox",
+        name = "pickup",
+        caption = "Pickup",
+        state = global.SI_Storage[player.index].copy_settings.pickup
+    })
+    basic_flow.add({
+        type = "checkbox",
+        name = "pickup_offset",
+        caption = "Pickup offset",
+        state = global.SI_Storage[player.index].copy_settings.pickup_offset
+    })
+    basic_flow.add({
+        type = "checkbox",
+        name = "si_direction",
+        caption = "Direction",
+        state = global.SI_Storage[player.index].copy_settings.si_direction
+    })
+    basic_flow.add({
+        type = "checkbox",
+        name = "relative_si_direction",
+        caption = "Relative direction",
+        state = global.SI_Storage[player.index].copy_settings.relative_si_direction
+    })
+
+    --Filter
+    local filter_tab = tab_pane.add({
+        type = "tab",
+        name = "filter_tab",
+        caption = "Filter"
+    })
+    local filter_flow = tab_pane.add({
+        type = "flow",
+        name = "filter_flow",
+        direction = "vertical",
+        style = "vertical_flow_with_extra_margins"
+    })
+    tab_pane.add_tab(filter_tab, filter_flow)
+    filter_flow.add({
+        type = "checkbox",
+        name = "inserter_filter_mode",
+        caption = "Filter mode",
+        state = global.SI_Storage[player.index].copy_settings.inserter_filter_mode
+    })
+    filter_flow.add({
+        type = "checkbox",
+        name = "filtered_stuff",
+        caption = "Filtered stuff",
+        state = global.SI_Storage[player.index].copy_settings.filtered_stuff
+    })
+    filter_flow.add({
+        type = "checkbox",
+        name = "inserter_stack_size_override",
+        caption = "Stack size override",
+        state = global.SI_Storage[player.index].copy_settings.inserter_stack_size_override
+    })
+
+    --Logic
+    local logic_tab = tab_pane.add({
+        type = "tab",
+        name = "logit_tab",
+        caption = "Circuit conditions"
+    })
+    local logic_flow = tab_pane.add({
+        type = "flow",
+        name = "logic_flow",
+        direction = "vertical",
+        style = "vertical_flow_with_extra_margins"
+    })
+    tab_pane.add_tab(logic_tab, logic_flow)
+    logic_flow.add({
+        type = "checkbox",
+        name = "circuit_set_stack_size",
+        caption = "Set stack size",
+        state = global.SI_Storage[player.index].copy_settings.circuit_set_stack_size
+    })
+    logic_flow.add({
+        type = "checkbox",
+        name = "circuit_read_hand_contents",
+        caption = "Read hand contentes",
+        state = global.SI_Storage[player.index].copy_settings.circuit_read_hand_contents
+    })
+    logic_flow.add({
+        type = "checkbox",
+        name = "circuit_mode_of_operation",
+        caption = "Mode of operation",
+        state = global.SI_Storage[player.index].copy_settings.circuit_mode_of_operation
+    })
+    logic_flow.add({
+        type = "checkbox",
+        name = "circuit_hand_read_mode",
+        caption = "Read hand mode",
+        state = global.SI_Storage[player.index].copy_settings.circuit_hand_read_mode
+    })
+    logic_flow.add({
+        type = "checkbox",
+        name = "circuit_condition",
+        caption = "Circuit condition",
+        state = global.SI_Storage[player.index].copy_settings.circuit_condition
+    })
+    logic_flow.add({
+        type = "checkbox",
+        name = "circuit_stack_control_signal",
+        caption = "Control signal",
+        state = global.SI_Storage[player.index].copy_settings.circuit_stack_control_signal
+    })
+end
+
+function copy_gui.update_checkbox_status(event)
+    local player_index = event.player_index
+    storage_functions.ensure_data(player_index)
+    global.SI_Storage[player_index].copy_settings[event.element.name] = event.element.state
+end
+
+function copy_gui.toggle_gui(player, event)
+    if player.gui.screen.si_copypaste_configurator then
+        copy_gui.remove_gui(player)
+    else
+        copy_gui.add_gui(player)
+    end
+end
+
+-- ------------------------------
 -- Gui
 -- ------------------------------
---fix force
+--fix force --done?
 function gui.create_pick_drop_editor(flow_content)
     -- Pickup/Drop label
     flow_content.add({
@@ -878,7 +1131,7 @@ function gui.create(player)
     -- Initialization
     local frame_main = player.gui.relative.add({
         type = "frame",
-        name = "inserter_config",
+        name = "smart_inserters",
         caption = { "gui-smart-inserters.configuration" },
         anchor = frame_main_anchor
     })
@@ -964,8 +1217,8 @@ function gui.create(player)
 end
 
 function gui.delete(player)
-    if player.gui.relative.inserter_config then
-        player.gui.relative.inserter_config.destroy()
+    if player.gui.relative.smart_inserters then
+        player.gui.relative.smart_inserters.destroy()
     end
 end
 
@@ -1016,7 +1269,7 @@ function gui.should_cell_be_enabled(position, inserter_range, force, inserter, s
 end
 
 function gui.update(player, inserter)
-    local gui_instance = player.gui.relative.inserter_config.frame_content.flow_content
+    local gui_instance = player.gui.relative.smart_inserters.frame_content.flow_content
     local inserter = inserter
     local table_range = (gui_instance.pick_drop_flow.pick_drop_housing.table_position.column_count - 1) / 2
     local inserter_range = inserter_utils.get_max_range(inserter, player.force)
@@ -1029,7 +1282,7 @@ function gui.update(player, inserter)
     local slims = slim and orientation == "S"
     local slimo = slim and orientation == "O"
 
-    player.gui.relative.inserter_config.visible = gui.should_show(inserter)
+    player.gui.relative.smart_inserters.visible = gui.should_show(inserter)
     gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position.allow_none_state = false
     gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position.visible = false
     gui_instance.pick_drop_flow.pick_drop_housing.inserter_drop_switch_position.allow_none_state = false
@@ -1533,16 +1786,8 @@ end
 -- ------------------------------
 function storage_functions.populate_storage()
     for player_index, _ in pairs(game.players) do
-        global.SI_Storage[player_index] = {}
-        global.SI_Storage[player_index]["is_selected"] = false
-        global.SI_Storage[player_index]["selected_inserter"] = {}
+        storage_functions.add_player(player_index)
 
-        global.SI_Storage[player_index].selected_inserter["position"] = { x = "", y = "" }
-        global.SI_Storage[player_index].selected_inserter["name"] = ""
-        global.SI_Storage[player_index].selected_inserter["drop"] = { x = "", y = "" }
-        global.SI_Storage[player_index].selected_inserter["pickup"] = { x = "", y = "" }
-
-        global.SI_Storage[player_index].selected_inserter["position_grid"] = {}
         local tmp = {}
         local x_string
         for x = -5, 5, 1 do
@@ -1553,6 +1798,7 @@ function storage_functions.populate_storage()
         for y = -5, 5, 1 do
             global.SI_Storage[player_index].selected_inserter["position_grid"][tostring(y)] = deepcopy(tmp)
         end
+        
         rendering.clear("Smart_Inserters")
     end
 end
@@ -1562,20 +1808,34 @@ function storage_functions.add_player(player_index)
 
     global.SI_Storage[player_index]["copy_event"] = {}
     global.SI_Storage[player_index].copy_event["tick"] = 0
+    global.SI_Storage[player_index].copy_event["drop"] = {}
+    global.SI_Storage[player_index].copy_event["pickup"] = {}
+    global.SI_Storage[player_index].copy_event["si_direction"] = 0
+    global.SI_Storage[player_index].copy_event["relative_si_direction"] = 0
     global.SI_Storage[player_index].copy_event["destination_behavior"] = {}
+    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_set_stack_size"] = 0
+    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_read_hand_contents"] = 0
+    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_mode_of_operation"] = 0
+    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_hand_read_mode"] = 0
+    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_condition"] = 0
+    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_stack_control_signal"] = 0
+
     global.SI_Storage[player_index].copy_event["inserter_filter_mode"] = {}
     global.SI_Storage[player_index].copy_event["inserter_stack_size_override"] = {}
+    global.SI_Storage[player_index].copy_event["filtered_slots"] = {}
+    global.SI_Storage[player_index].copy_event.filtered_slots = { { copy = true, item = "" }, { copy = true, item = "" },
+        { copy = true, item = "" }, { copy = true, item = "" }, { copy = true, item = "" } }
 
     global.SI_Storage[player_index]["copy_settings"] = {}
     global.SI_Storage[player_index].copy_settings["drop"] = true
     global.SI_Storage[player_index].copy_settings["drop_offset"] = true
     global.SI_Storage[player_index].copy_settings["pickup"] = true
     global.SI_Storage[player_index].copy_settings["pickup_offset"] = true
-    global.SI_Storage[player_index].copy_settings["rotation"] = true
+    global.SI_Storage[player_index].copy_settings["si_direction"] = true
+    global.SI_Storage[player_index].copy_settings["relative_si_direction"] = true
 
     global.SI_Storage[player_index].copy_settings["inserter_filter_mode"] = true
     global.SI_Storage[player_index].copy_settings["filtered_stuff"] = true
-    -- global.SI_Storage[player_index].copy_settings["filtered_slots"] = {} -- TODO filtered slot selector (may come in the future)
 
     global.SI_Storage[player_index].copy_settings["inserter_stack_size_override"] = true
     global.SI_Storage[player_index].copy_settings["circuit_set_stack_size"] = true
@@ -1583,7 +1843,7 @@ function storage_functions.add_player(player_index)
     global.SI_Storage[player_index].copy_settings["circuit_mode_of_operation"] = true
     global.SI_Storage[player_index].copy_settings["circuit_hand_read_mode"] = true
     global.SI_Storage[player_index].copy_settings["circuit_condition"] = true
-    global.SI_Storage[player_index].copy_settings["logistic_condition"] = true
+    global.SI_Storage[player_index].copy_settings["circuit_stack_control_signal"] = true
 
     global.SI_Storage[player_index]["is_selected"] = false
     global.SI_Storage[player_index]["selected_inserter"] = {}
@@ -1608,11 +1868,30 @@ end
 
 function storage_functions.purge_copy_event_data(player_index)
     storage_functions.ensure_data(player_index)
+    local filtered_slots = global.SI_Storage[player_index].copy_event.filtered_slots
     global.SI_Storage[player_index]["copy_event"] = {}
     global.SI_Storage[player_index].copy_event["tick"] = 0
+    global.SI_Storage[player_index].copy_event["drop"] = {}
+    global.SI_Storage[player_index].copy_event["pickup"] = {}
+    global.SI_Storage[player_index].copy_event["si_direction"] = 0
+    global.SI_Storage[player_index].copy_event["relative_si_direction"] = 0
     global.SI_Storage[player_index].copy_event["destination_behavior"] = {}
+    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_set_stack_size"] = 0
+    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_read_hand_contents"] = 0
+    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_mode_of_operation"] = 0
+    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_hand_read_mode"] = 0
+    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_condition"] = 0
+    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_stack_control_signal"] = 0
     global.SI_Storage[player_index].copy_event["inserter_filter_mode"] = {}
     global.SI_Storage[player_index].copy_event["inserter_stack_size_override"] = {}
+    global.SI_Storage[player_index].copy_event["filtered_slots"] = {}
+    global.SI_Storage[player_index].copy_event.filtered_slots = {
+        { copy = filtered_slots[1].copy, item = "" },
+        { copy = filtered_slots[2].copy, item = "" },
+        { copy = filtered_slots[3].copy, item = "" },
+        { copy = filtered_slots[4].copy, item = "" },
+        { copy = filtered_slots[5].copy, item = "" }
+    }
 end
 
 function storage_functions.ensure_data(player_index)
@@ -1674,6 +1953,7 @@ end
 local function on_init()
     global.SI_Storage = {}
     storage_functions.populate_storage()
+    copy_gui.create_all()
     gui.create_all()
 end
 
@@ -1684,11 +1964,11 @@ local function welcome()
 end
 
 local function on_configuration_changed(cfg_changed_data)
+    storage_functions.populate_storage()
     gui.create_all()
+    copy_gui.create_all()
     gui.update_all()
     tech.migrate_all()
-    storage_functions.ensure_data()
-    storage_functions.populate_storage()
     game.print(
         "[Smart Inserters] The in-world selector is experimental, bugs are to be expected, if you find some please report them to me on the mod portal!")
 end
@@ -1696,6 +1976,7 @@ end
 local function on_player_created(event)
     local player = game.players[event.player_index]
     gui.create(player)
+    copy_gui.create(player)
     storage_functions.add_player(event.player_index)
 end
 
@@ -1704,39 +1985,45 @@ local function on_entity_settings_pasted(event)
     if event.destination.type == "inserter" then
         local player_index = event.player_index
         storage_functions.ensure_data(player_index)
-        local source_arm = inserter_utils.get_arm_positions(event.source)
-        local destination_arm = inserter_utils.get_arm_positions(event.destination)
+        local drop_tile, drop_offset = math2d.position.split(global.SI_Storage[player_index].copy_event.drop)
+        local pickup_tile, pickup_offset = math2d.position.split(global.SI_Storage[player_index].copy_event.pickup)
         local destination = event.destination
 
-        if global.SI_Storage[player_index].copy_settings.rotation then -- rotation
-            destination.direction = event.source.direction
-            -- need to calculate the new rotation
+        -- Basic
+        destination.drop_position = global.SI_Storage[player_index].copy_event.drop
+        destination.pickup_position = global.SI_Storage[player_index].copy_event.pickup
+        destination.direction = global.SI_Storage[player_index].copy_event.si_direction
+
+        -- Filter
+        if event.destination.inserter_filter_mode and event.source.inserter_filter_mode then
+            event.destination.inserter_filter_mode = global.SI_Storage[player_index].copy_event.inserter_filter_mode
+            for i = 1, 5, 1 do
+                if global.SI_Storage[player_index].copy_event.filtered_slots[i].copy and global.SI_Storage[player_index].copy_event.filtered_slots[i].item ~= "" then
+                    event.destination.set_filter(i, global.SI_Storage[player_index].copy_event.filtered_slots[i].item)
+                end
+            end
+        end
+        if event.destination.inserter_stack_size_override and event.source.inserter_stack_size_override then
+            event.destination.inserter_stack_size_override = global.SI_Storage[player_index].copy_event
+                .inserter_stack_size_override
         end
 
-        local new_drop = math2d.position.add(
-            global.SI_Storage[player_index].copy_settings.drop and source_arm.drop or destination_arm.drop, -- drop
-            global.SI_Storage[player_index].copy_settings.drop_offset and source_arm.pure_drop_offset or
-            destination_arm.pure_drop_offset                                                                -- drop offset
-        )
-        destination.drop_position = math2d.position.add(new_drop, destination_arm.base)
-
-        local new_pickup = math2d.position.add(
-            global.SI_Storage[player_index].copy_settings.pickup and source_arm.pickup or destination_arm.pickup, -- pickup
-            global.SI_Storage[player_index].copy_settings.pickup_offset and source_arm.pure_pickup_offset or
-            destination_arm.pure_pickup_offset                                                                    -- pickup offset
-        )
-        destination.pickup_position = math2d.position.add(new_pickup, destination_arm.base)
-
+        -- Circuit condition
         local destination_behavior = event.destination.get_or_create_control_behavior()
-        --destination_behavior = global.SI_Storage[player_index].copy_event["destination_behavior"]
 
-        destination_behavior["circuit_set_stack_size"] = global.SI_Storage[player_index].copy_event.destination_behavior.circuit_set_stack_size
-        destination_behavior["circuit_read_hand_contents"] = global.SI_Storage[player_index].copy_event.destination_behavior.circuit_read_hand_contents
-        destination_behavior["circuit_mode_of_operation"] = global.SI_Storage[player_index].copy_event.destination_behavior.circuit_mode_of_operation and global.SI_Storage[player_index].copy_event.circuit_mode_of_operation or 0
-        destination_behavior["circuit_hand_read_mode"] = global.SI_Storage[player_index].copy_event.destination_behavior.circuit_hand_read_mode and global.SI_Storage[player_index].copy_event.circuit_hand_read_mode or 0
-        destination_behavior["circuit_condition"].condition = deepcopy(global.SI_Storage[player_index].copy_event.destination_behavior.circuit_condition)
-        destination_behavior["logistic_condition"].condition = deepcopy(global.SI_Storage[player_index].copy_event.destination_behavior.logistic_condition)
-        
+        destination_behavior["circuit_set_stack_size"] = global.SI_Storage[player_index].copy_event.destination_behavior
+            .circuit_set_stack_size
+        destination_behavior["circuit_read_hand_contents"] = global.SI_Storage[player_index].copy_event
+            .destination_behavior.circuit_read_hand_contents
+        destination_behavior["circuit_mode_of_operation"] = global.SI_Storage[player_index].copy_event
+            .destination_behavior.circuit_mode_of_operation
+        destination_behavior["circuit_hand_read_mode"] = global.SI_Storage[player_index].copy_event.destination_behavior
+            .circuit_hand_read_mode
+        destination_behavior["circuit_condition"] = game.json_to_table(global.SI_Storage[player_index].copy_event
+            .destination_behavior.circuit_condition)
+        destination_behavior["circuit_stack_control_signal"] = game.json_to_table(global.SI_Storage[player_index].copy_event
+            .destination_behavior.circuit_stack_control_signal)
+
         storage_functions.purge_copy_event_data(player_index)
         inserter_utils.enforce_max_range(destination, game.players[player_index].force)
         gui.update_all(destination)
@@ -1745,20 +2032,65 @@ end
 
 local function on_pre_entity_settings_pasted(event)
     local player_index = event.player_index
+    local source_arm = inserter_utils.get_arm_positions(event.source)
+    local destination_arm = inserter_utils.get_arm_positions(event.destination)
     storage_functions.ensure_data(player_index)
-    global.SI_Storage[player_index].copy_event.tick = event.tick
 
-    global.SI_Storage[player_index].copy_event.inserter_filter_mode = deepcopy(event.destination.inserter_filter_mode)
-    global.SI_Storage[player_index].copy_event.inserter_stack_size_override = deepcopy(event.destination
-        .inserter_stack_size_override)
+    --global.SI_Storage[player_index].copy_event.tick = event.tick
 
-    if event.destination.inserter_filter_mode and global.SI_Storage[player_index].copy_settings.inserter_filter_mode then
-        global.SI_Storage[player_index].copy_event.inserter_filter_mode = deepcopy(event.source.inserter_filter_mode)
+    -- Basic
+    local drop = global.SI_Storage[player_index].copy_settings.drop and source_arm.drop or destination_arm.drop
+    local drop_offset = global.SI_Storage[player_index].copy_settings.drop_offset and source_arm.pure_drop_offset or
+        destination_arm.pure_drop_offset
+    local pickup = global.SI_Storage[player_index].copy_settings.pickup and source_arm.pickup or destination_arm.pickup
+    local pickup_offset = global.SI_Storage[player_index].copy_settings.pickup_offset and source_arm.pure_pickup_offset or
+        destination_arm.pure_pickup_offset
+
+    global.SI_Storage[player_index].copy_event.si_direction = global.SI_Storage[player_index].copy_settings.si_direction and
+        event.source.direction or event.destination.direction
+
+    if global.SI_Storage[player_index].copy_settings.relative_si_direction then
+        drop = inserter_utils.calc_rotated_position(event.source, drop,
+            event.destination.direction)
+        pickup = inserter_utils.calc_rotated_position(event.source, pickup,
+            event.destination.direction)
+        drop_offset = inserter_utils.calc_rotated_offset(event.source,
+            event.destination.direction, "drop")
+        pickup_offset = inserter_utils.calc_rotated_offset(event.source,
+            event.destination.direction, "pickup")
+        drop_offset = math2d.position.add(
+            math2d.position.multiply_scalar(drop_offset, 0.2), { 0.5, 0.5 }
+        )
+        pickup_offset = math2d.position.add(
+            math2d.position.multiply_scalar(pickup_offset, 0.2), { 0.5, 0.5 }
+        )
     end
-    if event.destination.inserter_stack_size_override and global.SI_Storage[player_index].copy_settings.inserter_stack_size_override then
-        global.SI_Storage[player_index].copy_event.inserter_stack_size_override = deepcopy(event.source
-            .inserter_stack_size_override)
+
+    local new_drop = math2d.position.add(drop, drop_offset)
+    local new_pickup = math2d.position.add(pickup, pickup_offset)
+    global.SI_Storage[player_index].copy_event.drop = math2d.position.add(new_drop, destination_arm.base)
+    global.SI_Storage[player_index].copy_event.pickup = math2d.position.add(new_pickup, destination_arm.base)
+
+    -- Filter
+    if event.destination.inserter_filter_mode and event.source.inserter_filter_mode then
+        global.SI_Storage[player_index].copy_event.inserter_filter_mode = global.SI_Storage[player_index].copy_settings
+            .inserter_filter_mode and event.source.inserter_filter_mode or event.destination.inserter_filter_mode
+
+        local tmp = 0
+        for i = 1, 5, 1 do
+            tmp = (global.SI_Storage[player_index].copy_settings.filtered_stuff and global.SI_Storage[player_index].copy_event.filtered_slots[i].copy) and
+                event.source.get_filter(i) or event.destination.get_filter(i)
+            global.SI_Storage[player_index].copy_event.filtered_slots[i].item = tmp
+        end
     end
+    if event.destination.inserter_stack_size_override and event.source.inserter_stack_size_override then
+        global.SI_Storage[player_index].copy_event.inserter_stack_size_override = global.SI_Storage[player_index]
+            .copy_settings.inserter_stack_size_override and
+            event.source.inserter_stack_size_override or event.destination.inserter_stack_size_override
+    end
+
+
+    -- Circuit conditions
 
     local souce_behavior = event.source.get_or_create_control_behavior()
     local destination_behavior = event.destination.get_or_create_control_behavior()
@@ -1776,22 +2108,26 @@ local function on_pre_entity_settings_pasted(event)
         destination_behavior.circuit_hand_read_mode = souce_behavior.circuit_hand_read_mode
     end
     if global.SI_Storage[player_index].copy_settings.circuit_condition then
-        destination_behavior.circuit_condition.condition = souce_behavior.circuit_condition.condition
+        destination_behavior.circuit_condition = souce_behavior.circuit_condition
     end
-    if global.SI_Storage[player_index].copy_settings.logistic_condition then
-        destination_behavior.logistic_condition.condition = souce_behavior.logistic_condition.condition
+    if global.SI_Storage[player_index].copy_settings.circuit_stack_control_signal then
+        destination_behavior.circuit_stack_control_signal = souce_behavior.circuit_stack_control_signal
     end
 
-    local another_destination_behavior = {}
-    another_destination_behavior["circuit_set_stack_size"] = destination_behavior.circuit_set_stack_size and true or false
-    another_destination_behavior["circuit_read_hand_contents"] = destination_behavior.circuit_read_hand_contents and true or false
-    another_destination_behavior["circuit_mode_of_operation"] = deepcopy(destination_behavior.circuit_mode_of_operation)
-    another_destination_behavior["circuit_hand_read_mode"] = deepcopy(destination_behavior.circuit_hand_read_mode)
-    another_destination_behavior["circuit_condition"] = deepcopy(destination_behavior.circuit_condition.condition)
-    another_destination_behavior["logistic_condition"] = deepcopy(destination_behavior.logistic_condition.condition)
-    global.SI_Storage[player_index].copy_event["destination_behavior"] = another_destination_behavior
+    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_set_stack_size"] = destination_behavior
+        .circuit_set_stack_size
+    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_read_hand_contents"] = destination_behavior
+        .circuit_read_hand_contents
+    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_mode_of_operation"] = destination_behavior
+        .circuit_mode_of_operation
+    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_hand_read_mode"] = destination_behavior
+        .circuit_hand_read_mode
+
+    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_condition"] = game.table_to_json(
+        destination_behavior.circuit_condition)
+    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_stack_control_signal"] = game.table_to_json(
+        destination_behavior.circuit_stack_control_signal)
 end
-
 
 -- Gui Events
 local function on_gui_opened(event)
@@ -1804,7 +2140,8 @@ end
 
 local function on_gui_click(event)
     local player = game.players[event.player_index]
-    local gui_instance = player.gui.relative.inserter_config.frame_content.flow_content
+    local gui_instance = player.gui.relative.smart_inserters.frame_content.flow_content
+    local copy_gui_instance = mod_gui.get_button_flow(player).children
 
     if event.element.parent == gui_instance.pick_drop_flow.pick_drop_housing.table_position and event.element ~= gui_instance.pick_drop_flow.pick_drop_housing.table_position.sprite_inserter then
         gui.on_button_position(player, event)
@@ -1816,6 +2153,12 @@ local function on_gui_click(event)
         gui.on_switch_drop_position(player, event)
     elseif event.element == gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position then
         gui.on_switch_pick_position(player, event)
+    elseif event.element.name == "si_configurator_toggle" then
+        copy_gui.toggle_gui(player, event)
+    elseif event.element.parent and event.element.parent.parent and event.element.parent.parent.name == "si_config_tab_pane" then
+        copy_gui.update_checkbox_status(event)
+    elseif event.element.name == "si-close-button" then
+        copy_gui.remove_gui(player)
     end
 end
 
@@ -1887,7 +2230,7 @@ local function on_rotation_adjust(event)
 
         local new_arm_positions = {}
         new_arm_positions[target] = new_tile
-        new_arm_positions[target .. "_offset"] = inserter_utils.calc_rotated_offset(inserter, new_tile, direction, target)
+        new_arm_positions[target .. "_offset"] = inserter_utils.calc_rotated_offset(inserter, new_tile, target)
 
         new_arm_positions[target] = new_tile
         inserter_utils.set_arm_positions(inserter, new_arm_positions)
@@ -1934,7 +2277,7 @@ local function on_distance_adjust(event)
 
         local range = math.max(math.abs(arm_positions[target].x), math.abs(arm_positions[target].y))
         local max_range = inserter_utils.get_max_range(inserter, player.force)
-        local dir = math2d.direction.transform_to_vector1(arm_positions[target], range)
+        local dir = math2d.direction.vector_to_vec1_position(arm_positions[target], range)
 
         local new_range = (range % max_range) + 1
 
@@ -2241,10 +2584,11 @@ end
 
 -- Player and Init events
 script.on_init(on_init)
-script.on_event(defines.events.on_cutscene_cancelled, welcome)
-script.on_event(defines.events.on_cutscene_finished, welcome)
 script.on_configuration_changed(on_configuration_changed)
 script.on_event(defines.events.on_player_created, on_player_created)
+
+script.on_event(defines.events.on_cutscene_cancelled, welcome)
+script.on_event(defines.events.on_cutscene_finished, welcome)
 
 -- Gui events
 script.on_event(defines.events.on_gui_opened, on_gui_opened)
