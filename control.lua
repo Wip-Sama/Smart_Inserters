@@ -126,7 +126,7 @@ local function to_vector_table_generator(range)
     return merged
 end
 
-for i = 0, 5, 1 do
+for i = 1, 48, 1 do
     math2d.direction["vectors" .. tostring(i)] = to_vector_table_generator(i)
 end
 
@@ -860,7 +860,7 @@ function copy_gui.add_gui(player)
         sprite = "utility/close_white",
         hovered_sprite = "utility/close_black",
         clicked_sprite = "utility/close_black",
-        caption = "",
+        tooltip = "",
         style = "close_button"
     }
 
@@ -881,7 +881,7 @@ function copy_gui.add_gui(player)
     local basic_tab = tab_pane.add({
         type = "tab",
         name = "basic_tab",
-        caption = "Basic"
+        caption = { "gui-copy-smart-inserters.si-tab-basic" }
     })
     local basic_flow = tab_pane.add({
         type = "flow",
@@ -893,37 +893,37 @@ function copy_gui.add_gui(player)
     basic_flow.add({
         type = "checkbox",
         name = "drop",
-        caption = "Drop",
+        caption = { "gui-copy-smart-inserters.si-drop" },
         state = global.SI_Storage[player.index].copy_settings.drop
     })
     basic_flow.add({
         type = "checkbox",
         name = "drop_offset",
-        caption = "Drop Offset",
+        caption = { "gui-copy-smart-inserters.si-drop-offset" },
         state = global.SI_Storage[player.index].copy_settings.drop_offset
     })
     basic_flow.add({
         type = "checkbox",
         name = "pickup",
-        caption = "Pickup",
+        caption = { "gui-copy-smart-inserters.si-pickup" },
         state = global.SI_Storage[player.index].copy_settings.pickup
     })
     basic_flow.add({
         type = "checkbox",
         name = "pickup_offset",
-        caption = "Pickup offset",
+        caption = { "gui-copy-smart-inserters.si-pickup-offset" },
         state = global.SI_Storage[player.index].copy_settings.pickup_offset
     })
     basic_flow.add({
         type = "checkbox",
         name = "si_direction",
-        caption = "Direction",
+        caption = { "gui-copy-smart-inserters.si-direction" },
         state = global.SI_Storage[player.index].copy_settings.si_direction
     })
     basic_flow.add({
         type = "checkbox",
         name = "relative_si_direction",
-        caption = "Relative direction",
+        caption = { "gui-copy-smart-inserters.si-relative-direction" },
         state = global.SI_Storage[player.index].copy_settings.relative_si_direction
     })
 
@@ -931,7 +931,7 @@ function copy_gui.add_gui(player)
     local filter_tab = tab_pane.add({
         type = "tab",
         name = "filter_tab",
-        caption = "Filter"
+        caption = { "gui-copy-smart-inserters.si-tab-filter" }
     })
     local filter_flow = tab_pane.add({
         type = "flow",
@@ -943,19 +943,19 @@ function copy_gui.add_gui(player)
     filter_flow.add({
         type = "checkbox",
         name = "inserter_filter_mode",
-        caption = "Filter mode",
+        caption = { "gui-copy-smart-inserters.si-filter_mode" },
         state = global.SI_Storage[player.index].copy_settings.inserter_filter_mode
     })
     filter_flow.add({
         type = "checkbox",
         name = "filtered_stuff",
-        caption = "Filtered stuff",
+        caption = { "gui-copy-smart-inserters.si-filtered-stuff" },
         state = global.SI_Storage[player.index].copy_settings.filtered_stuff
     })
     filter_flow.add({
         type = "checkbox",
         name = "inserter_stack_size_override",
-        caption = "Stack size override",
+        caption = { "gui-copy-smart-inserters.si-stack-size-override" },
         state = global.SI_Storage[player.index].copy_settings.inserter_stack_size_override
     })
 
@@ -963,7 +963,7 @@ function copy_gui.add_gui(player)
     local logic_tab = tab_pane.add({
         type = "tab",
         name = "logit_tab",
-        caption = "Circuit conditions"
+        caption = { "gui-copy-smart-inserters.si-tab-circuit" }
     })
     local logic_flow = tab_pane.add({
         type = "flow",
@@ -975,37 +975,37 @@ function copy_gui.add_gui(player)
     logic_flow.add({
         type = "checkbox",
         name = "circuit_set_stack_size",
-        caption = "Set stack size",
+        caption = { "gui-copy-smart-inserters.si-set-stack-size" },
         state = global.SI_Storage[player.index].copy_settings.circuit_set_stack_size
     })
     logic_flow.add({
         type = "checkbox",
         name = "circuit_read_hand_contents",
-        caption = "Read hand contentes",
+        caption = { "gui-copy-smart-inserters.si-read-hand-contents" },
         state = global.SI_Storage[player.index].copy_settings.circuit_read_hand_contents
     })
     logic_flow.add({
         type = "checkbox",
         name = "circuit_mode_of_operation",
-        caption = "Mode of operation",
+        caption = { "gui-copy-smart-inserters.si-mode-of-operation" },
         state = global.SI_Storage[player.index].copy_settings.circuit_mode_of_operation
     })
     logic_flow.add({
         type = "checkbox",
         name = "circuit_hand_read_mode",
-        caption = "Read hand mode",
+        caption = { "gui-copy-smart-inserters.si-read-hand-mode" },
         state = global.SI_Storage[player.index].copy_settings.circuit_hand_read_mode
     })
     logic_flow.add({
         type = "checkbox",
         name = "circuit_condition",
-        caption = "Circuit condition",
+        caption = { "gui-copy-smart-inserters.si-circuit-conditions" },
         state = global.SI_Storage[player.index].copy_settings.circuit_condition
     })
     logic_flow.add({
         type = "checkbox",
         name = "circuit_stack_control_signal",
-        caption = "Control signal",
+        caption = { "gui-copy-smart-inserters.si-control-signal" },
         state = global.SI_Storage[player.index].copy_settings.circuit_stack_control_signal
     })
 end
@@ -1798,7 +1798,7 @@ function storage_functions.populate_storage()
         for y = -5, 5, 1 do
             global.SI_Storage[player_index].selected_inserter["position_grid"][tostring(y)] = deepcopy(tmp)
         end
-        
+
         rendering.clear("Smart_Inserters")
     end
 end
@@ -1959,8 +1959,7 @@ end
 
 local function welcome()
     game.print({ "smart-inserters.welcome" })
-    game.print(
-        "[Smart Inserters] The in-world selector is experimental, bugs are to be expected, if you find some please report them to me on the mod portal!")
+    game.print({ "smart-inserters.experimental-selector" })
 end
 
 local function on_configuration_changed(cfg_changed_data)
@@ -1969,8 +1968,7 @@ local function on_configuration_changed(cfg_changed_data)
     copy_gui.create_all()
     gui.update_all()
     tech.migrate_all()
-    game.print(
-        "[Smart Inserters] The in-world selector is experimental, bugs are to be expected, if you find some please report them to me on the mod portal!")
+    game.print({ "smart-inserters.experimental-selector" })
 end
 
 local function on_player_created(event)
@@ -2021,7 +2019,8 @@ local function on_entity_settings_pasted(event)
             .circuit_hand_read_mode
         destination_behavior["circuit_condition"] = game.json_to_table(global.SI_Storage[player_index].copy_event
             .destination_behavior.circuit_condition)
-        destination_behavior["circuit_stack_control_signal"] = game.json_to_table(global.SI_Storage[player_index].copy_event
+        destination_behavior["circuit_stack_control_signal"] = game.json_to_table(global.SI_Storage[player_index]
+            .copy_event
             .destination_behavior.circuit_stack_control_signal)
 
         storage_functions.purge_copy_event_data(player_index)
