@@ -860,7 +860,7 @@ function copy_gui.add_gui(player)
         sprite = "utility/close_white",
         hovered_sprite = "utility/close_black",
         clicked_sprite = "utility/close_black",
-        tooltip = "",
+        tooltip = "Close the window",
         style = "close_button"
     }
 
@@ -894,36 +894,42 @@ function copy_gui.add_gui(player)
         type = "checkbox",
         name = "drop",
         caption = { "gui-copy-smart-inserters.si-drop" },
+        tooltip = { "gui-copy-smart-inserters.si-drop-tooltip" },
         state = global.SI_Storage[player.index].copy_settings.drop
     })
     basic_flow.add({
         type = "checkbox",
         name = "drop_offset",
         caption = { "gui-copy-smart-inserters.si-drop-offset" },
+        tooltip = { "gui-copy-smart-inserters.si-drop-offset-tooltip" },
         state = global.SI_Storage[player.index].copy_settings.drop_offset
     })
     basic_flow.add({
         type = "checkbox",
         name = "pickup",
         caption = { "gui-copy-smart-inserters.si-pickup" },
+        tooltip = { "gui-copy-smart-inserters.si-pickup-tooltip" },
         state = global.SI_Storage[player.index].copy_settings.pickup
     })
     basic_flow.add({
         type = "checkbox",
         name = "pickup_offset",
         caption = { "gui-copy-smart-inserters.si-pickup-offset" },
+        tooltip = { "gui-copy-smart-inserters.si-pickup-offset-tooltip" },
         state = global.SI_Storage[player.index].copy_settings.pickup_offset
     })
     basic_flow.add({
         type = "checkbox",
         name = "si_direction",
         caption = { "gui-copy-smart-inserters.si-direction" },
+        tooltip = { "gui-copy-smart-inserters.si-direction-tooltip" },
         state = global.SI_Storage[player.index].copy_settings.si_direction
     })
     basic_flow.add({
         type = "checkbox",
         name = "relative_si_direction",
         caption = { "gui-copy-smart-inserters.si-relative-direction" },
+        tooltip = { "gui-copy-smart-inserters.si-relative-direction-tooltip" },
         state = global.SI_Storage[player.index].copy_settings.relative_si_direction
     })
 
@@ -943,19 +949,22 @@ function copy_gui.add_gui(player)
     filter_flow.add({
         type = "checkbox",
         name = "inserter_filter_mode",
-        caption = { "gui-copy-smart-inserters.si-filter_mode" },
+        caption = { "gui-copy-smart-inserters.si-filter-mode" },
+        tooltip = { "gui-copy-smart-inserters.si-filter-mode-tooltip" },
         state = global.SI_Storage[player.index].copy_settings.inserter_filter_mode
     })
     filter_flow.add({
         type = "checkbox",
         name = "filtered_stuff",
         caption = { "gui-copy-smart-inserters.si-filtered-stuff" },
+        tooltip = { "gui-copy-smart-inserters.si-filtered-stuff-tooltip" },
         state = global.SI_Storage[player.index].copy_settings.filtered_stuff
     })
     filter_flow.add({
         type = "checkbox",
         name = "inserter_stack_size_override",
         caption = { "gui-copy-smart-inserters.si-stack-size-override" },
+        tooltip = { "gui-copy-smart-inserters.si-stack-size-override-tooltip" },
         state = global.SI_Storage[player.index].copy_settings.inserter_stack_size_override
     })
 
@@ -976,36 +985,42 @@ function copy_gui.add_gui(player)
         type = "checkbox",
         name = "circuit_set_stack_size",
         caption = { "gui-copy-smart-inserters.si-set-stack-size" },
+        tooltip = { "gui-copy-smart-inserters.si-set-stack-size-tooltip" },
         state = global.SI_Storage[player.index].copy_settings.circuit_set_stack_size
     })
     logic_flow.add({
         type = "checkbox",
         name = "circuit_read_hand_contents",
         caption = { "gui-copy-smart-inserters.si-read-hand-contents" },
+        tooltip = { "gui-copy-smart-inserters.si-read-hand-contents-tooltip" },
         state = global.SI_Storage[player.index].copy_settings.circuit_read_hand_contents
     })
     logic_flow.add({
         type = "checkbox",
         name = "circuit_mode_of_operation",
         caption = { "gui-copy-smart-inserters.si-mode-of-operation" },
+        tooltip = { "gui-copy-smart-inserters.si-mode-of-operation-tooltip" },
         state = global.SI_Storage[player.index].copy_settings.circuit_mode_of_operation
     })
     logic_flow.add({
         type = "checkbox",
         name = "circuit_hand_read_mode",
         caption = { "gui-copy-smart-inserters.si-read-hand-mode" },
+        tooltip = { "gui-copy-smart-inserters.si-read-hand-mode-tooltip" },
         state = global.SI_Storage[player.index].copy_settings.circuit_hand_read_mode
     })
     logic_flow.add({
         type = "checkbox",
         name = "circuit_condition",
         caption = { "gui-copy-smart-inserters.si-circuit-conditions" },
+        tooltip = { "gui-copy-smart-inserters.si-circuit-conditions-tooltip" },
         state = global.SI_Storage[player.index].copy_settings.circuit_condition
     })
     logic_flow.add({
         type = "checkbox",
         name = "circuit_stack_control_signal",
         caption = { "gui-copy-smart-inserters.si-control-signal" },
+        tooltip = { "gui-copy-smart-inserters.si-control-signal-tooltip" },
         state = global.SI_Storage[player.index].copy_settings.circuit_stack_control_signal
     })
 end
@@ -1959,7 +1974,7 @@ end
 
 local function welcome()
     game.print({ "smart-inserters.welcome" })
-    game.print({ "smart-inserters.experimental-selector" })
+    game.print({ "smart-inserters.experimental" })
 end
 
 local function on_configuration_changed(cfg_changed_data)
@@ -1968,7 +1983,7 @@ local function on_configuration_changed(cfg_changed_data)
     copy_gui.create_all()
     gui.update_all()
     tech.migrate_all()
-    game.print({ "smart-inserters.experimental-selector" })
+    game.print({ "smart-inserters.experimental" })
 end
 
 local function on_player_created(event)
@@ -2019,9 +2034,11 @@ local function on_entity_settings_pasted(event)
             .circuit_hand_read_mode
         destination_behavior["circuit_condition"] = game.json_to_table(global.SI_Storage[player_index].copy_event
             .destination_behavior.circuit_condition)
-        destination_behavior["circuit_stack_control_signal"] = game.json_to_table(global.SI_Storage[player_index]
-            .copy_event
-            .destination_behavior.circuit_stack_control_signal)
+        if destination_behavior.circuit_stack_control_signal then
+            destination_behavior["circuit_stack_control_signal"] = game.json_to_table(global.SI_Storage[player_index]
+                .copy_event
+                .destination_behavior.circuit_stack_control_signal)
+        end
 
         storage_functions.purge_copy_event_data(player_index)
         inserter_utils.enforce_max_range(destination, game.players[player_index].force)
@@ -2109,7 +2126,7 @@ local function on_pre_entity_settings_pasted(event)
     if global.SI_Storage[player_index].copy_settings.circuit_condition then
         destination_behavior.circuit_condition = souce_behavior.circuit_condition
     end
-    if global.SI_Storage[player_index].copy_settings.circuit_stack_control_signal then
+    if destination_behavior.circuit_stack_control_signal and souce_behavior.circuit_stack_control_signal and global.SI_Storage[player_index].copy_settings.circuit_stack_control_signal then
         destination_behavior.circuit_stack_control_signal = souce_behavior.circuit_stack_control_signal
     end
 
@@ -2124,8 +2141,10 @@ local function on_pre_entity_settings_pasted(event)
 
     global.SI_Storage[player_index].copy_event.destination_behavior["circuit_condition"] = game.table_to_json(
         destination_behavior.circuit_condition)
-    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_stack_control_signal"] = game.table_to_json(
-        destination_behavior.circuit_stack_control_signal)
+    if destination_behavior.circuit_stack_control_signal then 
+        global.SI_Storage[player_index].copy_event.destination_behavior["circuit_stack_control_signal"] = game.table_to_json(
+            destination_behavior.circuit_stack_control_signal)
+    end
 end
 
 -- Gui Events
