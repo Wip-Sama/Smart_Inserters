@@ -1232,6 +1232,9 @@ function gui.create(player)
 end
 
 function gui.delete(player)
+    if player.gui.relative.inserter_config then
+        player.gui.relative.inserter_config.destroy()
+    end
     if player.gui.relative.smart_inserters then
         player.gui.relative.smart_inserters.destroy()
     end
