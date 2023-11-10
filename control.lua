@@ -2321,7 +2321,7 @@ local function on_distance_adjust(event)
     end
 end
 
-local function on_drop_offset_adjust(event)
+local function on_offset_adjust(event)
     local player = game.players[event.player_index]
     if inserter_utils.is_inserter(player.selected) then
         local inserter = player.selected
@@ -2337,25 +2337,17 @@ local function on_drop_offset_adjust(event)
             return
         end
 
-        local is_drop       = string.find(event.input_name, "drop", 17) and true or false
-
-        local target        = is_drop and "drop" or "pickup"
-
-        local lateral       = string.find(event.input_name, "lateral", -7) ~= nil
-
+        local target = string.find(event.input_name, "drop", 17) and "drop" or "pickup"
+        local lateral = string.find(event.input_name, "lateral", -7) ~= nil
         local arm_positions = inserter_utils.get_arm_positions(inserter)
-
-        local dir           = math2d.direction.from_vector(arm_positions[target])
-
-        dir                 = dir % 2 == 0 and dir or 0
-
-        local axis          = (dir % 4 == 0 ~= lateral) and "y" or "x"
-
-        local new_offset    = arm_positions[target .. "_offset"]
-        new_offset[axis]    = ((arm_positions[target .. "_offset"][axis] + 2) % 3) - 1
+        local dir = math2d.direction.from_vector(arm_positions[target])
+        dir = dir % 2 == 0 and dir or 0
+        local axis = (dir % 4 == 0 ~= lateral) and "y" or "x"
+        local new_offset = arm_positions[target .. "_offset"]
+        new_offset[axis] = arm_positions[target .. "_offset"][axis]*-1
+        if new_offset[axis] == 0 then new_offset[axis] = 1 end
 
         inserter_utils.set_arm_positions(inserter, { [target .. "_offset"] = new_offset })
-
         gui.update_all(inserter)
     end
 end
@@ -2622,10 +2614,10 @@ script.on_event("smart-inserters-pickup-rotate", on_rotation_adjust)
 script.on_event("smart-inserters-pickup-rotate-reverse", on_rotation_adjust)
 script.on_event("smart-inserters-pickup-distance-adjust", on_distance_adjust)
 script.on_event("smart-inserters-drop-distance-adjust", on_distance_adjust)
-script.on_event("smart-inserters-drop-offset-adjust-lateral", on_drop_offset_adjust)
-script.on_event("smart-inserters-drop-offset-adjust-distance", on_drop_offset_adjust)
-script.on_event("smart-inserters-pickup-offset-adjust-lateral", on_drop_offset_adjust)
-script.on_event("smart-inserters-pickup-offset-adjust-distance", on_drop_offset_adjust)
+script.on_event("smart-inserters-drop-offset-adjust-lateral", on_offset_adjust)
+script.on_event("smart-inserters-drop-offset-adjust-distance", on_offset_adjust)
+script.on_event("smart-inserters-pickup-offset-adjust-lateral", on_offset_adjust)
+script.on_event("smart-inserters-pickup-offset-adjust-distance", on_offset_adjust)
 
 -- World editor events
 script.on_event("smart-inserters-in-world-inserter-configurator-pickup", on_in_world_editor)
