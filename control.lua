@@ -2050,6 +2050,9 @@ local function on_entity_settings_pasted(event)
 end
 
 local function on_pre_entity_settings_pasted(event)
+    if not (inserter_utils.is_inserter(event.source) and inserter_utils.is_inserter(event.destination)) then
+        return
+    end
     local player_index = event.player_index
     local source_arm = inserter_utils.get_arm_positions(event.source)
     local destination_arm = inserter_utils.get_arm_positions(event.destination)
