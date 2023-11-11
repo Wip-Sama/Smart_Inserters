@@ -1,1968 +1,25 @@
 -- ------------------------------
 -- Dependencies
 -- ------------------------------
-local math2d = require("math2d")
 local mod_gui = require("mod-gui")
-
--- ------------------------------
--- Utilites
--- ------------------------------
-local function deepcopy(object)
-    if type(object) ~= 'table' then
-        return object
-    end
-    local res = {}
-    for k, v in pairs(object) do res[deepcopy(k)] = deepcopy(v) end
-    return res
-end
+local math2d = require("scripts.extended_math2d")
 
 -- ------------------------------
 -- Functions Group
 -- ------------------------------
-local gui = {}
-local copy_gui = {}
-local tech = {}
-local inserter_utils = {}
-local world_editor = {}
-local player_functions = {}
-local storage_functions = {}
+local player_functions = require("scripts.player_functions")
+local tech = require("scripts.technology_functions")
+local gui = require("scripts.selector_gui")
+local copy_gui = require("scripts.copy_gui")
+local world_editor = require("scripts.world_selector")
+local inserter_functions = require("scripts.inserter_functions")
+local storage_functions = require("scripts.storage_functions")
 
 -- ------------------------------
 -- Settings
 -- ------------------------------
-local inserters_range = settings.startup["si-max-inserters-range"].value
-local directional_slim_inserter = settings.startup["si-directional-slim-inserter"].value
-local diagonal_technologies = settings.startup["si-diagonal-technologies"].value
-local range_technologies = settings.startup["si-range-technologies"].value
-local offset_selector_technologies = settings.startup["si-offset-technologies"].value
-local single_line_slim_inserter = settings.startup["si-single-line-slim-inserter"].value
+
 local offset_selector = settings.startup["si-offset-selector"].value
-
--- ------------------------------
--- Blacklist
--- ------------------------------
-local blacklist = {}
-blacklist.mods = { "miniloader", "RenaiTransportation" }
-blacklist.entities = {}
-
--- ------------------------------
--- Math library additions
--- ------------------------------
-function math2d.position.equal(p1, p2)
-    p1 = math2d.position.ensure_xy(p1)
-    p2 = math2d.position.ensure_xy(p2)
-    return p1.x == p2.x and p1.y == p2.y
-end
-
-function math2d.position.dot_product(p1, p2)
-    p1 = math2d.position.ensure_xy(p1)
-    p2 = math2d.position.ensure_xy(p2)
-    return p1.x * p2.x + p1.y * p2.y
-end
-
--- splits a position into tile position int(x,y) and an offset float(x,y)
--- { x = -1.5, y = 2.5 } -> {{ x = -2, y = 2 }, { x = 0.5, y = 0.5 }}
-function math2d.position.split(pos)
-    pos = math2d.position.ensure_xy(pos)
-
-    local x_int, x_frac = math.modf(pos.x)
-    local y_int, y_frac = math.modf(pos.y)
-
-    if x_frac < 0 then
-        x_int = x_int - 1
-        x_frac = x_frac + 1
-    end
-
-    if y_frac < 0 then
-        y_int = y_int - 1
-        y_frac = y_frac + 1
-    end
-
-    return { x = x_int, y = y_int }, { x = x_frac, y = y_frac }
-end
-
-function math2d.position.tilepos(pos)
-    pos = math2d.position.ensure_xy(pos)
-    return { x = math.floor(pos.x), y = math.floor(pos.y) }
-end
-
-math2d.direction = {}
-
-local function to_vector_table_generator(range)
-    local posizioni = {}
-    local check = range * 4
-
-    local max = 8 * range - 1
-    max = range >= 0 and max or 4
-    for i = 0, max, 1 do
-        table.insert(posizioni, i)
-    end
-
-    local status = 0.0
-
-    for k, v in pairs(posizioni) do
-        local mod = v % check
-        if mod == 0 then
-            posizioni[k] = 0
-        elseif status < 0.25 then
-            posizioni[k] = posizioni[k - 1] + 1
-        elseif status >= 0.75 and status < 1.25 then
-            posizioni[k] = posizioni[k - 1] - 1
-        elseif status >= 1.25 and status < 1.75 then
-            posizioni[k] = -range
-        elseif status >= 1.75 then
-            posizioni[k] = posizioni[k - 1] + 1
-        else
-            posizioni[k] = range
-        end
-        status = v / check
-    end
-
-    local merged = {}
-    local max = max + 1
-    for k, v in pairs(posizioni) do
-        table.insert(merged, { x = v, y = posizioni[((k - (2 * range) - 1) % (max)) + 1] })
-    end
-    return merged
-end
-
-for i = 1, 48, 1 do
-    math2d.direction["vectors" .. tostring(i)] = to_vector_table_generator(i)
-end
-
-function math2d.direction.from_vector(vec, range)
-    range = range or 1
-    vec = math2d.position.ensure_xy(vec)
-    return math.floor(math.atan2(vec.x, -vec.y) * ((4 * range) / math.pi) + 0.5) % (8 * range)
-end
-
-function math2d.direction.to_vector(dir, range)
-    range = range or 1
-    return math2d.direction["vectors" .. tostring(range)][(dir % (8 * range)) + 1]
-end
-
-function math2d.direction.vector_to_vec1_position(position, range)
-    local check = range * 4
-    local pos = math2d.direction.from_vector(position, range)
-    local mod = pos / check
-
-    if mod == 0 then
-        return 1
-    elseif mod > 0 and mod < 0.5 then
-        return 2
-    elseif mod == 0.5 then
-        return 3
-    elseif mod > 0.5 and mod < 1 then
-        return 4
-    elseif mod == 1 then
-        return 5
-    elseif mod > 1 and mod < 1.5 then
-        return 6
-    elseif mod == 1.5 then
-        return 7
-    elseif mod > 1.5 then
-        return 8
-    end
-end
-
-function math2d.direction.upscale_vec1(vec1_pos, range)
-    return (vec1_pos - 1) * range
-end
-
-function math2d.round(vec)
-    vec = math2d.position.ensure_xy(vec)
-    local out = { x = vec.x, y = vec.y }
-    if out.x < 0 then
-        out.x = math.ceil(out.x)
-    else
-        out.x = math.ceil(out.x)
-    end
-    if out.y < 0 then
-        out.y = math.ceil(out.y)
-    else
-        out.y = math.ceil(out.y)
-    end
-    return out
-end
-
-function math2d.no_minus_0(vec)
-    vec = math2d.position.ensure_xy(vec)
-    if vec.x == -0 then vec.x = 0 end
-    if vec.y == -0 then vec.y = 0 end
-    return vec
-end
-
--- ------------------------------
--- Tech
--- ------------------------------
-function tech.check_offset_tech(force)
-    if not offset_selector_technologies then
-        return true
-    end
-
-    if force.technologies["si-unlock-offsets"].researched then
-        return true
-    end
-
-    return false
-end
-
-function tech.check_diagonal_tech(force, cell_position)
-    if not diagonal_technologies then
-        return true
-    end
-
-    if force.technologies["si-unlock-cross"].researched and (cell_position.x == 0 or cell_position.y == 0) then
-        return true
-    end
-
-    if force.technologies["si-unlock-x-diagonals"].researched and math.abs(cell_position.x) == math.abs(cell_position.y) then
-        return true
-    end
-
-    if force.technologies["si-unlock-all-diagonals"].researched then
-        return true
-    end
-
-    return false
-end
-
-function tech.check_range_tech(force, cell_position, distance_offset)
-    if not range_technologies then
-        return true
-    end
-
-    cell_position = math2d.position.ensure_xy(cell_position)
-    local distance_offset = distance_offset or 0
-    local distance = math.max(math.abs(cell_position.x), math.abs(cell_position.y)) - distance_offset
-
-    if distance <= 1 then
-        return true
-    end
-
-    if force.technologies["si-unlock-range-1"].researched and distance <= 2 then
-        return true
-    elseif force.technologies["si-unlock-range-2"].researched and distance <= 3 then
-        return true
-    elseif force.technologies["si-unlock-range-3"].researched and distance <= 4 then
-        return true
-    elseif force.technologies["si-unlock-range-4"].researched and distance <= 5 then
-        return true
-    end
-
-    return false
-end
-
-function tech.check_tech(force, cell_position, distance_offset)
-    local distance_offset = distance_offset or 0
-    if tech.check_range_tech(force, cell_position, distance_offset) and tech.check_diagonal_tech(force, cell_position) then
-        return true
-    end
-    return false
-end
-
-function tech.migrate_all()
-    for idx, player in pairs(game.players) do
-        local force = player.force
-        if force.technologies["near-inserters"].researched or force.technologies["si-unlock-range-1"].researched then
-            force.technologies["si-unlock-range-1"].researched = true
-        end
-        if force.technologies["long-inserters-1"].researched or force.technologies["si-unlock-range-2"].researched then
-            force.technologies["si-unlock-range-2"].researched = true
-        end
-        if force.technologies["long-inserters-2"].researched or force.technologies["si-unlock-range-3"].researched then
-            force.technologies["si-unlock-range-3"].researched = true
-        end
-        if force.technologies["more-inserters-1"].researched or force.technologies["si-unlock-cross"].researched then
-            force.technologies["si-unlock-cross"].researched = true
-        end
-        if force.technologies["more-inserters-2"].researched or force.technologies["si-unlock-x-diagonals"].researched then
-            force.technologies["si-unlock-x-diagonals"].researched = true
-        end
-    end
-end
-
--- ------------------------------
--- Inserter utils
--- ------------------------------
-function inserter_utils.get_prototype(inserter)
-    if inserter.type == "entity-ghost" then
-        return inserter.ghost_prototype
-    end
-    return inserter.prototype
-end
-
-function inserter_utils.is_inserter(entity)
-    return entity and (entity.type == "inserter" or (entity.type == "entity-ghost" and entity.ghost_type == "inserter"))
-end
-
-function inserter_utils.is_slim(inserter)
-    if inserter.tile_height == 0 or inserter.tile_width == 0 then
-        return true
-    end
-    return false
-end
-
-function inserter_utils.get_inserter_size(inserter)
-    local height = math.ceil(inserter.tile_height)
-    local width = math.ceil(inserter.tile_width)
-    return { x = inserter.tile_width, y = inserter.tile_height, z = math.max(width, height) }
-end
-
-function inserter_utils.get_arm_positions(inserter)
-    local base_tile, base_offset = math2d.position.split(inserter.position)
-    local drop_tile, drop_offset = math2d.position.split(inserter.drop_position)
-    local pickup_tile, pickup_offset = math2d.position.split(inserter.pickup_position)
-
-    local drop_offset_vec = { x = 0, y = 0 }
-
-    if drop_offset.x > 0.5 then
-        drop_offset_vec.x = 1
-    elseif drop_offset.x < 0.5 then
-        drop_offset_vec.x = -1
-    end
-
-    if drop_offset.y > 0.5 then
-        drop_offset_vec.y = 1
-    elseif drop_offset.y < 0.5 then
-        drop_offset_vec.y = -1
-    end
-
-    local pickup_offset_vec = { x = 0, y = 0 }
-
-    if pickup_offset.x > 0.5 then
-        pickup_offset_vec.x = 1
-    elseif pickup_offset.x < 0.5 then
-        pickup_offset_vec.x = -1
-    end
-
-    if pickup_offset.y > 0.5 then
-        pickup_offset_vec.y = 1
-    elseif pickup_offset.y < 0.5 then
-        pickup_offset_vec.y = -1
-    end
-
-    local result = {
-        base = base_tile,
-        base_offset = base_offset,
-        drop = math2d.position.subtract(drop_tile, base_tile),
-        pure_drop = drop_tile,
-        drop_offset = drop_offset_vec,
-        pure_drop_offset = drop_offset,
-        pickup = math2d.position.subtract(pickup_tile, base_tile),
-        pickup_offset = pickup_offset_vec,
-        pure_pickup = pickup_tile,
-        pure_pickup_offset = pickup_offset,
-    }
-
-    return result
-end
-
-function inserter_utils.set_arm_positions(inserter, positions)
-    local orientation = inserter_utils.get_inserter_orientation(inserter)
-    local slim = inserter_utils.is_slim(inserter)
-    local inserter_size = inserter_utils.get_inserter_size(inserter)
-    local inserter_arm = inserter_utils.get_arm_positions(inserter)
-    local slimn = slim and orientation == "N"
-    local slime = slim and orientation == "E"
-    local slims = slim and orientation == "S"
-    local slimo = slim and orientation == "O"
-
-    if positions.pickup or positions.pickup_offset or positions.pickup_adjust then
-        local base_tile, base_offset = math2d.position.split(inserter.position)
-        local old_pickup_tile, old_pickup_offset = math2d.position.split(inserter.pickup_position)
-        local new_pickup_tile, new_pickup_offset
-
-        if positions.pickup then
-            local edit = { x = 0, y = 0 }
-            if slim then
-                if (slims or slimn) and positions.pickup.y < 0 then      -- parte alta / high half
-                    --new_pickup_tile = math2d.position.add(base_tile, positions.pickup)
-                elseif (slims or slimn) and positions.pickup.y >= 0 then -- parte bassa / lower half
-                    --new_pickup_tile = math2d.position.add(base_tile, { positions.pickup.x, positions.pickup.y - 1 })
-                    edit.y = edit.y - 1
-                elseif (slime or slimo) and positions.pickup.x < 0 then  -- parte sinistra / left
-                    --new_pickup_tile = math2d.position.add(base_tile, positions.pickup)
-                elseif (slime or slimo) and positions.pickup.x >= 0 then -- parte destra / right
-                    --new_pickup_tile = math2d.position.add(base_tile, { positions.pickup.x - 1, positions.pickup.y })
-                    edit.x = edit.x - 1
-                end
-            elseif inserter_size.z >= 2 then
-                if positions.pickup.x < 0 then
-                    edit.x = edit.x - (inserter_size.z - 1)
-                end
-                if positions.pickup.y < 0 then
-                    edit.y = edit.y - (inserter_size.z - 1)
-                end
-            end
-            new_pickup_tile = math2d.position.add(base_tile, { positions.pickup.x + edit.x, positions.pickup.y + edit.y })
-        else
-            new_pickup_tile = old_pickup_tile
-        end
-
-        if positions.pickup_adjust then
-            new_pickup_tile = {
-                x = new_pickup_tile.x + positions.pickup_adjust.x,
-                y = new_pickup_tile.y + positions.pickup_adjust.y
-            }
-        end
-
-        if positions.pickup_offset then
-            new_pickup_offset = math2d.position.add(
-                math2d.position.multiply_scalar(positions.pickup_offset, 0.2), { 0.5, 0.5 }
-            )
-        else
-            new_pickup_offset = old_pickup_offset
-        end
-
-        inserter.pickup_position = math2d.position.add(new_pickup_tile, new_pickup_offset)
-    end
-
-    if positions.drop or positions.drop_offset or positions.drop_adjust then
-        local base_tile, base_offset = math2d.position.split(inserter.position)
-        local old_drop_tile, old_drop_offset = math2d.position.split(inserter.drop_position)
-        local new_drop_tile, new_drop_offset
-
-        if positions.drop then
-            local edit = { x = 0, y = 0 }
-            if slim then
-                if (slims or slimn) and positions.drop.y < 0 then      -- parte alta / high half
-                    new_drop_tile = math2d.position.add(base_tile, positions.drop)
-                elseif (slims or slimn) and positions.drop.y >= 0 then -- parte bassa / lower half
-                    new_drop_tile = math2d.position.add(base_tile, { positions.drop.x, positions.drop.y - 1 })
-                elseif (slime or slimo) and positions.drop.x < 0 then  -- parte sinistra / left
-                    new_drop_tile = math2d.position.add(base_tile, positions.drop)
-                elseif (slime or slimo) and positions.drop.x >= 0 then -- parte destra / right
-                    new_drop_tile = math2d.position.add(base_tile, { positions.drop.x - 1, positions.drop.y })
-                end
-            elseif inserter_size.z == 2 then
-                if positions.drop.x < 0 then
-                    edit.x = edit.x - (inserter_size.z - 1)
-                end
-                if positions.drop.y < 0 then
-                    edit.y = edit.y - (inserter_size.z - 1)
-                end
-                new_drop_tile = math2d.position.add(base_tile, { positions.drop.x + edit.x, positions.drop.y + edit.y })
-            else
-                new_drop_tile = math2d.position.add(base_tile, positions.drop)
-            end
-        else
-            new_drop_tile = old_drop_tile
-        end
-
-        if positions.drop_adjust then
-            new_drop_tile = {
-                x = new_drop_tile.x + positions.drop_adjust.x,
-                y = new_drop_tile.y + positions.drop_adjust.y
-            }
-        end
-
-        if positions.drop_offset then
-            new_drop_offset = math2d.position.add(
-                math2d.position.multiply_scalar(positions.drop_offset, 0.2), { 0.5, 0.5 }
-            )
-        else
-            new_drop_offset = old_drop_offset
-        end
-
-        inserter.drop_position = math2d.position.add(new_drop_tile, new_drop_offset)
-    end
-end
-
-function inserter_utils.get_max_range(inserter, force)
-    if settings.startup["si-range-adder"].value == "equal" then
-        return inserters_range
-    end
-
-    local prototype = inserter
-    if prototype.object_name == "LuaEntity" then
-        prototype = inserter_utils.get_prototype(prototype)
-    end
-    local pickup_pos = math2d.position.tilepos(math2d.position.add(prototype.inserter_pickup_position, { 0.5, 0.5 }))
-    local drop_pos = math2d.position.tilepos(math2d.position.add(prototype.inserter_drop_position, { 0.5, 0.5 }))
-    local inserter_range = math.max(math.abs(pickup_pos.x), math.abs(pickup_pos.y), math.abs(drop_pos.x),
-        math.abs(drop_pos.y))
-
-    if settings.startup["si-range-adder"].value == "inserter" then
-        return inserter_range
-    elseif settings.startup["si-range-adder"].value == "incremental" then
-        local added = 0
-        if force.technologies["si-unlock-range-1"].researched then
-            added = added + 1
-        end
-        if force.technologies["si-unlock-range-2"].researched then
-            added = added + 1
-        end
-        if force.technologies["si-unlock-range-3"].researched then
-            added = added + 1
-        end
-        if force.technologies["si-unlock-range-4"].researched then
-            added = added + 1
-        end
-
-        return math.min(inserter_range + added, inserters_range)
-    end
-end
-
-function inserter_utils.enforce_max_range(inserter, force)
-    local arm_positions = inserter_utils.get_arm_positions(inserter)
-    local max_range = inserter_utils.get_max_range(inserter, force)
-
-    if math.max(math.abs(arm_positions.drop.x), math.abs(arm_positions.drop.y)) > max_range then
-        arm_positions.drop = math2d.position.multiply_scalar(
-            math2d.direction.to_vector(math2d.direction.from_vector(arm_positions.drop)), max_range)
-    end
-
-    if math.max(math.abs(arm_positions.pickup.x), math.abs(arm_positions.pickup.y)) > max_range then
-        arm_positions.pickup = math2d.position.multiply_scalar(
-            math2d.direction.to_vector(math2d.direction.from_vector(arm_positions.pickup)), max_range)
-    end
-
-    if math2d.position.equal(arm_positions.pickup, arm_positions.drop) then
-        arm_positions.pickup = { x = -arm_positions.drop.x, y = -arm_positions.drop.y }
-    end
-
-    inserter_utils.set_arm_positions(inserter, arm_positions)
-end
-
-function inserter_utils.calc_rotated_position(inserter, new_position, new_direction)
-    new_direction = new_direction == 0 and 8 or new_direction
-    local spostamento = (8 - inserter.direction) - (8 - new_direction)
-    if spostamento < 0 then spostamento = 8 + spostamento end
-    local tmp_pos = 0
-
-    while spostamento ~= 0 do
-        tmp_pos = new_position.y * -1
-        new_position.y = new_position.x
-        new_position.x = tmp_pos
-        spostamento = spostamento - 2
-    end
-
-    return new_position
-end
-
-function inserter_utils.calc_rotated_offset(inserter, new_position, target)
-    local old_positions = inserter_utils.get_arm_positions(inserter)
-
-    if old_positions[target .. "_offset"].x == 0 and old_positions[target .. "_offset"].y == 0 then
-        return old_positions[target .. "_offset"]
-    end
-
-    local range = math.max(math.abs(old_positions[target].x), math.abs(old_positions[target].y))
-
-    local position = math2d.direction.from_vector(old_positions[target .. "_offset"])
-
-    local old_sector = math2d.direction.vector_to_vec1_position(old_positions[target], range)
-    if type(new_position) == "number" then
-        new_position = inserter_utils.calc_rotated_position(inserter, old_positions[target .. "_offset"], new_position)
-    end
-    local new_sector = math2d.direction.vector_to_vec1_position(new_position, range)
-
-    if old_sector ~= new_sector then
-        local spostamento = (8 - old_sector) - (8 - new_sector)
-        position = position + spostamento
-        position = (position % 8) + 1
-        return math2d.direction["vectors1"][position]
-    end
-
-    return old_positions[target .. "_offset"]
-end
-
-function inserter_utils.get_inserter_orientation(inserter)
-    local value = inserter.orientation
-    if value > 0.875 or value <= 0.125 then
-        return "N"
-    elseif 0.125 < value and value <= 0.375 then
-        return "E"
-    elseif 0.375 < value and value <= 0.625 then
-        return "S"
-    else
-        return "O"
-    end
-end
-
-function inserter_utils.get_inserter_size_old(inserter)
-    local higher = math.max(inserter.tile_height, inserter.tile_height)
-    local count = 1
-    while higher > 1 do
-        higher = higher - 1
-        count = count + 1
-    end
-    return count
-end
-
-function inserter_utils.inseter_default_range(inserter)
-    local collision_box_toal = 0.2
-
-    if inserter.collision_box ~= nil then
-        local collision_box_1 = math2d.position.ensure_xy(inserter.collision_box.left_top)
-        local collision_box_2 = math2d.position.ensure_xy(inserter.collision_box.right_bottom)
-        local collision_box_1_max = math.max(math.abs(collision_box_1.x), math.abs(collision_box_1.y))
-        local collision_box_2_max = math.max(math.abs(collision_box_2.x), math.abs(collision_box_2.y))
-        collision_box_toal = collision_box_1_max + collision_box_2_max
-    end
-
-    local biggest = { x = 0, y = 0, z = 0 }
-    local pickup_position = math2d.position.ensure_xy(inserter.inserter_pickup_position)
-    local insert_position = math2d.position.ensure_xy(inserter.inserter_drop_position)
-    biggest.x = math.max(math.abs(pickup_position.x), math.abs(insert_position.x))
-    biggest.y = math.max(math.abs(pickup_position.y), math.abs(insert_position.y))
-    biggest.z = math.max(biggest.x, biggest.y) - collision_box_toal
-
-    return biggest.z
-end
-
--- ------------------------------
--- In world editor
--- ------------------------------
-local colors       = {}
-colors.can_select  = { 30, 30, 30, 5 }
-colors.cant_select = { 207, 31, 60, 5 }
-colors.drop        = { 77, 15, 15, 2 }
-colors.pickup      = { 15, 74, 13, 2 }
--- colors.inserter    = { 15, 74, 13, 2 } I want something blueish to implement this
-
-function world_editor.draw_positions(player_index, inserter)
-    local player        = game.players[player_index]
-    local range         = inserter_utils.get_max_range(inserter, player.force)
-    local arm_positions = inserter_utils.get_arm_positions(inserter)
-    local enabled_cell, is_drop, is_pickup
-    storage_functions.ensure_data(player_index)
-    global.SI_Storage[player_index].is_selected = true
-    for px = -range, range, 1 do
-        for py = -range, range, 1 do
-            if px == py and py == 0 then goto continue end
-
-            enabled_cell = gui.should_cell_be_enabled({ px, py }, range, player.force, inserter)
-            is_drop = arm_positions.drop.x == px and arm_positions.drop.y == py
-            is_pickup = arm_positions.pickup.x == px and arm_positions.pickup.y == py
-            if not enabled_cell and not (is_pickup or is_pickup) then goto continue end
-
-            local render_id = rendering.draw_rectangle {
-                color = colors
-                    [is_drop and "drop" or is_pickup and "pickup" or enabled_cell and "can_select" or "cant_select"],
-                filled = true,
-                left_top = { inserter.position.x + px - 0.5, inserter.position.y + py - 0.5 },
-                right_bottom = { inserter.position.x + px + 0.5, inserter.position.y + py + 0.5 },
-                surface = player.surface,
-                forces = { player.force },
-                players = { player },
-                visible = true,
-                draw_on_ground = false,
-                only_in_alt_mode = false
-            }
-
-            global.SI_Storage[player_index].selected_inserter.position_grid[tostring(px)][tostring(py)] = {
-                loaded = true,
-                render_id = render_id
-            }
-            ::continue::
-        end
-    end
-end
-
-function world_editor.update_positions(player_index, inserter, changes)
-    local player        = game.players[player_index]
-    local arm_positions = inserter_utils.get_arm_positions(inserter)
-    local range         = inserter_utils.get_max_range(inserter, player.force)
-    local render_id, enabled_cell
-    storage_functions.ensure_data(player_index)
-
-    if changes.pickup then
-        if changes.pickup.old then
-            render_id = global.SI_Storage[player_index].selected_inserter.position_grid[tostring(changes.pickup.old.x)]
-                [tostring(changes.pickup.old.y)].render_id
-            rendering.destroy(render_id)
-            enabled_cell = gui.should_cell_be_enabled(changes.pickup.old, range, player.force, inserter)
-            render_id = rendering.draw_rectangle {
-                color = colors[enabled_cell and "can_select" or "cant_select"],
-                filled = true,
-                left_top = { arm_positions.base.x + changes.pickup.old.x, arm_positions.base.y + changes.pickup.old.y },
-                right_bottom = { arm_positions.base.x + changes.pickup.old.x + 1,
-                    arm_positions.base.y + changes.pickup.old.y + 1 },
-                surface = player.surface,
-                forces = { player.force },
-                players = { player },
-                visible = true,
-                draw_on_ground = false,
-                only_in_alt_mode = false
-            }
-            global.SI_Storage[player_index].selected_inserter.position_grid[tostring(changes.pickup.old.x)][tostring(changes.pickup.old.y)] = {
-                loaded = true,
-                render_id = render_id
-            }
-        end
-        if changes.pickup.new then
-            render_id = global.SI_Storage[player_index].selected_inserter.position_grid[tostring(changes.pickup.new.x)]
-                [tostring(changes.pickup.new.y)].render_id
-            rendering.destroy(render_id)
-            render_id = rendering.draw_rectangle {
-                color = colors["pickup"],
-                filled = true,
-                left_top = { arm_positions.base.x + changes.pickup.new.x, arm_positions.base.y + changes.pickup.new.y },
-                right_bottom = { arm_positions.base.x + changes.pickup.new.x + 1,
-                    arm_positions.base.y + changes.pickup.new.y + 1 },
-                surface = player.surface,
-                forces = { player.force },
-                players = { player },
-                visible = true,
-                draw_on_ground = false,
-                only_in_alt_mode = false
-            }
-            global.SI_Storage[player_index].selected_inserter.position_grid[tostring(changes.pickup.new.x)][tostring(changes.pickup.new.y)] = {
-                loaded = true,
-                render_id = render_id
-            }
-        end
-    end
-
-    if changes.drop then
-        if changes.drop.old and not changes.pickup then
-            render_id = global.SI_Storage[player_index].selected_inserter.position_grid[tostring(changes.drop.old.x)]
-                [tostring(changes.drop.old.y)].render_id
-            rendering.destroy(render_id)
-            enabled_cell = gui.should_cell_be_enabled(changes.drop.old, range, player.force, inserter)
-            render_id = rendering.draw_rectangle {
-                color = colors[enabled_cell and "can_select" or "cant_select"],
-                filled = true,
-                left_top = { arm_positions.base.x + changes.drop.old.x, arm_positions.base.y + changes.drop.old.y },
-                right_bottom = { arm_positions.base.x + changes.drop.old.x + 1,
-                    arm_positions.base.y + changes.drop.old.y + 1 },
-                surface = player.surface,
-                forces = { player.force },
-                players = { player },
-                visible = true,
-                draw_on_ground = false,
-                only_in_alt_mode = false
-            }
-            global.SI_Storage[player_index].selected_inserter.position_grid[tostring(changes.drop.old.x)][tostring(changes.drop.old.y)] = {
-                loaded = true,
-                render_id = render_id
-            }
-        end
-        if changes.drop.new then
-            render_id = global.SI_Storage[player_index].selected_inserter.position_grid[tostring(changes.drop.new.x)]
-                [tostring(changes.drop.new.y)].render_id
-            rendering.destroy(render_id)
-            render_id = rendering.draw_rectangle {
-                color = colors["drop"],
-                filled = true,
-                left_top = { arm_positions.base.x + changes.drop.new.x, arm_positions.base.y + changes.drop.new.y },
-                right_bottom = { arm_positions.base.x + changes.drop.new.x + 1,
-                    arm_positions.base.y + changes.drop.new.y + 1 },
-                surface = player.surface,
-                forces = { player.force },
-                players = { player },
-                visible = true,
-                draw_on_ground = false,
-                only_in_alt_mode = false
-            }
-            global.SI_Storage[player_index].selected_inserter.position_grid[tostring(changes.drop.new.x)][tostring(changes.drop.new.y)] = {
-                loaded = true,
-                render_id = render_id
-            }
-        end
-    end
-
-    if changes.tech == true then
-        world_editor.draw_positions(player_index, inserter)
-    end
-end
-
-function world_editor.clear_positions(player_index)
-    storage_functions.ensure_data(player_index)
-    global.SI_Storage[player_index].is_selected = false
-    for _0, x in pairs(global.SI_Storage[player_index].selected_inserter.position_grid) do
-        for _1, y in pairs(x) do
-            if y.loaded then
-                rendering.destroy(y.render_id)
-                y.loaded = false
-            end
-        end
-    end
-end
-
-function world_editor.update_all_positions(inserter)
-    for idx, player in pairs(game.players) do
-        storage_functions.ensure_data(idx)
-        if global.SI_Storage[idx].is_selected == true and math2d.position.equal(global.SI_Storage[idx].selected_inserter.position, inserter.position) then
-            world_editor.clear_positions(idx)
-            world_editor.draw_positions(idx, inserter)
-        end
-    end
-end
-
--- ------------------------------
--- Copy Gui
--- ------------------------------
-
-function copy_gui.delete(player)
-    if player.gui.relative.smart_inserters then
-        player.gui.relative.smart_inserters.destroy()
-    end
-end
-
-function copy_gui.create(player)
-    local button_flow = mod_gui.get_button_flow(player)
-    if button_flow.si_configurator_toggle then return end
-    button_flow.add {
-        type = "sprite-button",
-        name = "si_configurator_toggle",
-        sprite = "circle"
-    }
-end
-
-function copy_gui.create_all()
-    for idx, player in pairs(game.players) do
-        --copy_gui.delete(player)
-        copy_gui.create(player)
-    end
-end
-
-function copy_gui.remove_gui(player)
-    player.gui.screen.si_copypaste_configurator.destroy()
-end
-
-function copy_gui.add_gui(player)
-    local si_copypaste_configurator = player.gui.screen.add {
-        type = "frame",
-        direction = "vertical",
-        name = "si_copypaste_configurator",
-    }
-
-    local hotbar = si_copypaste_configurator.add {
-        type = "flow",
-        direction = "horizontal",
-        style = "si_hotbar_flow"
-    }
-    hotbar.drag_target = si_copypaste_configurator
-
-    hotbar.add { -- Sprite
-        type = "sprite",
-        sprite = "circle",
-        ignored_by_interaction = true,
-        style = "si_hotbar_sprite"
-    }
-    hotbar.add { -- Title
-        type = "label",
-        caption = { "gui-copy-smart-inserters.si-hotbar-title" },
-        ignored_by_interaction = true,
-        style = "frame_title"
-    }
-    hotbar.add { -- handle
-        type = "empty-widget",
-        ignored_by_interaction = true,
-        style = "si_drag_handle"
-    }
-    hotbar.add { -- Close
-        type = "sprite-button",
-        name = "si-close-button",
-        sprite = "utility/close_white",
-        hovered_sprite = "utility/close_black",
-        clicked_sprite = "utility/close_black",
-        tooltip = "Close the window",
-        style = "close_button"
-    }
-
-    local copypaste_down_frame = si_copypaste_configurator.add({
-        type = "frame",
-        name = "copypaste_down_frame",
-        style = "inside_deep_frame_for_tabs",
-    })
-
-    local tab_pane = copypaste_down_frame.add({
-        type = "tabbed-pane",
-        name = "si_config_tab_pane",
-    })
-
-    storage_functions.ensure_data(player.index)
-
-    -- Basic
-    local basic_tab = tab_pane.add({
-        type = "tab",
-        name = "basic_tab",
-        caption = { "gui-copy-smart-inserters.si-tab-basic" }
-    })
-    local basic_flow = tab_pane.add({
-        type = "flow",
-        name = "basic_flow",
-        direction = "vertical",
-        style = "vertical_flow_with_extra_margins"
-    })
-    tab_pane.add_tab(basic_tab, basic_flow)
-    basic_flow.add({
-        type = "checkbox",
-        name = "drop",
-        caption = { "gui-copy-smart-inserters.si-drop" },
-        tooltip = { "gui-copy-smart-inserters.si-drop-tooltip" },
-        state = global.SI_Storage[player.index].copy_settings.drop
-    })
-    basic_flow.add({
-        type = "checkbox",
-        name = "drop_offset",
-        caption = { "gui-copy-smart-inserters.si-drop-offset" },
-        tooltip = { "gui-copy-smart-inserters.si-drop-offset-tooltip" },
-        state = global.SI_Storage[player.index].copy_settings.drop_offset
-    })
-    basic_flow.add({
-        type = "checkbox",
-        name = "pickup",
-        caption = { "gui-copy-smart-inserters.si-pickup" },
-        tooltip = { "gui-copy-smart-inserters.si-pickup-tooltip" },
-        state = global.SI_Storage[player.index].copy_settings.pickup
-    })
-    basic_flow.add({
-        type = "checkbox",
-        name = "pickup_offset",
-        caption = { "gui-copy-smart-inserters.si-pickup-offset" },
-        tooltip = { "gui-copy-smart-inserters.si-pickup-offset-tooltip" },
-        state = global.SI_Storage[player.index].copy_settings.pickup_offset
-    })
-    basic_flow.add({
-        type = "checkbox",
-        name = "si_direction",
-        caption = { "gui-copy-smart-inserters.si-direction" },
-        tooltip = { "gui-copy-smart-inserters.si-direction-tooltip" },
-        state = global.SI_Storage[player.index].copy_settings.si_direction
-    })
-    basic_flow.add({
-        type = "checkbox",
-        name = "relative_si_direction",
-        caption = { "gui-copy-smart-inserters.si-relative-direction" },
-        tooltip = { "gui-copy-smart-inserters.si-relative-direction-tooltip" },
-        state = global.SI_Storage[player.index].copy_settings.relative_si_direction
-    })
-
-    --Filter
-    local filter_tab = tab_pane.add({
-        type = "tab",
-        name = "filter_tab",
-        caption = { "gui-copy-smart-inserters.si-tab-filter" }
-    })
-    local filter_flow = tab_pane.add({
-        type = "flow",
-        name = "filter_flow",
-        direction = "vertical",
-        style = "vertical_flow_with_extra_margins"
-    })
-    tab_pane.add_tab(filter_tab, filter_flow)
-    filter_flow.add({
-        type = "checkbox",
-        name = "inserter_filter_mode",
-        caption = { "gui-copy-smart-inserters.si-filter-mode" },
-        tooltip = { "gui-copy-smart-inserters.si-filter-mode-tooltip" },
-        state = global.SI_Storage[player.index].copy_settings.inserter_filter_mode
-    })
-    filter_flow.add({
-        type = "checkbox",
-        name = "filtered_stuff",
-        caption = { "gui-copy-smart-inserters.si-filtered-stuff" },
-        tooltip = { "gui-copy-smart-inserters.si-filtered-stuff-tooltip" },
-        state = global.SI_Storage[player.index].copy_settings.filtered_stuff
-    })
-    filter_flow.add({
-        type = "checkbox",
-        name = "inserter_stack_size_override",
-        caption = { "gui-copy-smart-inserters.si-stack-size-override" },
-        tooltip = { "gui-copy-smart-inserters.si-stack-size-override-tooltip" },
-        state = global.SI_Storage[player.index].copy_settings.inserter_stack_size_override
-    })
-
-    --Logic
-    local logic_tab = tab_pane.add({
-        type = "tab",
-        name = "logit_tab",
-        caption = { "gui-copy-smart-inserters.si-tab-circuit" }
-    })
-    local logic_flow = tab_pane.add({
-        type = "flow",
-        name = "logic_flow",
-        direction = "vertical",
-        style = "vertical_flow_with_extra_margins"
-    })
-    tab_pane.add_tab(logic_tab, logic_flow)
-    logic_flow.add({
-        type = "checkbox",
-        name = "circuit_set_stack_size",
-        caption = { "gui-copy-smart-inserters.si-set-stack-size" },
-        tooltip = { "gui-copy-smart-inserters.si-set-stack-size-tooltip" },
-        state = global.SI_Storage[player.index].copy_settings.circuit_set_stack_size
-    })
-    logic_flow.add({
-        type = "checkbox",
-        name = "circuit_read_hand_contents",
-        caption = { "gui-copy-smart-inserters.si-read-hand-contents" },
-        tooltip = { "gui-copy-smart-inserters.si-read-hand-contents-tooltip" },
-        state = global.SI_Storage[player.index].copy_settings.circuit_read_hand_contents
-    })
-    logic_flow.add({
-        type = "checkbox",
-        name = "circuit_mode_of_operation",
-        caption = { "gui-copy-smart-inserters.si-mode-of-operation" },
-        tooltip = { "gui-copy-smart-inserters.si-mode-of-operation-tooltip" },
-        state = global.SI_Storage[player.index].copy_settings.circuit_mode_of_operation
-    })
-    logic_flow.add({
-        type = "checkbox",
-        name = "circuit_hand_read_mode",
-        caption = { "gui-copy-smart-inserters.si-read-hand-mode" },
-        tooltip = { "gui-copy-smart-inserters.si-read-hand-mode-tooltip" },
-        state = global.SI_Storage[player.index].copy_settings.circuit_hand_read_mode
-    })
-    logic_flow.add({
-        type = "checkbox",
-        name = "circuit_condition",
-        caption = { "gui-copy-smart-inserters.si-circuit-conditions" },
-        tooltip = { "gui-copy-smart-inserters.si-circuit-conditions-tooltip" },
-        state = global.SI_Storage[player.index].copy_settings.circuit_condition
-    })
-    logic_flow.add({
-        type = "checkbox",
-        name = "circuit_stack_control_signal",
-        caption = { "gui-copy-smart-inserters.si-control-signal" },
-        tooltip = { "gui-copy-smart-inserters.si-control-signal-tooltip" },
-        state = global.SI_Storage[player.index].copy_settings.circuit_stack_control_signal
-    })
-end
-
-function copy_gui.update_checkbox_status(event)
-    local player_index = event.player_index
-    storage_functions.ensure_data(player_index)
-    global.SI_Storage[player_index].copy_settings[event.element.name] = event.element.state
-end
-
-function copy_gui.toggle_gui(player, event)
-    if player.gui.screen.si_copypaste_configurator then
-        copy_gui.remove_gui(player)
-    else
-        copy_gui.add_gui(player)
-    end
-end
-
--- ------------------------------
--- Gui
--- ------------------------------
---fix force --done?
-function gui.create_pick_drop_editor(flow_content)
-    -- Pickup/Drop label
-    flow_content.add({
-        type = "label",
-        name = "label_position",
-        caption = { "gui-smart-inserters.position" },
-        style = "heading_2_label"
-    })
-
-    local table_range = inserters_range
-
-    --PROBABLY NOT NEEDED
-    --local inserter_prototyes = game.get_filtered_entity_prototypes({ { filter = "type", type = "inserter" } })
-    --for name, prototype in pairs(inserter_prototyes) do
-    --    local range = inserter_utils.get_max_range(prototype)
-    --    table_range = math.max(table_range, range)
-    --end
-
-    -- Pickup/Drop Grid
-    local table_position = flow_content.add({
-        type = "table",
-        name = "table_position",
-        column_count = 1 + table_range * 2
-    })
-    table_position.style.horizontal_spacing = 1
-    table_position.style.vertical_spacing = 1
-
-    for y = -table_range, table_range, 1 do
-        for x = -table_range, table_range, 1 do
-            local pos_suffix = "_" .. tostring(x + table_range + 1) .. "_" .. tostring(y + table_range + 1)
-
-            if x == 0 and y == 0 then
-                local sprite = table_position.add({ type = "sprite", name = "sprite_inserter", sprite = "item/inserter" })
-                sprite.style.stretch_image_to_widget_size = true
-                sprite.style.size = { 32, 32 }
-            else
-                local button = table_position.add({
-                    type = "sprite-button",
-                    name = "button_position" .. pos_suffix,
-                    style = "slot_sized_button"
-                })
-                button.style.size = { 32, 32 }
-            end
-        end
-    end
-end
-
-function gui.create_bigger_inserter_editor(flow_content, inserter_type)
-    local bigger_switch = flow_content.add({
-        type = "switch",
-        name = "inserter_" .. inserter_type .. "_switch_position",
-        left_label_caption = "Left " .. inserter_type .. " position",
-        right_label_caption = "Right " .. inserter_type .. " position",
-    })
-    bigger_switch.switch_state = "right"
-end
-
-function gui.create_offset_editor(flow_offset, offset_name)
-    local table_range = inserters_range
-    local flow_editor = flow_offset.add({
-        type = "flow",
-        name = "flow_" .. offset_name,
-        direction = "vertical"
-    })
-
-    flow_editor.add({
-        type = "label",
-        name = "label_" .. offset_name .. "_offset",
-        caption = { "gui-smart-inserters." .. offset_name .. "-offset" },
-        style = "heading_2_label"
-    })
-
-    local table_editor = flow_editor.add({
-        type = "table",
-        name = "table_" .. offset_name,
-        column_count = 3
-    })
-    table_editor.style.horizontal_spacing = 1
-    table_editor.style.vertical_spacing = 1
-
-    for y = 1, 3, 1 do
-        for x = 1, 3, 1 do
-            local button_name = "button_" .. offset_name .. "_offset_" ..
-                tostring(x + table_range + 1) .. "_" .. tostring(y + table_range + 1)
-            local button = table_editor.add({
-                type = "sprite-button",
-                name = button_name,
-                style = "slot_sized_button"
-            })
-            button.style.size = { 32, 32 }
-        end
-    end
-end
-
-function gui.create(player)
-    local frame_main_anchor = {
-        gui = defines.relative_gui_type.inserter_gui,
-        position = defines.relative_gui_position.right
-    }
-
-    -- Initialization
-    local frame_main = player.gui.relative.add({
-        type = "frame",
-        name = "smart_inserters",
-        caption = { "gui-smart-inserters.configuration" },
-        anchor = frame_main_anchor
-    })
-    local frame_content = frame_main.add({
-        type = "frame",
-        name = "frame_content",
-        style = "inside_shallow_frame_with_padding"
-    })
-
-    -- Main vertical row
-    local flow_content = frame_content.add({
-        type = "flow",
-        name = "flow_content",
-        direction = "vertical"
-    })
-
-    -- Pickup Drop
-    local pick_drop_flow = flow_content.add({
-        type = "flow",
-        name = "pick_drop_flow",
-        direction = "horizontal"
-    })
-
-    local pusher_left = pick_drop_flow.add({
-        type = "empty-widget",
-        name = "pusher_left"
-    })
-    pusher_left.style.horizontally_stretchable = true
-
-    local pick_drop_housing = pick_drop_flow.add({
-        type = "flow",
-        name = "pick_drop_housing",
-        direction = "vertical"
-    })
-
-    gui.create_pick_drop_editor(pick_drop_housing)
-    gui.create_bigger_inserter_editor(pick_drop_housing, "pick")
-    gui.create_bigger_inserter_editor(pick_drop_housing, "drop")
-
-    local pusher_right = pick_drop_flow.add({
-        type = "empty-widget",
-        name = "pusher_right"
-    })
-    pusher_right.style.horizontally_stretchable = true
-
-    if offset_selector ~= false then
-        -- Separator
-        flow_content.add({
-            type = "line",
-            name = "line",
-            style = "control_behavior_window_line"
-        })
-
-        -- Flow element
-        local flow_offset = flow_content.add({
-            type = "flow",
-            name = "flow_offset",
-            direction = "horizontal"
-        })
-
-        local offset_pusher_left = flow_offset.add({
-            type = "empty-widget",
-            name = "offset_pusher_left"
-        })
-        offset_pusher_left.style.horizontally_stretchable = true
-
-        gui.create_offset_editor(flow_offset, "pick")
-
-        local offset_pusher_middle = flow_offset.add({
-            type = "empty-widget",
-            name = "offset_pusher_middle"
-        })
-        offset_pusher_middle.style.horizontally_stretchable = true
-
-        gui.create_offset_editor(flow_offset, "drop")
-
-        local offset_pusher_right = flow_offset.add({
-            type = "empty-widget",
-            name = "offset_pusher_right"
-        })
-        offset_pusher_right.style.horizontally_stretchable = true
-    end
-end
-
-function gui.delete(player)
-    if player.gui.relative.inserter_config then
-        player.gui.relative.inserter_config.destroy()
-    end
-    if player.gui.relative.smart_inserters then
-        player.gui.relative.smart_inserters.destroy()
-    end
-end
-
-function gui.create_all()
-    for idx, player in pairs(game.players) do
-        gui.delete(player)
-        gui.create(player)
-    end
-end
-
-function gui.should_cell_be_enabled(position, inserter_range, force, inserter, slimv, slimo, slim)
-    --button.enabled = math.min(math.abs(x), math.abs(y)) == 0 and math.max(math.abs(x), math.abs(y)) <= inserter_range
-    --button.enabled = ((math.min(math.abs(x), math.abs(y)) == 0 or math.abs(x) == math.abs(y) ) and math.max(math.abs(x), math.abs(y)) <= inserter_range)
-    --button.enabled = math.max(math.abs(x), math.abs(y)) <= table_range
-    position = math2d.position.ensure_xy(position)
-
-    local default_range = 0 -- equal
-    local in_inserter_range = true
-
-    if settings.startup["si-range-adder"].value == "inserter" and inserter.prototype then
-        in_inserter_range = math.max(math.abs(position.x), math.abs(position.y)) <= inserter_range
-    end
-
-    if settings.startup["si-range-adder"].value == "incremental" and inserter.prototype then
-        default_range = inserter_utils.inseter_default_range(inserter.prototype)
-    end
-
-    if in_inserter_range and tech.check_tech(force, position, default_range) then
-        if slim then
-            if single_line_slim_inserter then
-                if slimv and position.x == 0 then
-                    return true
-                elseif slimo and position.y == 0 then
-                    return true
-                end
-            else
-                if slimv and position.y ~= 0 then
-                    return true
-                elseif slimo and position.x ~= 0 then
-                    return true
-                end
-            end
-        else
-            return true
-        end
-    end
-    return false
-end
-
-function gui.update(player, inserter)
-    local gui_instance = player.gui.relative.smart_inserters.frame_content.flow_content
-    local inserter = inserter
-    local table_range = (gui_instance.pick_drop_flow.pick_drop_housing.table_position.column_count - 1) / 2
-    local inserter_range = inserter_utils.get_max_range(inserter, player.force)
-    local arm_positions = inserter_utils.get_arm_positions(inserter)
-    local orientation = inserter_utils.get_inserter_orientation(inserter)
-    local inserter_size = inserter_utils.get_inserter_size(inserter)
-    local slim = inserter_utils.is_slim(inserter)
-    local slimn = slim and orientation == "N"
-    local slime = slim and orientation == "E"
-    local slims = slim and orientation == "S"
-    local slimo = slim and orientation == "O"
-
-    player.gui.relative.smart_inserters.visible = gui.should_show(inserter)
-    gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position.allow_none_state = false
-    gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position.visible = false
-    gui_instance.pick_drop_flow.pick_drop_housing.inserter_drop_switch_position.allow_none_state = false
-    gui_instance.pick_drop_flow.pick_drop_housing.inserter_drop_switch_position.visible = false
-
-    if slim then                                                   -- adjust position
-        if (slims or slimn) and arm_positions.drop.y >= 0 then     -- parte bassa / lower half
-            arm_positions.drop.y = arm_positions.drop.y + 1
-        elseif (slime or slimo) and arm_positions.drop.x >= 0 then -- parte destra / right
-            arm_positions.drop.x = arm_positions.drop.x + 1
-        end
-        if (slims or slimn) and arm_positions.pickup.y >= 0 then     -- parte bassa / lower half
-            arm_positions.pickup.y = arm_positions.pickup.y + 1
-        elseif (slime or slimo) and arm_positions.pickup.x >= 0 then -- parte destra / right
-            arm_positions.pickup.x = arm_positions.pickup.x + 1
-        end
-    elseif inserter_size.z >= 2 then
-        if inserter_size.z == 3 then
-            gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position.allow_none_state = true
-            gui_instance.pick_drop_flow.pick_drop_housing.inserter_drop_switch_position.allow_none_state = true
-        end
-
-        if arm_positions.pickup.x < 0 then
-            arm_positions.pickup.x = arm_positions.pickup.x + (inserter_size.z - 1)
-        end
-        if arm_positions.pickup.y < 0 then
-            arm_positions.pickup.y = arm_positions.pickup.y + (inserter_size.z - 1)
-        end
-        if arm_positions.pickup.y == 0 then
-            gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position.visible = true
-            gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position.right_label_caption =
-            "Buttom pickup"
-            gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position.left_label_caption = "Top pickup"
-            if arm_positions.base.y == arm_positions.pure_pickup.y then
-                gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position.switch_state = "right"
-            else
-                gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position.switch_state = "left"
-            end
-        elseif arm_positions.pickup.x == 0 then
-            gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position.visible = true
-            gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position.right_label_caption =
-            "Right pickup"
-            gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position.left_label_caption =
-            "Left pickup"
-            if arm_positions.base.x == arm_positions.pure_pickup.x then
-                gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position.switch_state = "right"
-            else
-                gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position.switch_state = "left"
-            end
-        end
-
-        if arm_positions.drop.x < 0 then
-            arm_positions.drop.x = arm_positions.drop.x + (inserter_size.z - 1)
-        end
-        if arm_positions.drop.y < 0 then
-            arm_positions.drop.y = arm_positions.drop.y + (inserter_size.z - 1)
-        end
-        if arm_positions.drop.y == 0 then
-            gui_instance.pick_drop_flow.pick_drop_housing.inserter_drop_switch_position.visible = true
-            gui_instance.pick_drop_flow.pick_drop_housing.inserter_drop_switch_position.right_label_caption =
-            "Buttom drop"
-            gui_instance.pick_drop_flow.pick_drop_housing.inserter_drop_switch_position.left_label_caption = "Top drop"
-            if arm_positions.base.y == arm_positions.pure_drop.y then
-                gui_instance.pick_drop_flow.pick_drop_housing.inserter_drop_switch_position.switch_state = "right"
-            else
-                gui_instance.pick_drop_flow.pick_drop_housing.inserter_drop_switch_position.switch_state = "left"
-            end
-        elseif arm_positions.drop.x == 0 then
-            gui_instance.pick_drop_flow.pick_drop_housing.inserter_drop_switch_position.visible = true
-            gui_instance.pick_drop_flow.pick_drop_housing.inserter_drop_switch_position.right_label_caption =
-            "Right drop"
-            gui_instance.pick_drop_flow.pick_drop_housing.inserter_drop_switch_position.left_label_caption = "Left drop"
-            if arm_positions.base.x == arm_positions.pure_drop.x then
-                gui_instance.pick_drop_flow.pick_drop_housing.inserter_drop_switch_position.switch_state = "right"
-            else
-                gui_instance.pick_drop_flow.pick_drop_housing.inserter_drop_switch_position.switch_state = "left"
-            end
-        end
-    end
-
-    local idx = 0
-    for y = -table_range, table_range, 1 do
-        for x = -table_range, table_range, 1 do
-            idx = idx + 1
-            local button = gui_instance.pick_drop_flow.pick_drop_housing.table_position.children[idx]
-            if button.type == "sprite-button" then
-                button.enabled = gui.should_cell_be_enabled({ x = x, y = y }, inserter_range, player.force, inserter,
-                    (slimn or slims), (slimo or slime), slim
-                )
-
-                if math2d.position.equal(arm_positions.drop, { x, y }) then
-                    if directional_slim_inserter and slim then
-                        button.sprite = "selected-drop"
-                    else
-                        button.sprite = "drop"
-                    end
-                elseif math2d.position.equal(arm_positions.pickup, { x, y }) then
-                    if directional_slim_inserter and slim then
-                        button.sprite = "selected-pickup"
-                    else
-                        button.sprite = "pickup"
-                    end
-                elseif x ~= 0 or y ~= 0 then
-                    if directional_slim_inserter and slim and button.enabled == true then
-                        if slimn and y > 0 then
-                            button.sprite = "background-drop"
-                        elseif slimn and y < 0 then
-                            button.sprite = "background-pickup"
-                        elseif slims and y < 0 then
-                            button.sprite = "background-drop"
-                        elseif slims and y > 0 then
-                            button.sprite = "background-pickup"
-                        elseif slime and x < 0 then
-                            button.sprite = "background-drop"
-                        elseif slime and x > 0 then
-                            button.sprite = "background-pickup"
-                        elseif slimo and x > 0 then
-                            button.sprite = "background-drop"
-                        elseif slimo and x < 0 then
-                            button.sprite = "background-pickup"
-                        else
-                            button.sprite = nil
-                        end
-                    else
-                        button.sprite = nil
-                    end
-                end
-            end
-        end
-    end
-
-    local icon = "item/inserter"
-    if slim then
-        icon = "circle"
-    elseif inserter.prototype.items_to_place_this then
-        icon = "item/" .. inserter.prototype.items_to_place_this[1].name
-    end
-    gui_instance.pick_drop_flow.pick_drop_housing.table_position.sprite_inserter.sprite = icon
-
-    if offset_selector == false then
-        return
-    end
-
-    local offset_tech_unlocked = tech.check_offset_tech(player.force)
-
-    local idx = 0
-    for y = -1, 1, 1 do
-        for x = -1, 1, 1 do
-            idx = idx + 1
-
-            gui_instance.flow_offset.flow_pick.table_pick.children[idx].enabled = offset_tech_unlocked
-            if math2d.position.equal(arm_positions.pickup_offset, { x, y }) then
-                gui_instance.flow_offset.flow_pick.table_pick.children[idx].sprite = "pickup"
-            else
-                gui_instance.flow_offset.flow_pick.table_pick.children[idx].sprite = nil
-            end
-        end
-    end
-
-    local idx = 0
-    for y = -1, 1, 1 do
-        for x = -1, 1, 1 do
-            idx = idx + 1
-
-            gui_instance.flow_offset.flow_drop.table_drop.children[idx].enabled = offset_tech_unlocked
-            if math2d.position.equal(arm_positions.drop_offset, { x, y }) then
-                gui_instance.flow_offset.flow_drop.table_drop.children[idx].sprite = "drop"
-            else
-                gui_instance.flow_offset.flow_drop.table_drop.children[idx].sprite = nil
-            end
-        end
-    end
-end
-
-function gui.update_all(inserter)
-    for idx, player in pairs(game.players) do
-        if (inserter and player.opened == inserter) or (not inserter and player.opened and player.opened.type == "inserter") then
-            gui.update(player, player.opened)
-        end
-    end
-end
-
-function gui.get_button_pos(button)
-    local idx = button.get_index_in_parent() - 1
-    local len = button.parent.column_count
-    local center = (len - 1) * -0.5 -- /2*-1
-    return math2d.position.add({ idx % len, math.floor(idx / len) }, { center, center })
-end
-
-function gui.on_button_position(player, event)
-    local inserter = player.opened
-    local new_pos = gui.get_button_pos(event.element)
-    local orientation = inserter_utils.get_inserter_orientation(inserter)
-    local inserter_size = inserter_utils.get_inserter_size(inserter)
-    local inserter_positions = inserter_utils.get_arm_positions(inserter)
-    local slim = inserter_utils.is_slim(inserter)
-    local slimn = slim and orientation == "N"
-    local slime = slim and orientation == "E"
-    local slims = slim and orientation == "S"
-    local slimo = slim and orientation == "O"
-    local new_positions
-
-    if event.button == defines.mouse_button_type.left and not event.control and not event.shift then
-        new_positions = { drop = new_pos }
-
-        if event.element.sprite == "drop" then
-            return
-        end
-
-        if event.element.sprite == "pickup" then
-            new_positions.pickup = inserter_positions.drop
-
-            if new_positions.pickup.y >= 0 and (slimn or slims) then
-                new_positions.pickup.y = new_positions.pickup.y + 1
-            elseif new_positions.pickup.x >= 0 and (slimo or slime) then
-                new_positions.pickup.x = new_positions.pickup.x + 1
-            end
-            if (new_positions.pickup.y <= -1) and (inserter_size.z >= 2) then
-                new_positions.pickup.y = new_positions.pickup.y + 1
-            end
-            if (new_positions.pickup.x <= -1) and (inserter_size.z >= 2) then
-                new_positions.pickup.x = new_positions.pickup.x + 1
-            end
-        end
-
-        new_positions.drop_offset = { x = 0, y = 0 }
-        --Set the drop offset to the farthest side
-        --[
-        if new_pos.x < 0 and not (slimo or slime) then
-            new_positions.drop_offset.x = -1
-        elseif new_pos.x > 0 and not (slimo or slime) then
-            new_positions.drop_offset.x = 1
-        end
-
-        if new_pos.y < 0 and not (slimn or slims) then
-            new_positions.drop_offset.y = -1
-        elseif new_pos.y > 0 and not (slimn or slims) then
-            new_positions.drop_offset.y = 1
-        end
-        --]
-
-        if gui.validate_button_placement(inserter, new_positions) then
-            inserter_utils.set_arm_positions(inserter, new_positions)
-        else
-            return
-        end
-    elseif event.button == defines.mouse_button_type.right or (event.button == defines.mouse_button_type.left and (event.control or event.shift)) then
-        new_positions = { pickup = new_pos }
-
-        if event.element.sprite == "pickup" then
-            return
-        end
-
-        if event.element.sprite == "drop" then
-            new_positions.drop = inserter_positions.pickup
-
-            if new_positions.drop.y >= 0 and (slimn or slims) then
-                new_positions.drop.y = new_positions.drop.y + 1
-            elseif new_positions.drop.x >= 0 and (slimo or slime) then
-                new_positions.drop.x = new_positions.drop.x + 1
-            end
-            if (new_positions.drop.y <= -1) and (inserter_size.z >= 2) then
-                new_positions.drop.y = new_positions.drop.y + 1
-            end
-            if (new_positions.drop.x <= -1) and (inserter_size.z >= 2) then
-                new_positions.drop.x = new_positions.drop.x + 1
-            end
-
-            new_positions.drop_offset = { x = 0, y = 0 }
-            if new_positions.drop.x < 0 and not (slimo or slime) then
-                new_positions.drop_offset.x = -1
-            elseif new_positions.drop.x > 0 and not (slimo or slime) then
-                new_positions.drop_offset.x = 1
-            end
-
-            if new_positions.drop.y < 0 and not (slimn or slims) then
-                new_positions.drop_offset.y = -1
-            elseif new_positions.drop.y > 0 and not (slimn or slims) then
-                new_positions.drop_offset.y = 1
-            end
-        end
-
-        new_positions.pickup_offset = { x = 0, y = 0 }
-        --[[
-            if new_pos.x < 0 and not (slimo or slime) then
-                new_positions.pickup_offset.x = -1
-            elseif new_pos.x > 0 and not (slimo or slime) then
-                new_positions.pickup_offset.x = 1
-            end
-
-            if new_pos.y < 0 and not (slimn or slims) then
-                new_positions.pickup_offset.y = -1
-            elseif new_pos.y > 0 and not (slimn or slims) then
-                new_positions.pickup_offset.y = 1
-            end
-        --]]
-
-        if gui.validate_button_placement(inserter, new_positions) then
-            inserter_utils.set_arm_positions(inserter, new_positions)
-        else
-            return
-        end
-    end
-
-    gui.update_all(inserter)
-    if global.SI_Storage[event.player_index].is_selected and math2d.position.equal(player.opened.position, global.SI_Storage[event.player_index].selected_inserter.position) then
-        local changes = {}
-        if new_positions.drop then
-            changes["drop"] = {
-                old = {
-                    x = inserter_positions.drop.x,
-                    y = inserter_positions.drop.y,
-                },
-                new = {
-                    x = new_positions.drop.x,
-                    y = new_positions.drop.y,
-                }
-            }
-        end
-        if new_positions.pickup then
-            changes["pickup"] = {
-                old = {
-                    x = inserter_positions.pickup.x,
-                    y = inserter_positions.pickup.y,
-                },
-                new = {
-                    x = new_positions.pickup.x,
-                    y = new_positions.pickup.y,
-                }
-            }
-        end
-
-        world_editor.update_positions(event.player_index, player.opened, changes)
-    end
-end
-
-function gui.on_button_drop_offset(player, event)
-    local new_drop_offset = gui.get_button_pos(event.element)
-    inserter_utils.set_arm_positions(player.opened, { drop_offset = new_drop_offset })
-
-    gui.update(player, player.opened)
-end
-
-function gui.on_button_pick_offset(player, event)
-    local new_pickup_offset = gui.get_button_pos(event.element)
-    inserter_utils.set_arm_positions(player.opened, { pickup_offset = new_pickup_offset })
-
-    gui.update(player, player.opened)
-end
-
-function gui.on_switch_drop_position(player, event)
-    local inserter = player.opened
-    local position = inserter_utils.get_arm_positions(inserter)
-    local drop_position = position.drop
-
-    local state = 0 -- "none"
-    if event.element.switch_state == "right" then
-        state = 1
-    elseif event.element.switch_state == "left" then
-        state = -1
-    end
-
-    local drop_adjust = { x = 0, y = 0 }
-
-    if (drop_position.y >= 1) or (drop_position.y <= -2) then
-        if position.base.x ~= position.pure_drop.x and event.element.switch_state == "left" then
-            return
-        elseif position.base.x == position.pure_drop.x and event.element.switch_state == "right" then
-            return
-        end
-        if state == 1 then
-            drop_adjust.x = 1
-        else
-            drop_adjust.x = -1
-        end
-    elseif (drop_position.x >= 1) or (drop_position.x <= -1) then
-        if position.base.y ~= position.pure_drop.y and event.element.switch_state == "left" then
-            return
-        elseif position.base.y == position.pure_drop.y and event.element.switch_state == "right" then
-            return
-        end
-        if state == 1 then
-            drop_adjust.y = 1
-        else
-            drop_adjust.y = -1
-        end
-    end
-
-    inserter_utils.set_arm_positions(inserter, { drop_adjust = drop_adjust })
-    gui.update(player, inserter)
-end
-
-function gui.on_switch_pick_position(player, event)
-    local inserter = player.opened
-    local position = inserter_utils.get_arm_positions(inserter)
-    local pickup_position = position.pickup
-
-    local state = 0 -- "none"
-    if event.element.switch_state == "right" then
-        state = 1
-    elseif event.element.switch_state == "left" then
-        state = -1
-    end
-
-    local pickup_adjust = { x = 0, y = 0 }
-
-    if (pickup_position.y >= 1) or (pickup_position.y <= -2) then
-        if position.base.x ~= position.pure_pickup.x and event.element.switch_state == "left" then
-            return
-        elseif position.base.x == position.pure_pickup.x and event.element.switch_state == "right" then
-            return
-        end
-        if state == 1 then
-            pickup_adjust.x = 1
-        else
-            pickup_adjust.x = -1
-        end
-    elseif (pickup_position.x >= 1) or (pickup_position.x <= -1) then
-        if position.base.y ~= position.pure_pickup.y and event.element.switch_state == "left" then
-            return
-        elseif position.base.y == position.pure_pickup.y and event.element.switch_state == "right" then
-            return
-        end
-        if state == 1 then
-            pickup_adjust.y = 1
-        else
-            pickup_adjust.y = -1
-        end
-    end
-
-    inserter_utils.set_arm_positions(inserter, { pickup_adjust = pickup_adjust })
-    gui.update(player, inserter)
-end
-
-function gui.validate_button_placement(inserter, positions)
-    if not directional_slim_inserter then
-        return true
-    end
-
-    local orientation = inserter_utils.get_inserter_orientation(inserter)
-    local slim = inserter_utils.is_slim(inserter)
-    local slimn = slim and orientation == "N"
-    local slime = slim and orientation == "E"
-    local slims = slim and orientation == "S"
-    local slimo = slim and orientation == "O"
-
-    if positions.pickup ~= nil then
-        if slims and positions.pickup.y < 0 then
-            return false
-        end
-        if slimn and positions.pickup.y > 0 then
-            return false
-        end
-        if slimo and positions.pickup.x > 0 then
-            return false
-        end
-        if slime and positions.pickup.x < 0 then
-            return false
-        end
-    end
-
-    if positions.drop ~= nil then
-        if slims and positions.drop.y > 0 then
-            return false
-        end
-        if slimn and positions.drop.y < 0 then
-            return false
-        end
-        if slimo and positions.drop.x < 0 then
-            return false
-        end
-        if slime and positions.drop.x > 0 then
-            return false
-        end
-    end
-
-    return true
-end
-
-function gui.should_show(entity)
-    --What an ugly ass piece of code... I rellay hate checking strings in this way to filter something, it's reliability is below 0...
-    local prototype_history = script.get_prototype_history(entity.type, entity.name)
-
-    for _, v in pairs(blacklist.mods) do
-        if string.find(prototype_history.created, v) then
-            return false
-        end
-    end
-
-    for _, v in pairs(blacklist.entities) do
-        if string.find(entity.name, v) then
-            return false
-        end
-    end
-
-    return true
-end
-
--- ------------------------------
--- SI_Storage
--- ------------------------------
-function storage_functions.populate_storage()
-    for player_index, _ in pairs(game.players) do
-        storage_functions.add_player(player_index)
-
-        local tmp = {}
-        local x_string
-        for x = -5, 5, 1 do
-            x_string = tostring(x)
-            global.SI_Storage[player_index].selected_inserter["position_grid"][x_string] = {}
-            tmp[x_string] = { loaded = false }
-        end
-        for y = -5, 5, 1 do
-            global.SI_Storage[player_index].selected_inserter["position_grid"][tostring(y)] = deepcopy(tmp)
-        end
-
-        rendering.clear("Smart_Inserters")
-    end
-end
-
-function storage_functions.add_player(player_index)
-    global.SI_Storage[player_index] = {}
-
-    global.SI_Storage[player_index]["copy_event"] = {}
-    global.SI_Storage[player_index].copy_event["tick"] = 0
-    global.SI_Storage[player_index].copy_event["drop"] = {}
-    global.SI_Storage[player_index].copy_event["pickup"] = {}
-    global.SI_Storage[player_index].copy_event["si_direction"] = 0
-    global.SI_Storage[player_index].copy_event["relative_si_direction"] = 0
-    global.SI_Storage[player_index].copy_event["destination_behavior"] = {}
-    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_set_stack_size"] = 0
-    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_read_hand_contents"] = 0
-    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_mode_of_operation"] = 0
-    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_hand_read_mode"] = 0
-    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_condition"] = 0
-    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_stack_control_signal"] = 0
-
-    global.SI_Storage[player_index].copy_event["inserter_filter_mode"] = {}
-    global.SI_Storage[player_index].copy_event["inserter_stack_size_override"] = {}
-    global.SI_Storage[player_index].copy_event["filtered_slots"] = {}
-    global.SI_Storage[player_index].copy_event.filtered_slots = { { copy = true, item = "" }, { copy = true, item = "" },
-        { copy = true, item = "" }, { copy = true, item = "" }, { copy = true, item = "" } }
-
-    global.SI_Storage[player_index]["copy_settings"] = {}
-    global.SI_Storage[player_index].copy_settings["drop"] = true
-    global.SI_Storage[player_index].copy_settings["drop_offset"] = true
-    global.SI_Storage[player_index].copy_settings["pickup"] = true
-    global.SI_Storage[player_index].copy_settings["pickup_offset"] = true
-    global.SI_Storage[player_index].copy_settings["si_direction"] = true
-    global.SI_Storage[player_index].copy_settings["relative_si_direction"] = true
-
-    global.SI_Storage[player_index].copy_settings["inserter_filter_mode"] = true
-    global.SI_Storage[player_index].copy_settings["filtered_stuff"] = true
-
-    global.SI_Storage[player_index].copy_settings["inserter_stack_size_override"] = true
-    global.SI_Storage[player_index].copy_settings["circuit_set_stack_size"] = true
-    global.SI_Storage[player_index].copy_settings["circuit_read_hand_contents"] = true
-    global.SI_Storage[player_index].copy_settings["circuit_mode_of_operation"] = true
-    global.SI_Storage[player_index].copy_settings["circuit_hand_read_mode"] = true
-    global.SI_Storage[player_index].copy_settings["circuit_condition"] = true
-    global.SI_Storage[player_index].copy_settings["circuit_stack_control_signal"] = true
-
-    global.SI_Storage[player_index]["is_selected"] = false
-    global.SI_Storage[player_index]["selected_inserter"] = {}
-    global.SI_Storage[player_index].selected_inserter["position"] = { x = "", y = "" }
-    global.SI_Storage[player_index].selected_inserter["name"] = ""
-    global.SI_Storage[player_index].selected_inserter["surface"] = ""
-    global.SI_Storage[player_index].selected_inserter["drop"] = { x = "", y = "" }
-    global.SI_Storage[player_index].selected_inserter["pickup"] = { x = "", y = "" }
-
-    global.SI_Storage[player_index].selected_inserter["position_grid"] = {}
-    local tmp = {}
-    local x_string
-    for x = -5, 5, 1 do
-        x_string = tostring(x)
-        global.SI_Storage[player_index].selected_inserter["position_grid"][x_string] = {}
-        tmp[x_string] = { loaded = false }
-    end
-    for y = -5, 5, 1 do
-        global.SI_Storage[player_index].selected_inserter["position_grid"][tostring(y)] = deepcopy(tmp)
-    end
-end
-
-function storage_functions.purge_copy_event_data(player_index)
-    storage_functions.ensure_data(player_index)
-    local filtered_slots = global.SI_Storage[player_index].copy_event.filtered_slots
-    global.SI_Storage[player_index]["copy_event"] = {}
-    global.SI_Storage[player_index].copy_event["tick"] = 0
-    global.SI_Storage[player_index].copy_event["drop"] = {}
-    global.SI_Storage[player_index].copy_event["pickup"] = {}
-    global.SI_Storage[player_index].copy_event["si_direction"] = 0
-    global.SI_Storage[player_index].copy_event["relative_si_direction"] = 0
-    global.SI_Storage[player_index].copy_event["destination_behavior"] = {}
-    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_set_stack_size"] = 0
-    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_read_hand_contents"] = 0
-    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_mode_of_operation"] = 0
-    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_hand_read_mode"] = 0
-    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_condition"] = 0
-    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_stack_control_signal"] = 0
-    global.SI_Storage[player_index].copy_event["inserter_filter_mode"] = {}
-    global.SI_Storage[player_index].copy_event["inserter_stack_size_override"] = {}
-    global.SI_Storage[player_index].copy_event["filtered_slots"] = {}
-    global.SI_Storage[player_index].copy_event.filtered_slots = {
-        { copy = filtered_slots[1].copy, item = "" },
-        { copy = filtered_slots[2].copy, item = "" },
-        { copy = filtered_slots[3].copy, item = "" },
-        { copy = filtered_slots[4].copy, item = "" },
-        { copy = filtered_slots[5].copy, item = "" }
-    }
-end
-
-function storage_functions.ensure_data(player_index)
-    player_index = player_index and player_index or false
-    if global.SI_Storage == nil then global.SI_Storage = {} end
-    if player_index and not global.SI_Storage[player_index] then
-        storage_functions.add_player(player_index)
-    end
-    return global.SI_Storage[player_index]
-end
-
--- ------------------------------
--- Player functions
--- ------------------------------
-function player_functions.safely_change_cursor(player, item)
-    item = item or false
-    local inventory = player.get_main_inventory()
-    if player.cursor_stack.valid_for_read then
-        local available_space = inventory.get_insertable_count(player.cursor_stack.name)
-        local skip = false
-        if player.cursor_stack.prototype.flags then
-            skip = player.cursor_stack.prototype.flags["only-in-cursor"] and true or false
-        end
-        if skip then goto skip_change end
-
-        if available_space >= player.cursor_stack.count * 2 then
-            inventory.insert({ name = player.cursor_stack.name, count = player.cursor_stack.count })
-        else
-            player.force.character_inventory_slots_bonus = player.force.character_inventory_slots_bonus + 1
-            inventory.insert(player.cursor_stack)
-            player.cursor_stack.clear()
-            player.force.character_inventory_slots_bonus = player.force.character_inventory_slots_bonus - 1
-        end
-
-        ::skip_change::
-    end
-
-    player.cursor_stack.clear()
-    if item == false then return end
-    return player.cursor_stack.set_stack(item)
-end
-
-function player_functions.configure_pickup_drop_changher(player, is_drop)
-    if player.cursor_stack.is_blueprint then --and player.cursor_stack.name == "si-in-world-pikcup-drop-changer"
-        player.cursor_stack.set_blueprint_entities({ {
-            name = "si-in-world-" .. is_drop .. "-entity",
-            entity_number = 1,
-            position = { 0, 0 }
-        } })
-        player.cursor_stack.blueprint_absolute_snapping = true
-        player.cursor_stack.blueprint_snap_to_grid      = { 1, 0 }
-    end
-end
 
 -- ------------------------------
 -- Event Handlers
@@ -1998,159 +55,139 @@ end
 
 -- TODO check in muliplayer when changing the in-world selector updates
 local function on_entity_settings_pasted(event)
-    if event.destination.type == "inserter" then
-        local player_index = event.player_index
-        storage_functions.ensure_data(player_index)
-        local drop_tile, drop_offset = math2d.position.split(global.SI_Storage[player_index].copy_event.drop)
-        local pickup_tile, pickup_offset = math2d.position.split(global.SI_Storage[player_index].copy_event.pickup)
-        local destination = event.destination
+    if not event.destination.type == "inserter" then
+        return
+    end
 
-        -- Basic
-        destination.drop_position = global.SI_Storage[player_index].copy_event.drop
-        destination.pickup_position = global.SI_Storage[player_index].copy_event.pickup
-        destination.direction = global.SI_Storage[player_index].copy_event.si_direction
+    local player_index = event.player_index
+    storage_functions.ensure_data(player_index)
+    local player_storage = global.SI_Storage[player_index]
+    local destination = event.destination
+    local copy_event = player_storage.copy_event
 
-        -- Filter
-        if event.destination.inserter_filter_mode and event.source.inserter_filter_mode then
-            event.destination.inserter_filter_mode = global.SI_Storage[player_index].copy_event.inserter_filter_mode
-            for i = 1, 5, 1 do
-                if global.SI_Storage[player_index].copy_event.filtered_slots[i].copy and global.SI_Storage[player_index].copy_event.filtered_slots[i].item ~= "" then
-                    event.destination.set_filter(i, global.SI_Storage[player_index].copy_event.filtered_slots[i].item)
-                end
+    -- Basic
+    destination.drop_position = copy_event.drop
+    destination.pickup_position = copy_event.pickup
+    destination.direction = copy_event.si_direction
+
+    -- Filter
+    if event.destination.inserter_filter_mode and event.source.inserter_filter_mode then
+        destination.inserter_filter_mode = copy_event.inserter_filter_mode
+        for i = 1, 5, 1 do
+            local filtered_slot = copy_event.filtered_slots[i]
+            if filtered_slot.copy and filtered_slot.item ~= "" then
+                event.destination.set_filter(i, filtered_slot.item)
             end
         end
-        if event.destination.inserter_stack_size_override and event.source.inserter_stack_size_override then
-            event.destination.inserter_stack_size_override = global.SI_Storage[player_index].copy_event
-                .inserter_stack_size_override
-        end
-
-        -- Circuit condition
-        local destination_behavior = event.destination.get_or_create_control_behavior()
-
-        destination_behavior["circuit_set_stack_size"] = global.SI_Storage[player_index].copy_event.destination_behavior
-            .circuit_set_stack_size
-        destination_behavior["circuit_read_hand_contents"] = global.SI_Storage[player_index].copy_event
-            .destination_behavior.circuit_read_hand_contents
-        destination_behavior["circuit_mode_of_operation"] = global.SI_Storage[player_index].copy_event
-            .destination_behavior.circuit_mode_of_operation
-        destination_behavior["circuit_hand_read_mode"] = global.SI_Storage[player_index].copy_event.destination_behavior
-            .circuit_hand_read_mode
-        destination_behavior["circuit_condition"] = game.json_to_table(global.SI_Storage[player_index].copy_event
-            .destination_behavior.circuit_condition)
-        if destination_behavior.circuit_stack_control_signal then
-            destination_behavior["circuit_stack_control_signal"] = game.json_to_table(global.SI_Storage[player_index]
-                .copy_event
-                .destination_behavior.circuit_stack_control_signal)
-        end
-
-        storage_functions.purge_copy_event_data(player_index)
-        inserter_utils.enforce_max_range(destination, game.players[player_index].force)
-        gui.update_all(destination)
     end
+    if event.destination.inserter_stack_size_override and event.source.inserter_stack_size_override then
+        destination.inserter_stack_size_override = copy_event.inserter_stack_size_override
+    end
+
+    -- Circuit condition
+    local destination_behavior = event.destination.get_or_create_control_behavior()
+    local dest_behavior_copy = copy_event.destination_behavior
+
+    destination_behavior.circuit_set_stack_size = dest_behavior_copy.circuit_set_stack_size
+    destination_behavior.circuit_read_hand_contents = dest_behavior_copy.circuit_read_hand_contents
+    destination_behavior.circuit_mode_of_operation = dest_behavior_copy.circuit_mode_of_operation
+    destination_behavior.circuit_hand_read_mode = dest_behavior_copy.circuit_hand_read_mode
+    destination_behavior.circuit_condition = game.json_to_table(dest_behavior_copy.circuit_condition)
+
+    if destination_behavior.circuit_stack_control_signal then
+        destination_behavior.circuit_stack_control_signal = game.json_to_table(dest_behavior_copy.circuit_stack_control_signal)
+    end
+
+    storage_functions.purge_copy_event_data(player_index)
+    inserter_functions.enforce_max_range(destination, game.players[player_index].force)
+    gui.update_all(destination)
 end
 
 local function on_pre_entity_settings_pasted(event)
-    if not (inserter_utils.is_inserter(event.source) and inserter_utils.is_inserter(event.destination)) then
+    if not (inserter_functions.is_inserter(event.source) and inserter_functions.is_inserter(event.destination)) then
         return
     end
-    local player_index = event.player_index
-    local source_arm = inserter_utils.get_arm_positions(event.source)
-    local destination_arm = inserter_utils.get_arm_positions(event.destination)
-    storage_functions.ensure_data(player_index)
 
-    --global.SI_Storage[player_index].copy_event.tick = event.tick
+    local player_index = event.player_index
+    local player_storage = global.SI_Storage[player_index]
+    local source_arm = inserter_functions.get_arm_positions(event.source)
+    local destination_arm = inserter_functions.get_arm_positions(event.destination)
+    storage_functions.ensure_data(player_index)
+    local copy_settings = player_storage.copy_settings
+    local copy_event = player_storage.copy_event
 
     -- Basic
-    local drop = global.SI_Storage[player_index].copy_settings.drop and source_arm.drop or destination_arm.drop
-    local drop_offset = global.SI_Storage[player_index].copy_settings.drop_offset and source_arm.pure_drop_offset or
-        destination_arm.pure_drop_offset
-    local pickup = global.SI_Storage[player_index].copy_settings.pickup and source_arm.pickup or destination_arm.pickup
-    local pickup_offset = global.SI_Storage[player_index].copy_settings.pickup_offset and source_arm.pure_pickup_offset or
-        destination_arm.pure_pickup_offset
+    local drop = copy_settings.drop and source_arm.drop or destination_arm.drop
+    local drop_offset = copy_settings.drop_offset and source_arm.pure_drop_offset or destination_arm.pure_drop_offset
+    local pickup = copy_settings.pickup and source_arm.pickup or destination_arm.pickup
+    local pickup_offset = copy_settings.pickup_offset and source_arm.pure_pickup_offset or destination_arm.pure_pickup_offse
 
-    global.SI_Storage[player_index].copy_event.si_direction = global.SI_Storage[player_index].copy_settings.si_direction and
-        event.source.direction or event.destination.direction
+    copy_event.si_direction = copy_settings.si_direction and event.source.direction or event.destination.direction
 
-    if global.SI_Storage[player_index].copy_settings.relative_si_direction then
-        drop = inserter_utils.calc_rotated_position(event.source, drop,
-            event.destination.direction)
-        pickup = inserter_utils.calc_rotated_position(event.source, pickup,
-            event.destination.direction)
-        drop_offset = inserter_utils.calc_rotated_offset(event.source,
-            event.destination.direction, "drop")
-        pickup_offset = inserter_utils.calc_rotated_offset(event.source,
-            event.destination.direction, "pickup")
-        drop_offset = math2d.position.add(
-            math2d.position.multiply_scalar(drop_offset, 0.2), { 0.5, 0.5 }
-        )
-        pickup_offset = math2d.position.add(
-            math2d.position.multiply_scalar(pickup_offset, 0.2), { 0.5, 0.5 }
-        )
+    if copy_settings.relative_si_direction then
+        drop = inserter_functions.calc_rotated_position(event.source, drop, event.destination.direction)
+        pickup = inserter_functions.calc_rotated_position(event.source, pickup, event.destination.direction)
+        drop_offset = inserter_functions.calc_rotated_offset(event.source, event.destination.direction, "drop")
+        pickup_offset = inserter_functions.calc_rotated_offset(event.source, event.destination.direction, "pickup")
+        drop_offset = math2d.position.add(math2d.position.multiply_scalar(drop_offset, 0.2), { 0.5, 0.5 })
+        pickup_offset = math2d.position.add(math2d.position.multiply_scalar(pickup_offset, 0.2), { 0.5, 0.5 })
     end
 
     local new_drop = math2d.position.add(drop, drop_offset)
     local new_pickup = math2d.position.add(pickup, pickup_offset)
-    global.SI_Storage[player_index].copy_event.drop = math2d.position.add(new_drop, destination_arm.base)
-    global.SI_Storage[player_index].copy_event.pickup = math2d.position.add(new_pickup, destination_arm.base)
+    copy_event.drop = math2d.position.add(new_drop, destination_arm.base)
+    copy_event.pickup = math2d.position.add(new_pickup, destination_arm.base)
 
     -- Filter
     if event.destination.inserter_filter_mode and event.source.inserter_filter_mode then
-        global.SI_Storage[player_index].copy_event.inserter_filter_mode = global.SI_Storage[player_index].copy_settings
-            .inserter_filter_mode and event.source.inserter_filter_mode or event.destination.inserter_filter_mode
-
-        local tmp = 0
+        copy_event.inserter_filter_mode = copy_settings.inserter_filter_mode and event.source.inserter_filter_mode or event.destination.inserter_filter_mode
         for i = 1, 5, 1 do
-            tmp = (global.SI_Storage[player_index].copy_settings.filtered_stuff and global.SI_Storage[player_index].copy_event.filtered_slots[i].copy) and
-                event.source.get_filter(i) or event.destination.get_filter(i)
-            global.SI_Storage[player_index].copy_event.filtered_slots[i].item = tmp
+            local filtered_slot = copy_event.filtered_slots[i]
+            if copy_settings.filtered_stuff and filtered_slot.copy and event.source.filter_slot_count >= i then
+                filtered_slot.item = event.source.get_filter(i)
+            elseif event.destination.filter_slot_count >= i then
+                filtered_slot.item = event.destination.get_filter(i)
+            else
+                filtered_slot.item = ""
+            end
         end
     end
-    if event.destination.inserter_stack_size_override and event.source.inserter_stack_size_override then
-        global.SI_Storage[player_index].copy_event.inserter_stack_size_override = global.SI_Storage[player_index]
-            .copy_settings.inserter_stack_size_override and
-            event.source.inserter_stack_size_override or event.destination.inserter_stack_size_override
-    end
 
+    if event.destination.inserter_stack_size_override and event.source.inserter_stack_size_override then
+        copy_event.inserter_stack_size_override = copy_settings.inserter_stack_size_override and
+                                                    event.source.inserter_stack_size_override or
+                                                    event.destination.inserter_stack_size_override
+    end
 
     -- Circuit conditions
-
-    local souce_behavior = event.source.get_or_create_control_behavior()
+    local source_behavior = event.source.get_or_create_control_behavior()
     local destination_behavior = event.destination.get_or_create_control_behavior()
 
-    if global.SI_Storage[player_index].copy_settings.circuit_set_stack_size then
-        destination_behavior.circuit_set_stack_size = souce_behavior.circuit_set_stack_size
-    end
-    if global.SI_Storage[player_index].copy_settings.circuit_read_hand_contents then
-        destination_behavior.circuit_read_hand_contents = souce_behavior.circuit_read_hand_contents
-    end
-    if global.SI_Storage[player_index].copy_settings.circuit_mode_of_operation then
-        destination_behavior.circuit_mode_of_operation = souce_behavior.circuit_mode_of_operation
-    end
-    if global.SI_Storage[player_index].copy_settings.circuit_hand_read_mode then
-        destination_behavior.circuit_hand_read_mode = souce_behavior.circuit_hand_read_mode
-    end
-    if global.SI_Storage[player_index].copy_settings.circuit_condition then
-        destination_behavior.circuit_condition = souce_behavior.circuit_condition
-    end
-    if destination_behavior.circuit_stack_control_signal and souce_behavior.circuit_stack_control_signal and global.SI_Storage[player_index].copy_settings.circuit_stack_control_signal then
-        destination_behavior.circuit_stack_control_signal = souce_behavior.circuit_stack_control_signal
+    local function copy_circuit_settings(setting)
+        if copy_settings[setting] then
+            destination_behavior[setting] = source_behavior[setting]
+        end
     end
 
-    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_set_stack_size"] = destination_behavior
-        .circuit_set_stack_size
-    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_read_hand_contents"] = destination_behavior
-        .circuit_read_hand_contents
-    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_mode_of_operation"] = destination_behavior
-        .circuit_mode_of_operation
-    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_hand_read_mode"] = destination_behavior
-        .circuit_hand_read_mode
+    copy_circuit_settings("circuit_set_stack_size")
+    copy_circuit_settings("circuit_read_hand_contents")
+    copy_circuit_settings("circuit_mode_of_operation")
+    copy_circuit_settings("circuit_hand_read_mode")
+    copy_circuit_settings("circuit_condition")
 
-    global.SI_Storage[player_index].copy_event.destination_behavior["circuit_condition"] = game.table_to_json(
-        destination_behavior.circuit_condition)
-    if destination_behavior.circuit_stack_control_signal then 
-        global.SI_Storage[player_index].copy_event.destination_behavior["circuit_stack_control_signal"] = game.table_to_json(
-            destination_behavior.circuit_stack_control_signal)
+    if destination_behavior.circuit_stack_control_signal and source_behavior.circuit_stack_control_signal and copy_settings.circuit_stack_control_signal then
+        destination_behavior.circuit_stack_control_signal = source_behavior.circuit_stack_control_signal
     end
+
+    copy_event.destination_behavior.circuit_set_stack_size = destination_behavior.circuit_set_stack_size
+    copy_event.destination_behavior.circuit_read_hand_contents = destination_behavior.circuit_read_hand_contents
+    copy_event.destination_behavior.circuit_mode_of_operation = destination_behavior.circuit_mode_of_operation
+    copy_event.destination_behavior.circuit_hand_read_mode = destination_behavior.circuit_hand_read_mode
+    copy_event.destination_behavior.circuit_condition = game.table_to_json(destination_behavior.circuit_condition)
+
+    if destination_behavior.circuit_stack_control_signal then
+        copy_event.destination_behavior.circuit_stack_control_signal = game.table_to_json(destination_behavior.circuit_stack_control_signal)
+    end    
 end
 
 -- Gui Events
@@ -2167,7 +204,9 @@ local function on_gui_click(event)
     local gui_instance = player.gui.relative.smart_inserters.frame_content.flow_content
     local copy_gui_instance = mod_gui.get_button_flow(player).children
 
-    if event.element.parent == gui_instance.pick_drop_flow.pick_drop_housing.table_position and event.element ~= gui_instance.pick_drop_flow.pick_drop_housing.table_position.sprite_inserter then
+    if not gui_instance then
+        return
+    elseif event.element.parent == gui_instance.pick_drop_flow.pick_drop_housing.table_position and event.element ~= gui_instance.pick_drop_flow.pick_drop_housing.table_position.sprite_inserter then
         gui.on_button_position(player, event)
     elseif offset_selector and event.element.parent == gui_instance.flow_offset.flow_drop.table_drop then
         gui.on_button_drop_offset(player, event)
@@ -2197,11 +236,11 @@ end
 -- Hotkey Events
 local function on_rotation_adjust(event)
     local player = game.players[event.player_index]
-    if inserter_utils.is_inserter(player.selected) then
+    if inserter_functions.is_inserter(player.selected) then
         local inserter = player.selected
 
-        local slim = inserter_utils.is_slim(inserter)
-        local size = inserter_utils.get_inserter_size(inserter)
+        local slim = inserter_functions.is_slim(inserter)
+        local size = inserter_functions.get_inserter_size(inserter)
         if slim then
             ---@diagnostic disable-next-line: missing-fields
             player.surface.create_entity({
@@ -2229,7 +268,7 @@ local function on_rotation_adjust(event)
         local target = is_drop and "drop" or "pickup"
         local check = is_drop and "pickup" or "drop"
 
-        local arm_positions = inserter_utils.get_arm_positions(inserter)
+        local arm_positions = inserter_functions.get_arm_positions(inserter)
 
         local range = math.max(math.abs(arm_positions[target].x), math.abs(arm_positions[target].y))
 
@@ -2254,10 +293,10 @@ local function on_rotation_adjust(event)
 
         local new_arm_positions = {}
         new_arm_positions[target] = new_tile
-        new_arm_positions[target .. "_offset"] = inserter_utils.calc_rotated_offset(inserter, new_tile, target)
+        new_arm_positions[target .. "_offset"] = inserter_functions.calc_rotated_offset(inserter, new_tile, target)
 
         new_arm_positions[target] = new_tile
-        inserter_utils.set_arm_positions(inserter, new_arm_positions)
+        inserter_functions.set_arm_positions(inserter, new_arm_positions)
 
         gui.update_all(inserter)
     end
@@ -2265,11 +304,11 @@ end
 
 local function on_distance_adjust(event)
     local player = game.players[event.player_index]
-    if inserter_utils.is_inserter(player.selected) then
+    if inserter_functions.is_inserter(player.selected) then
         local inserter = player.selected
 
-        local slim = inserter_utils.is_slim(inserter)
-        local size = inserter_utils.get_inserter_size(inserter)
+        local slim = inserter_functions.is_slim(inserter)
+        local size = inserter_functions.get_inserter_size(inserter)
 
         if slim then
             ---@diagnostic disable-next-line: missing-fields
@@ -2297,10 +336,10 @@ local function on_distance_adjust(event)
         local target = is_drop and "drop" or "pickup"
         local check = is_drop and "pickup" or "drop"
 
-        local arm_positions = inserter_utils.get_arm_positions(inserter)
+        local arm_positions = inserter_functions.get_arm_positions(inserter)
 
         local range = math.max(math.abs(arm_positions[target].x), math.abs(arm_positions[target].y))
-        local max_range = inserter_utils.get_max_range(inserter, player.force)
+        local max_range = inserter_functions.get_max_range(inserter, player.force)
         local dir = math2d.direction.vector_to_vec1_position(arm_positions[target], range)
 
         local new_range = (range % max_range) + 1
@@ -2322,14 +361,14 @@ local function on_distance_adjust(event)
             new_positions[target] = math2d.direction.to_vector(pos, new_range)
         end
 
-        inserter_utils.set_arm_positions(inserter, new_positions)
+        inserter_functions.set_arm_positions(inserter, new_positions)
         gui.update_all(inserter)
     end
 end
 
 local function on_offset_adjust(event)
     local player = game.players[event.player_index]
-    if inserter_utils.is_inserter(player.selected) then
+    if inserter_functions.is_inserter(player.selected) then
         local inserter = player.selected
 
         if not tech.check_offset_tech(player.force) then
@@ -2345,15 +384,15 @@ local function on_offset_adjust(event)
 
         local target = string.find(event.input_name, "drop", 17) and "drop" or "pickup"
         local lateral = string.find(event.input_name, "lateral", -7) ~= nil
-        local arm_positions = inserter_utils.get_arm_positions(inserter)
+        local arm_positions = inserter_functions.get_arm_positions(inserter)
         local dir = math2d.direction.from_vector(arm_positions[target])
         dir = dir % 2 == 0 and dir or 0
         local axis = (dir % 4 == 0 ~= lateral) and "y" or "x"
         local new_offset = arm_positions[target .. "_offset"]
-        new_offset[axis] = arm_positions[target .. "_offset"][axis]*-1
+        new_offset[axis] = arm_positions[target .. "_offset"][axis] * -1
         if new_offset[axis] == 0 then new_offset[axis] = 1 end
 
-        inserter_utils.set_arm_positions(inserter, { [target .. "_offset"] = new_offset })
+        inserter_functions.set_arm_positions(inserter, { [target .. "_offset"] = new_offset })
         gui.update_all(inserter)
     end
 end
@@ -2385,9 +424,9 @@ local function on_in_world_editor(event)
             return
         end
     end
-    if player.selected and inserter_utils.is_inserter(player.selected) and player.selected.position and gui.should_show(player.selected) then
-        local slim = inserter_utils.is_slim(player.selected)
-        local size = inserter_utils.get_inserter_size(player.selected)
+    if player.selected and inserter_functions.is_inserter(player.selected) and player.selected.position and gui.should_show(player.selected) then
+        local slim = inserter_functions.is_slim(player.selected)
+        local size = inserter_functions.get_inserter_size(player.selected)
         if slim then
             ---@diagnostic disable-next-line: missing-fields
             player.surface.create_entity({
@@ -2409,7 +448,7 @@ local function on_in_world_editor(event)
             return
         end
 
-        local arm_positions = inserter_utils.get_arm_positions(player.selected)
+        local arm_positions = inserter_functions.get_arm_positions(player.selected)
         global.SI_Storage[event.player_index].is_selected = true
         global.SI_Storage[event.player_index].selected_inserter.name = player.selected.name
         global.SI_Storage[event.player_index].selected_inserter.surface = player.selected.surface
@@ -2455,7 +494,7 @@ local function on_built_entity(event)
     local inserter = player.surface.find_entity(storage.selected_inserter.name, storage.selected_inserter.position)
     local inserter_ghost = player.surface.find_entity("entity-ghost", storage.selected_inserter.position)
     inserter = inserter and inserter or inserter_ghost
-    local arm_positions = inserter_utils.get_arm_positions(inserter)
+    local arm_positions = inserter_functions.get_arm_positions(inserter)
 
     local diff = math2d.position.subtract(storage.selected_inserter.position, position)
     diff = math2d.round(diff)
@@ -2478,7 +517,7 @@ local function on_built_entity(event)
         return
     end
 
-    local max_range = inserter_utils.get_max_range(inserter, player.force)
+    local max_range = inserter_functions.get_max_range(inserter, player.force)
     local range = math.max(math.abs(diff.x), math.abs(diff.y))
     if range <= max_range then
         if gui.should_cell_be_enabled(diff, max_range, player.force, inserter) then
@@ -2544,7 +583,7 @@ local function on_built_entity(event)
                 end
             end
 
-            inserter_utils.set_arm_positions(inserter, set)
+            inserter_functions.set_arm_positions(inserter, set)
             world_editor.update_positions(event.player_index, inserter, changes)
             gui.update(player, inserter)
         else
@@ -2582,7 +621,7 @@ local function on_player_cursor_stack_changed(event)
 end
 
 local function on_entity_destroyed(event)
-    if not inserter_utils.is_inserter(event.entity) then
+    if not inserter_functions.is_inserter(event.entity) then
         return
     end
     for player_index, player in pairs(game.players) do
@@ -2644,4 +683,3 @@ script.on_event(defines.events.on_robot_mined_entity, on_entity_destroyed)
 -- in-world selector for slim inserter
 -- in world selector for 2x2 inserter
 -- compatibility with renai trasportation
--- split the control.lua (it's starting to be quite big)

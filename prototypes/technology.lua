@@ -314,3 +314,81 @@ data:extend({
         order = "a-b-c-d"
     },
 })
+
+if not mods["bobinserters"] then
+	data:extend({
+		{
+			type = "technology",
+			name = "long-inserters-1",
+			icon = "__Smart_Inserters__/graphics/icons/circle.png",
+			icon_size = 64,
+			unit = {
+				count = 1,
+				ingredients = { { "automation-science-pack", 1 } },
+				time = 1,
+			},
+			order = "a",
+			hidden = true,
+		},
+		{
+			type = "technology",
+			name = "long-inserters-2",
+			icon = "__Smart_Inserters__/graphics/icons/circle.png",
+			icon_size = 64,
+			effects = {},
+			prerequisites = {},
+			unit = {
+				count = 1,
+				ingredients = { { "automation-science-pack", 1 } },
+				time = 1,
+			},
+			order = "a",
+			hidden = true,
+		},
+		{
+			type = "technology",
+			name = "near-inserters",
+			icon = "__Smart_Inserters__/graphics/icons/circle.png",
+			icon_size = 64,
+			effects = {},
+			prerequisites = {},
+			unit = {
+				count = 1,
+				ingredients = { { "automation-science-pack", 1 } },
+				time = 1,
+			},
+			order = "a",
+			hidden = true,
+		},
+		{
+			type = "technology",
+			name = "more-inserters-1",
+			icon = "__Smart_Inserters__/graphics/icons/circle.png",
+			icon_size = 64,
+			effects = {},
+			prerequisites = {},
+			unit = {
+				count = 1,
+				ingredients = { { "automation-science-pack", 1 } },
+				time = 1,
+			},
+			order = "a",
+			hidden = true,
+		},
+		{
+			type = "technology",
+			name = "more-inserters-2",
+			icon = "__Smart_Inserters__/graphics/icons/circle.png",
+			icon_size = 64,
+			effects = {},
+			prerequisites = {},
+			unit = {
+				count = 1,
+				ingredients = { { "automation-science-pack", 1 } },
+				time = 1,
+			},
+			order = "a",
+			hidden = true,
+		}
+	})
+end
