@@ -35,6 +35,7 @@ function tech.check_range_tech(force, cell_position, distance_offset)
     cell_position = math2d.position.ensure_xy(cell_position)
     distance_offset = distance_offset or 0
     local distance = math.max(math.abs(cell_position.x), math.abs(cell_position.y)) - distance_offset
+    distance = math.max(math.floor(distance), 1)
 
     local range_unlocked = force.technologies["si-unlock-range-" .. math.min(4, distance)].researched
 
