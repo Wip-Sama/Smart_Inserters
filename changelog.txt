@@ -1,8 +1,14 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.2.5
+Date: 2023-11-12
+  Bugfixes:
+    - Direction and Relative direction misconfiguration
+    - Offsets when copy pasting
+---------------------------------------------------------------------------------------------------
 Version: 1.2.4
 Date: 2023-11-12
   Bugfixes:
-    - Drop offsets were not working properly
+    - Offsets were not working properly
   Notes:
     - Hope it's the last update for today
 ---------------------------------------------------------------------------------------------------

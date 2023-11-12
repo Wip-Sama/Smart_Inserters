@@ -122,12 +122,15 @@ function inserter_functions.enforce_max_range(inserter, force)
 end
 
 function inserter_functions.calc_rotated_position(inserter, new_position, new_direction)
-    new_direction = (new_direction == 0) and 8 or new_direction
+    new_direction = new_direction == 0 and 8 or new_direction
     local spostamento = (8 - inserter.direction) - (8 - new_direction)
-    spostamento = (spostamento < 0) and (8 + spostamento) or spostamento
+    if spostamento < 0 then spostamento = 8 + spostamento end
+    local tmp_pos = 0
 
     while spostamento ~= 0 do
-        new_position = { y = new_position.x * -1, x = new_position.y }
+        tmp_pos = new_position.y * -1
+        new_position.y = new_position.x
+        new_position.x = tmp_pos
         spostamento = spostamento - 2
     end
 
@@ -136,29 +139,29 @@ end
 
 function inserter_functions.calc_rotated_offset(inserter, new_position, target)
     local old_positions = inserter_functions.get_arm_positions(inserter)
-    local target_offset = old_positions[target .. "_offset"]
 
-    if target_offset.x == 0 and target_offset.y == 0 then
-        return target_offset
+    if old_positions[target .. "_offset"].x == 0 and old_positions[target .. "_offset"].y == 0 then
+        return old_positions[target .. "_offset"]
     end
 
     local range = math.max(math.abs(old_positions[target].x), math.abs(old_positions[target].y))
-    local position = math2d.direction.from_vector(target_offset)
+
+    local position = math2d.direction.from_vector(old_positions[target .. "_offset"])
+
     local old_sector = math2d.direction.vector_to_vec1_position(old_positions[target], range)
-
     if type(new_position) == "number" then
-        new_position = inserter_functions.calc_rotated_position(inserter, target_offset, new_position)
+        new_position = inserter_functions.calc_rotated_position(inserter, old_positions[target .. "_offset"], new_position)
     end
-
     local new_sector = math2d.direction.vector_to_vec1_position(new_position, range)
 
     if old_sector ~= new_sector then
         local spostamento = (8 - old_sector) - (8 - new_sector)
-        position = (position + spostamento) % 8 + 1
-        return math2d.direction.vectors1[position]
+        position = position + spostamento
+        position = (position % 8) + 1
+        return math2d.direction["vectors1"][position]
     end
 
-    return target_offset
+    return old_positions[target .. "_offset"]
 end
 
 
