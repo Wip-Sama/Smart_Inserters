@@ -53,8 +53,19 @@ local function on_player_created(event)
     storage_functions.add_player(event.player_index)
 end
 
--- TODO check in muliplayer when changing the in-world selector updates
 local function on_entity_settings_pasted(event)
+    if event.destination.type == "inserter" then
+        event.destination.direction = event.source.direction
+        inserter_functions.enforce_max_range(event.destination, game.players[event.player_index].force)
+        storage_functions.populate_storage()
+        gui.update_all(event.destination)
+    end
+end
+
+
+-- TODO check in muliplayer when changing the in-world selector updates
+local function on_entity_settings_pasted_new(event)
+    if true then return end
     if not (inserter_functions.is_inserter(event.destination) and inserter_functions.is_inserter(event.source)) then
         return
     end
@@ -124,12 +135,14 @@ local function on_pre_entity_settings_pasted(event)
 
     copy_event.si_direction = copy_settings.si_direction and event.source.direction or event.destination.direction
 
-    drop = inserter_functions.calc_rotated_position(event.source, drop, event.destination.direction)
-    pickup = inserter_functions.calc_rotated_position(event.source, pickup, event.destination.direction)
-    drop_offset = inserter_functions.calc_rotated_offset(event.source, event.destination.direction, "drop")
-    pickup_offset = inserter_functions.calc_rotated_offset(event.source, event.destination.direction, "pickup")
-    drop_offset = math2d.position.add(math2d.position.multiply_scalar(drop_offset, 0.2), { 0.5, 0.5 })
-    pickup_offset = math2d.position.add(math2d.position.multiply_scalar(pickup_offset, 0.2), { 0.5, 0.5 })
+    if copy_settings.relative_si_direction then
+        drop = inserter_functions.calc_rotated_position(event.source, drop, event.destination.direction)
+        pickup = inserter_functions.calc_rotated_position(event.source, pickup, event.destination.direction)
+        drop_offset = inserter_functions.calc_rotated_offset(event.source, event.destination.direction, "drop")
+        pickup_offset = inserter_functions.calc_rotated_offset(event.source, event.destination.direction, "pickup")
+        drop_offset = math2d.position.add(math2d.position.multiply_scalar(drop_offset, 0.2), { 0.5, 0.5 })
+        pickup_offset = math2d.position.add(math2d.position.multiply_scalar(pickup_offset, 0.2), { 0.5, 0.5 })
+    end
 
     local new_drop = math2d.position.add(drop, drop_offset)
     local new_pickup = math2d.position.add(pickup, pickup_offset)
@@ -648,7 +661,7 @@ script.on_event(defines.events.on_gui_opened, on_gui_opened)
 script.on_event(defines.events.on_gui_click, on_gui_click)
 script.on_event(defines.events.on_player_rotated_entity, on_player_rotated_entity)
 script.on_event(defines.events.on_entity_settings_pasted, on_entity_settings_pasted)
-script.on_event(defines.events.on_pre_entity_settings_pasted, on_pre_entity_settings_pasted)
+--script.on_event(defines.events.on_pre_entity_settings_pasted, on_pre_entity_settings_pasted)
 
 -- Shortcut events
 script.on_event("smart-inserters-drop-rotate", on_rotation_adjust)

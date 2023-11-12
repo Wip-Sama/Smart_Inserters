@@ -1,9 +1,10 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.2.5
 Date: 2023-11-12
-  Bugfixes:
-    - Direction and Relative direction misconfiguration
-    - Offsets when copy pasting
+  Changes:
+    - Reverted everything to 1.1.2
+  Notes:
+    - I'm truly sorry for this huge mess, I got over exited over this mod and ruined everything, I will try to be more careful in the future, for now I reverted everything to where it was still working, sorry again, Ill fix this taking my time to make sure it works fine
 ---------------------------------------------------------------------------------------------------
 Version: 1.2.4
 Date: 2023-11-12
