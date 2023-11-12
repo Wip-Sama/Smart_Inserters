@@ -39,8 +39,8 @@ end
 
 local function on_configuration_changed(cfg_changed_data)
     storage_functions.populate_storage()
-    gui.create_all()
     copy_gui.create_all()
+    gui.create_all()
     gui.update_all()
     tech.migrate_all()
     game.print({ "smart-inserters.experimental" })

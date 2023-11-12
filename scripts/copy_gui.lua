@@ -4,8 +4,8 @@ local mod_gui = require("mod-gui")
 local copy_gui = {}
 
 function copy_gui.delete(player)
-    if player.gui.relative.smart_inserters then
-        player.gui.relative.smart_inserters.destroy()
+    if player.gui.screen.smart_inserters then
+        player.gui.screen.smart_inserters.destroy()
     end
 end
 
