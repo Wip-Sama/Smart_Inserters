@@ -1,6 +1,18 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.2.4
+Date: 2023-11-12
+  Bugfixes:
+    - Drop offsets were not working properly
+  Notes:
+    - Hope it's the last update for today
+---------------------------------------------------------------------------------------------------
+Version: 1.2.3
+Date: 2023-11-12
+  Bugfixes:
+    - still crashing while pasting... hope it's fixed now
+---------------------------------------------------------------------------------------------------
 Version: 1.2.2
-Date: 2023-11-10
+Date: 2023-11-12
   Changes:
     - Code cleanup
   Bugfixes:
@@ -12,7 +24,7 @@ Date: 2023-11-10
   Bugfixes:
     - Copy pasting any entity other than an inserter would crash the mod
 ---------------------------------------------------------------------------------------------------
-Version: 1.2
+Version: 1.2.0
 Date: 2023-11-10
   Added:
     - Ability to toggle what to copy when copy/pasting an inserter over another (does not work with blueprint)

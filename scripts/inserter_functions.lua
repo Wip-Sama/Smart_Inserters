@@ -192,57 +192,96 @@ function inserter_functions.set_arm_positions(inserter, positions)
     local slims = slim and orientation == "S"
     local slimo = slim and orientation == "O"
 
-    local function calculate_new_position(base_tile, target_position, edit_condition)
-        local new_tile = base_tile
+    if positions.pickup or positions.pickup_offset or positions.pickup_adjust then
+        local base_tile, base_offset = math2d.position.split(inserter.position)
+        local old_pickup_tile, old_pickup_offset = math2d.position.split(inserter.pickup_position)
+        local new_pickup_tile, new_pickup_offset
 
-        if target_position then
+        if positions.pickup then
             local edit = { x = 0, y = 0 }
             if slim then
-                if edit_condition(target_position) then
-                    edit = target_position.y < 0 and { 0, -1 } or { -1, 0 }
+                if (slims or slimn) and positions.pickup.y >= 0 then -- parte bassa / lower half
+                    edit.y = edit.y - 1
+                elseif (slime or slimo) and positions.pickup.x >= 0 then -- parte destra / right
+                    edit.x = edit.x - 1
                 end
             elseif inserter_size.z >= 2 then
-                if target_position.x < 0 then
+                if positions.pickup.x < 0 then
                     edit.x = edit.x - (inserter_size.z - 1)
                 end
-                if target_position.y < 0 then
+                if positions.pickup.y < 0 then
                     edit.y = edit.y - (inserter_size.z - 1)
                 end
             end
-            new_tile = math2d.position.add(base_tile, math2d.position.add(target_position, edit))
+            new_pickup_tile = math2d.position.add(base_tile, { positions.pickup.x + edit.x, positions.pickup.y + edit.y })
+        else
+            new_pickup_tile = old_pickup_tile
         end
 
-        return new_tile
-    end
+        if positions.pickup_adjust then
+            new_pickup_tile = {
+                x = new_pickup_tile.x + positions.pickup_adjust.x,
+                y = new_pickup_tile.y + positions.pickup_adjust.y
+            }
+        end
 
-    local function calculate_new_offset(target_offset, old_offset)
-        return target_offset and math2d.position.add(math2d.position.multiply_scalar(target_offset, 0.2), { 0.5, 0.5 }) or old_offset
-    end
-
-    if positions.pickup or positions.pickup_offset or positions.pickup_adjust then
-        local base_tile, _ = math2d.position.split(inserter.position)
-        local old_pickup_tile, old_pickup_offset = math2d.position.split(inserter.pickup_position)
-
-        local new_pickup_tile = calculate_new_position(
-            base_tile, positions.pickup, function(pos) return (slims or slimn) and pos.y >= 0 or (slime or slimo) and pos.x >= 0 end
-        )
-
-        new_pickup_tile = positions.pickup_adjust and math2d.position.add(new_pickup_tile, positions.pickup_adjust) or new_pickup_tile
-        local new_pickup_offset = calculate_new_offset(positions.pickup_offset, old_pickup_offset)
+        if positions.pickup_offset then
+            new_pickup_offset = math2d.position.add(
+                math2d.position.multiply_scalar(positions.pickup_offset, 0.2), { 0.5, 0.5 }
+            )
+        else
+            new_pickup_offset = old_pickup_offset
+        end
 
         inserter.pickup_position = math2d.position.add(new_pickup_tile, new_pickup_offset)
     end
 
     if positions.drop or positions.drop_offset or positions.drop_adjust then
-        local base_tile, _ = math2d.position.split(inserter.position)
+        local base_tile, base_offset = math2d.position.split(inserter.position)
         local old_drop_tile, old_drop_offset = math2d.position.split(inserter.drop_position)
+        local new_drop_tile, new_drop_offset
 
-        local new_drop_tile = calculate_new_position(
-            base_tile, positions.drop, function(pos) return (slims or slimn) and pos.y < 0 or (slime or slimo) and pos.x < 0 end
-        )
+        if positions.drop then
+            local edit = { x = 0, y = 0 }
+            if slim then
+                if (slims or slimn) and positions.drop.y < 0 then      -- parte alta / high half
+                    new_drop_tile = math2d.position.add(base_tile, positions.drop)
+                elseif (slims or slimn) and positions.drop.y >= 0 then -- parte bassa / lower half
+                    new_drop_tile = math2d.position.add(base_tile, { positions.drop.x, positions.drop.y - 1 })
+                elseif (slime or slimo) and positions.drop.x < 0 then  -- parte sinistra / left
+                    new_drop_tile = math2d.position.add(base_tile, positions.drop)
+                elseif (slime or slimo) and positions.drop.x >= 0 then -- parte destra / right
+                    new_drop_tile = math2d.position.add(base_tile, { positions.drop.x - 1, positions.drop.y })
+                end
+            elseif inserter_size.z == 2 then
+                if positions.drop.x < 0 then
+                    edit.x = edit.x - (inserter_size.z - 1)
+                end
+                if positions.drop.y < 0 then
+                    edit.y = edit.y - (inserter_size.z - 1)
+                end
+                new_drop_tile = math2d.position.add(base_tile, { positions.drop.x + edit.x, positions.drop.y + edit.y })
+            else
+                new_drop_tile = math2d.position.add(base_tile, positions.drop)
+            end
+        else
+            new_drop_tile = old_drop_tile
+        end
 
-        new_drop_tile = positions.drop_adjust and math2d.position.add(new_drop_tile, positions.drop_adjust) or new_drop_tile
-        local new_drop_offset = calculate_new_offset(positions.drop_offset, old_drop_offset)
+        if positions.drop_adjust then
+            new_drop_tile = {
+                x = new_drop_tile.x + positions.drop_adjust.x,
+                y = new_drop_tile.y + positions.drop_adjust.y
+            }
+        end
+
+        if positions.drop_offset then
+            new_drop_offset = math2d.position.add(
+                math2d.position.multiply_scalar(positions.drop_offset, 0.2), { 0.5, 0.5 }
+            )
+        else
+            new_drop_offset = old_drop_offset
+        end
 
         inserter.drop_position = math2d.position.add(new_drop_tile, new_drop_offset)
     end

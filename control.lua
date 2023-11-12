@@ -55,7 +55,7 @@ end
 
 -- TODO check in muliplayer when changing the in-world selector updates
 local function on_entity_settings_pasted(event)
-    if not event.destination.type == "inserter" then
+    if not (inserter_functions.is_inserter(event.destination) and inserter_functions.is_inserter(event.source)) then
         return
     end
 
