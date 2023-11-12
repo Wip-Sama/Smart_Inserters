@@ -5,6 +5,7 @@ Date: 2023-11-10
     - Code cleanup
   Bugfixes:
     - Copy pasting filtered inserter in some ases would crash the mod
+    - localization fixes
 ---------------------------------------------------------------------------------------------------
 Version: 1.2.1
 Date: 2023-11-10

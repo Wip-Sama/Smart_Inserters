@@ -1,4 +1,5 @@
 local storage_functions = require("scripts/storage_functions")
+local mod_gui = require("mod-gui")
 
 local copy_gui = {}
 
