@@ -14,6 +14,7 @@ local copy_gui = require("scripts.copy_gui")
 local world_editor = require("scripts.world_selector")
 local inserter_functions = require("scripts.inserter_functions")
 local storage_functions = require("scripts.storage_functions")
+local util = require("scripts.util")
 
 -- ------------------------------
 -- Settings
@@ -28,6 +29,7 @@ local offset_selector = settings.startup["si-offset-selector"].value
 local function on_init()
     global.SI_Storage = {}
     storage_functions.populate_storage()
+    inserter_functions.calculate_max_inserters_range()
     copy_gui.create_all()
     gui.create_all()
 end
@@ -39,6 +41,7 @@ end
 
 local function on_configuration_changed(cfg_changed_data)
     storage_functions.populate_storage()
+    inserter_functions.calculate_max_inserters_range()
     copy_gui.create_all()
     gui.create_all()
     gui.update_all()
@@ -417,7 +420,7 @@ local function on_in_world_editor(event)
         local is_pickup_changer = (player.cursor_stack.name == "si-in-world-pickup-changer")
         if is_drop_changer and is_drop == "pickup" then
             player_functions.safely_change_cursor(player, "si-in-world-pickup-changer")
-            player_functions.configure_pickup_drop_changher(player, is_drop)
+            player_functions.configure_pickup_drop_changer(player, is_drop)
             return
         elseif is_drop_changer and is_drop == "drop" then
             global.SI_Storage[event.player_index]["is_selected"] = false
@@ -426,7 +429,7 @@ local function on_in_world_editor(event)
             return
         elseif is_pickup_changer and is_drop == "drop" then
             player_functions.safely_change_cursor(player, "si-in-world-drop-changer")
-            player_functions.configure_pickup_drop_changher(player, is_drop)
+            player_functions.configure_pickup_drop_changer(player, is_drop)
             return
         elseif is_pickup_changer and is_drop == "pickup" then
             global.SI_Storage[event.player_index]["is_selected"] = false
@@ -469,7 +472,7 @@ local function on_in_world_editor(event)
         global.SI_Storage[event.player_index].selected_inserter.pickup = arm_positions.pickup
         world_editor.draw_positions(event.player_index, player.selected)
         player_functions.safely_change_cursor(player, "si-in-world-" .. is_drop .. "-changer")
-        player_functions.configure_pickup_drop_changher(player, is_drop)
+        player_functions.configure_pickup_drop_changer(player, is_drop)
     end
 end
 
@@ -531,7 +534,7 @@ local function on_built_entity(event)
     local max_range = inserter_functions.get_max_range(inserter, player.force)
     local range = math.max(math.abs(diff.x), math.abs(diff.y))
     if range <= max_range then
-        if gui.should_cell_be_enabled(diff, max_range, player.force, inserter) then
+        if util.should_cell_be_enabled(diff, max_range, player.force, inserter) then
             math2d.direction.from_vector(diff, range)
             local set = {}
             local changes = {}

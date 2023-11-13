@@ -14,6 +14,7 @@ local function deepcopy(object)
 end
 
 function storage_functions.populate_storage()
+    global.SI_Storage["inserters_range"] = settings.startup["si-max-inserters-range"].value
     for player_index, _ in pairs(game.players) do
         storage_functions.add_player(player_index)
 
@@ -89,15 +90,14 @@ function storage_functions.add_player(player_index)
         position_grid = {}
     }
 
-    for x = -5, 5 do
+    for x = -global.SI_Storage["inserters_range"], global.SI_Storage["inserters_range"] do
         local x_string = tostring(x)
         storage.selected_inserter.position_grid[x_string] = {}
-        for y = -5, 5 do
+        for y = -global.SI_Storage["inserters_range"], global.SI_Storage["inserters_range"] do
             storage.selected_inserter.position_grid[x_string][tostring(y)] = { loaded = false }
         end
     end
 end
-
 
 function storage_functions.purge_copy_event_data(player_index)
     storage_functions.ensure_data(player_index)
@@ -133,6 +133,10 @@ function storage_functions.ensure_data(player_index)
 
     if global.SI_Storage == nil then
         global.SI_Storage = {}
+    end
+
+    if not global.SI_Storage["inserters_range"] then
+        global.SI_Storage["inserters_range"] = settings.startup["si-max-inserters-range"].value
     end
 
     if player_index and not global.SI_Storage[player_index] then

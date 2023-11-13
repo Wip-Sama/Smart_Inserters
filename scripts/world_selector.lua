@@ -13,8 +13,8 @@ local math2d = require("scripts.extended_math2d")
 local world_editor = {}
 
 function world_editor.draw_positions(player_index, inserter)
-    local player        = game.players[player_index]
-    local range         = inserter_functions.get_max_range(inserter, player.force)
+    local player = game.players[player_index]
+    local range = inserter_functions.get_max_range(inserter, player.force)
     local arm_positions = inserter_functions.get_arm_positions(inserter)
     local enabled_cell, is_drop, is_pickup, render_id
     storage_functions.ensure_data(player_index)
@@ -56,50 +56,102 @@ function world_editor.update_positions(player_index, inserter, changes)
     local player = game.players[player_index]
     local arm_positions = inserter_functions.get_arm_positions(inserter)
     local range = inserter_functions.get_max_range(inserter, player.force)
+    local render_id, enabled_cell
     storage_functions.ensure_data(player_index)
-
-    local function draw_rectangle_at_position(position, color_key)
-        local render_id = rendering.draw_rectangle {
-            color = colors[color_key],
-            filled = true,
-            left_top = { x = arm_positions.base.x + position.x, y = arm_positions.base.y + position.y },
-            right_bottom = { x = arm_positions.base.x + position.x + 1, y = arm_positions.base.y + position.y + 1 },
-            surface = player.surface,
-            forces = { player.force },
-            players = { player },
-            visible = true,
-            draw_on_ground = false,
-            only_in_alt_mode = false
-        }
-        return render_id
-    end
-
-    local function destroy_render_id(position)
-        local render_id = global.SI_Storage[player_index].selected_inserter.position_grid[tostring(position.x)][tostring(position.y)].render_id
-        rendering.destroy(render_id)
-    end
 
     if changes.pickup then
         if changes.pickup.old then
-            destroy_render_id(changes.pickup.old)
-            local enabled_cell = util.should_cell_be_enabled(changes.pickup.old, range, player.force, inserter)
-            draw_rectangle_at_position(changes.pickup.old, enabled_cell and "can_select" or "cant_select")
+            render_id = global.SI_Storage[player_index].selected_inserter.position_grid[tostring(changes.pickup.old.x)]
+                [tostring(changes.pickup.old.y)].render_id
+            rendering.destroy(render_id)
+            enabled_cell = util.should_cell_be_enabled(changes.pickup.old, range, player.force, inserter)
+            render_id = rendering.draw_rectangle {
+                color = colors[enabled_cell and "can_select" or "cant_select"],
+                filled = true,
+                left_top = { arm_positions.base.x + changes.pickup.old.x, arm_positions.base.y + changes.pickup.old.y },
+                right_bottom = { arm_positions.base.x + changes.pickup.old.x + 1,
+                    arm_positions.base.y + changes.pickup.old.y + 1 },
+                surface = player.surface,
+                forces = { player.force },
+                players = { player },
+                visible = true,
+                draw_on_ground = false,
+                only_in_alt_mode = false
+            }
+            global.SI_Storage[player_index].selected_inserter.position_grid[tostring(changes.pickup.old.x)][tostring(changes.pickup.old.y)] = {
+                loaded = true,
+                render_id = render_id
+            }
         end
         if changes.pickup.new then
-            destroy_render_id(changes.pickup.new)
-            draw_rectangle_at_position(changes.pickup.new, "pickup")
+            render_id = global.SI_Storage[player_index].selected_inserter.position_grid[tostring(changes.pickup.new.x)]
+                [tostring(changes.pickup.new.y)].render_id
+            rendering.destroy(render_id)
+            render_id = rendering.draw_rectangle {
+                color = colors["pickup"],
+                filled = true,
+                left_top = { arm_positions.base.x + changes.pickup.new.x, arm_positions.base.y + changes.pickup.new.y },
+                right_bottom = { arm_positions.base.x + changes.pickup.new.x + 1,
+                    arm_positions.base.y + changes.pickup.new.y + 1 },
+                surface = player.surface,
+                forces = { player.force },
+                players = { player },
+                visible = true,
+                draw_on_ground = false,
+                only_in_alt_mode = false
+            }
+            global.SI_Storage[player_index].selected_inserter.position_grid[tostring(changes.pickup.new.x)][tostring(changes.pickup.new.y)] = {
+                loaded = true,
+                render_id = render_id
+            }
         end
     end
 
     if changes.drop then
         if changes.drop.old and not changes.pickup then
-            destroy_render_id(changes.drop.old)
-            local enabled_cell = util.should_cell_be_enabled(changes.drop.old, range, player.force, inserter)
-            draw_rectangle_at_position(changes.drop.old, enabled_cell and "can_select" or "cant_select")
+            render_id = global.SI_Storage[player_index].selected_inserter.position_grid[tostring(changes.drop.old.x)]
+                [tostring(changes.drop.old.y)].render_id
+            rendering.destroy(render_id)
+            enabled_cell = util.should_cell_be_enabled(changes.drop.old, range, player.force, inserter)
+            render_id = rendering.draw_rectangle {
+                color = colors[enabled_cell and "can_select" or "cant_select"],
+                filled = true,
+                left_top = { arm_positions.base.x + changes.drop.old.x, arm_positions.base.y + changes.drop.old.y },
+                right_bottom = { arm_positions.base.x + changes.drop.old.x + 1,
+                    arm_positions.base.y + changes.drop.old.y + 1 },
+                surface = player.surface,
+                forces = { player.force },
+                players = { player },
+                visible = true,
+                draw_on_ground = false,
+                only_in_alt_mode = false
+            }
+            global.SI_Storage[player_index].selected_inserter.position_grid[tostring(changes.drop.old.x)][tostring(changes.drop.old.y)] = {
+                loaded = true,
+                render_id = render_id
+            }
         end
         if changes.drop.new then
-            destroy_render_id(changes.drop.new)
-            draw_rectangle_at_position(changes.drop.new, "drop")
+            render_id = global.SI_Storage[player_index].selected_inserter.position_grid[tostring(changes.drop.new.x)]
+                [tostring(changes.drop.new.y)].render_id
+            rendering.destroy(render_id)
+            render_id = rendering.draw_rectangle {
+                color = colors["drop"],
+                filled = true,
+                left_top = { arm_positions.base.x + changes.drop.new.x, arm_positions.base.y + changes.drop.new.y },
+                right_bottom = { arm_positions.base.x + changes.drop.new.x + 1,
+                    arm_positions.base.y + changes.drop.new.y + 1 },
+                surface = player.surface,
+                forces = { player.force },
+                players = { player },
+                visible = true,
+                draw_on_ground = false,
+                only_in_alt_mode = false
+            }
+            global.SI_Storage[player_index].selected_inserter.position_grid[tostring(changes.drop.new.x)][tostring(changes.drop.new.y)] = {
+                loaded = true,
+                render_id = render_id
+            }
         end
     end
 
@@ -107,6 +159,7 @@ function world_editor.update_positions(player_index, inserter, changes)
         world_editor.draw_positions(player_index, inserter)
     end
 end
+
 
 function world_editor.update_all_positions(inserter)
     local player_storage

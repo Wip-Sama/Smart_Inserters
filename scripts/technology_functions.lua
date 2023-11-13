@@ -3,7 +3,22 @@ local range_technologies = settings.startup["si-range-technologies"].value
 local offset_selector_technologies = settings.startup["si-offset-technologies"].value
 
 local math2d = require("scripts.extended_math2d")
+local tech_lookup_table = {}
 local tech = {}
+
+-- Need further development
+local function generate_lookup_table()
+    local enabled = true
+    for x = -8, 8 do
+        tech_lookup_table[x] = {}
+        for y = -8, 8 do
+            if y == x and x == 0 then
+                enabled = false
+            end
+            tech_lookup_table[x][y] = enabled
+        end
+    end
+end
 
 function tech.check_offset_tech(force)
     if not offset_selector_technologies then
@@ -36,8 +51,20 @@ function tech.check_range_tech(force, cell_position, distance_offset)
     distance_offset = distance_offset or 0
     local distance = math.max(math.abs(cell_position.x), math.abs(cell_position.y)) - distance_offset
     distance = math.max(math.floor(distance), 1)
-
-    local range_unlocked = force.technologies["si-unlock-range-" .. math.min(4, distance)].researched
+    local range_unlocked = false
+    if settings.startup["si-range-adder"].value == "incremental" then
+        if force.technologies["si-unlock-range-" .. math.min(4, distance)].researched and force.technologies["si-unlock-range-" .. math.min(4, distance)].prototype.hidden == false then
+            range_unlocked = true
+        elseif force.technologies["si-unlock-range-3"].researched and force.technologies["si-unlock-range-3"].prototype.hidden == false then
+            range_unlocked = true
+        elseif force.technologies["si-unlock-range-2"].researched and force.technologies["si-unlock-range-2"].prototype.hidden == false then
+            range_unlocked = true
+        elseif force.technologies["si-unlock-range-1"].researched and force.technologies["si-unlock-range-1"].prototype.hidden == false then
+            range_unlocked = true
+        end
+    else
+        range_unlocked = force.technologies["si-unlock-range-" .. math.min(4, distance)].researched
+    end
 
     return distance <= 1 or range_unlocked
 end

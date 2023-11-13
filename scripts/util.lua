@@ -19,8 +19,18 @@ function util.merge_tables(target, source)
     end
 end
 
-function util.generate_lookup_table()
-    -- coming in the followings updates
+-- Need further development
+local function generate_lookup_table()
+    local enabled = true
+    for x = -8, 8 do
+        cell_enabled_lookup_table[x] = {}
+        for y = -8, 8 do
+            if y == x and x == 0 then
+                enabled = false
+            end
+            cell_enabled_lookup_table[x][y] = enabled
+        end
+    end
 end
 
 function util.should_cell_be_enabled(position, inserter_range, force, inserter, slimv, slimo, slim)

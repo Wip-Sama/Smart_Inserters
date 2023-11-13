@@ -1,4 +1,3 @@
-local inserters_range = settings.startup["si-max-inserters-range"].value
 local directional_slim_inserter = settings.startup["si-directional-slim-inserter"].value
 local offset_selector = settings.startup["si-offset-selector"].value
 
@@ -15,6 +14,7 @@ local util = require("scripts.util")
 local gui = {}
 
 function gui.create_pick_drop_editor(flow_content)
+    local inserters_max_range = inserter_functions.get_max_inserters_range()
     -- Pickup/Drop label
     flow_content.add({
         type = "label",
@@ -23,20 +23,18 @@ function gui.create_pick_drop_editor(flow_content)
         style = "heading_2_label"
     })
 
-    local table_range = inserters_range
-
     -- Pickup/Drop Grid
     local table_position = flow_content.add({
         type = "table",
         name = "table_position",
-        column_count = 1 + table_range * 2
+        column_count = 1 + inserters_max_range * 2
     })
     table_position.style.horizontal_spacing = 1
     table_position.style.vertical_spacing = 1
 
-    for y = -table_range, table_range, 1 do
-        for x = -table_range, table_range, 1 do
-            local pos_suffix = "_" .. tostring(x + table_range + 1) .. "_" .. tostring(y + table_range + 1)
+    for y = -inserters_max_range, inserters_max_range, 1 do
+        for x = -inserters_max_range, inserters_max_range, 1 do
+            local pos_suffix = "_" .. tostring(x + inserters_max_range + 1) .. "_" .. tostring(y + inserters_max_range + 1)
 
             if x == 0 and y == 0 then
                 local sprite = table_position.add({ type = "sprite", name = "sprite_inserter", sprite = "item/inserter" })
@@ -65,7 +63,7 @@ function gui.create_bigger_inserter_editor(flow_content, inserter_type)
 end
 
 function gui.create_offset_editor(flow_offset, offset_name)
-    local table_range = inserters_range
+    local inserters_max_range = inserter_functions.get_max_inserters_range()
     local flow_editor = flow_offset.add({
         type = "flow",
         name = "flow_" .. offset_name,
@@ -90,7 +88,7 @@ function gui.create_offset_editor(flow_offset, offset_name)
     for y = 1, 3, 1 do
         for x = 1, 3, 1 do
             local button_name = "button_" .. offset_name .. "_offset_" ..
-                tostring(x + table_range + 1) .. "_" .. tostring(y + table_range + 1)
+                tostring(x + inserters_max_range + 1) .. "_" .. tostring(y + inserters_max_range + 1)
             local button = table_editor.add({
                 type = "sprite-button",
                 name = button_name,
@@ -213,7 +211,6 @@ end
 
 function gui.update(player, inserter)
     local gui_instance = player.gui.relative.smart_inserters.frame_content.flow_content
-    local inserter = inserter
     local table_range = (gui_instance.pick_drop_flow.pick_drop_housing.table_position.column_count - 1) / 2
     local inserter_range = inserter_functions.get_max_range(inserter, player.force)
     local arm_positions = inserter_functions.get_arm_positions(inserter)
@@ -312,9 +309,14 @@ function gui.update(player, inserter)
             idx = idx + 1
             local button = gui_instance.pick_drop_flow.pick_drop_housing.table_position.children[idx]
             if button.type == "sprite-button" then
-                button.enabled = util.should_cell_be_enabled({ x = x, y = y }, inserter_range, player.force, inserter,
-                    (slimn or slims), (slimo or slime), slim
-                )
+
+                if math.max(math.abs(x), math.abs(y)) > inserter_range then
+                    button.enabled = false
+                else
+                    button.enabled = util.should_cell_be_enabled({ x = x, y = y }, inserter_range, player.force, inserter,
+                        (slimn or slims), (slimo or slime), slim
+                    )
+                end
 
                 if math2d.position.equal(arm_positions.drop, { x, y }) then
                     if directional_slim_inserter and slim then

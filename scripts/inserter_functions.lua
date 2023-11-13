@@ -1,6 +1,5 @@
-local inserters_range = settings.startup["si-max-inserters-range"].value
-
 local math2d = require("scripts.extended_math2d")
+local storage_functions = require("scripts.storage_functions")
 local inserter_functions = {}
 
 function inserter_functions.get_prototype(inserter)
@@ -8,6 +7,32 @@ function inserter_functions.get_prototype(inserter)
         return inserter.ghost_prototype
     end
     return inserter.prototype
+end
+
+function inserter_functions.calculate_max_inserters_range()
+    storage_functions.ensure_data()
+    if settings.startup["si-range-adder"].value ~= "incremental" then
+        global.SI_Storage["inserters_range"] = settings.startup["si-max-inserters-range"].value
+    end
+
+    local max_range = 0
+    for _, prototype in pairs(game.entity_prototypes) do
+        if prototype.type == "inserter" then
+            local inserter = prototype
+            local prototype = inserter.object_name == "LuaEntity" and inserter_functions.get_prototype(inserter) or inserter
+            local pickup_pos = math2d.position.tilepos(math2d.position.add(prototype.inserter_pickup_position, { 0.5, 0.5 }))
+            local drop_pos = math2d.position.tilepos(math2d.position.add(prototype.inserter_drop_position, { 0.5, 0.5 }))
+            local inserter_range = math.max(math.abs(pickup_pos.x), math.abs(pickup_pos.y), math.abs(drop_pos.x),
+                math.abs(drop_pos.y))
+            max_range = math.max(inserter_range, max_range)
+        end
+    end
+    local somma = settings.startup["si-max-inserters-range"].value+max_range
+    global.SI_Storage["inserters_range"] = somma
+end
+
+function inserter_functions.get_max_inserters_range()
+    return global.SI_Storage["inserters_range"]
 end
 
 function inserter_functions.get_inserter_size(inserter)
@@ -70,7 +95,7 @@ function inserter_functions.get_max_range(inserter, force)
     local range_adder_setting = settings.startup["si-range-adder"].value
 
     if range_adder_setting == "equal" then
-        return inserters_range
+        return global.SI_Storage["inserters_range"]
     end
 
     local prototype = inserter.object_name == "LuaEntity" and inserter_functions.get_prototype(inserter) or inserter
@@ -83,17 +108,17 @@ function inserter_functions.get_max_range(inserter, force)
         return inserter_range
     elseif range_adder_setting == "incremental" then
         local added_range = 0
-        if force.technologies["si-unlock-range-4"].researched then
+        if force.technologies["si-unlock-range-4"].researched and force.technologies["si-unlock-range-4"].prototype.hidden == false then
             added_range = 4
-        elseif force.technologies["si-unlock-range-3"].researched then
+        elseif force.technologies["si-unlock-range-3"].researched and force.technologies["si-unlock-range-3"].prototype.hidden == false then
             added_range = 3
-        elseif force.technologies["si-unlock-range-2"].researched then
+        elseif force.technologies["si-unlock-range-2"].researched and force.technologies["si-unlock-range-2"].prototype.hidden == false then
             added_range = 2
-        elseif force.technologies["si-unlock-range-1"].researched then
+        elseif force.technologies["si-unlock-range-1"].researched and force.technologies["si-unlock-range-1"].prototype.hidden == false then
             added_range = 1
         end
         ---@diagnostic disable-next-line: param-type-mismatch
-        return math.min(inserter_range + added_range, inserters_range)
+        return math.min(inserter_range + added_range, global.SI_Storage["inserters_range"])
     end
 end
 

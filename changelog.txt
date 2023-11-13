@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.2.7
+Date: 2023-??-??
+  Changes:
+    - Inserters in incremental setting have different max height depending on the inserter type
+  Bugfixes:
+    - World selector was not working properly
+---------------------------------------------------------------------------------------------------
 Version: 1.2.6
 Date: 2023-11-12
   Bugfixes:
