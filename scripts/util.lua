@@ -1,11 +1,14 @@
 local single_line_slim_inserter = settings.startup["si-single-line-slim-inserter"].value
 
 local tech = require("scripts.technology_functions")
-local inserter_functions = require("scripts.inserter_functions")
 local math2d = require("scripts.extended_math2d")
 
 local cell_enabled_lookup_table = {}
 local util = {}
+
+local blacklist = {}
+blacklist.mods = { "miniloader", "RenaiTransportation" }
+blacklist.entities = {}
 
 function util.extend_table(target, source)
     for _, value in ipairs(source) do
@@ -47,7 +50,7 @@ function util.should_cell_be_enabled(position, inserter_range, force, inserter, 
 
     --Incremental
     if settings.startup["si-range-adder"].value == "incremental" and inserter.prototype then
-        default_range = inserter_functions.inserter_default_range(inserter.prototype)
+        default_range = util.inserter_default_range(inserter.prototype)
     end
 
     if in_inserter_range and tech.check_tech(force, position, default_range) then
@@ -71,6 +74,46 @@ function util.should_cell_be_enabled(position, inserter_range, force, inserter, 
     end
     return false
 
+end
+
+function util.check_blacklist(entity)
+    --What an ugly ass piece of code... I rellay hate checking strings in this way to filter something, it's reliability is below 0...
+    local prototype = script.get_prototype_history(entity.type, entity.name)
+
+    for _, v in pairs(blacklist.mods) do
+        if string.find(prototype.created, v) then
+            return false
+        end
+    end
+
+    for _, v in pairs(blacklist.entities) do
+        if string.find(entity.name, v) then
+            return false
+        end
+    end
+
+    return true
+end
+
+function util.inserter_default_range(inserter)
+    local collision_box_total = 0.2
+
+    if inserter.collision_box then
+        local collision_box_1 = math2d.position.ensure_xy(inserter.collision_box.left_top)
+        local collision_box_2 = math2d.position.ensure_xy(inserter.collision_box.right_bottom)
+        local collision_box_1_max = math.max(math.abs(collision_box_1.x), math.abs(collision_box_1.y))
+        local collision_box_2_max = math.max(math.abs(collision_box_2.x), math.abs(collision_box_2.y))
+        collision_box_total = collision_box_1_max + collision_box_2_max
+    end
+
+    local biggest = { x = 0, y = 0, z = 0 }
+    local pickup_position = math2d.position.ensure_xy(inserter.inserter_pickup_position)
+    local insert_position = math2d.position.ensure_xy(inserter.inserter_drop_position)
+    biggest.x = math.max(math.abs(pickup_position.x), math.abs(insert_position.x))
+    biggest.y = math.max(math.abs(pickup_position.y), math.abs(insert_position.y))
+    biggest.z = math.max(biggest.x, biggest.y) - collision_box_total
+
+    return biggest.z
 end
 
 return util
