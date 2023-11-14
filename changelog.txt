@@ -2,29 +2,32 @@
 Version: 1.2.7
 Date: 2023-11-13
   Changes:
-    - Inserters in incremental setting have different max height depending on the inserter type
+    - Inserters in incremental settings have different max heights depending on the inserter type
+    - Reworked a bit the changelog
+    - Reworked a bit the English localization
   Bugfixes:
     - World selector was not working properly
     - The copy/past configurator is now back online and should work properly
+    - Technologies were resetting after updating
 ---------------------------------------------------------------------------------------------------
 Version: 1.2.6
 Date: 2023-11-12
   Bugfixes:
-    - Incremental setting now work properly again
+    - Incremental setting now works properly again
 ---------------------------------------------------------------------------------------------------
 Version: 1.2.5
 Date: 2023-11-12
   Changes:
     - Reverted everything to 1.1.2
   Notes:
-    - I'm truly sorry for this huge mess, I got over exited over this mod and ruined everything, I will try to be more careful in the future, for now I reverted everything to where it was still working, sorry again, Ill fix this taking my time to make sure it works fine
+    - I'm truly sorry for this huge mess, I got excited over this mod and ruined everything, I will try to be more careful in the future, for now, I reverted everything to where it was still working, sorry again, I'll fix this taking my time to make sure it works fine
 ---------------------------------------------------------------------------------------------------
 Version: 1.2.4
 Date: 2023-11-12
   Bugfixes:
     - Offsets were not working properly
   Notes:
-    - Hope it's the last update for today
+    - I hope it's the last update for today
 ---------------------------------------------------------------------------------------------------
 Version: 1.2.3
 Date: 2023-11-12
@@ -36,20 +39,20 @@ Date: 2023-11-12
   Changes:
     - Code cleanup
   Bugfixes:
-    - Copy pasting filtered inserter in some ases would crash the mod
+    - Copy-pasting filtered inserter in some cases would crash the mod
     - localization fixes
 ---------------------------------------------------------------------------------------------------
 Version: 1.2.1
 Date: 2023-11-10
   Bugfixes:
-    - Copy pasting any entity other than an inserter would crash the mod
+    - Copy-pasting any entity other than an inserter would crash the mod
 ---------------------------------------------------------------------------------------------------
 Version: 1.2.0
 Date: 2023-11-10
   Added:
     - Ability to toggle what to copy when copy/pasting an inserter over another (does not work with blueprint)
   Changes:
-    - Better integration of the in-world selector with the copy paste
+    - Better integration of the in-world selector with the copy-paste
     - Now the pickup/drop offset shortcuts alternate between far and near instead of 3 positions
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.2
@@ -59,33 +62,33 @@ Date: 2023-10-28
     - tech difficulty selector (starting settings)
     - Incremental range setting
   Bugfixes:
-    - Item would dron on the floor when activating the in-world selector if you had a single slot available
+    - Item would drop on the floor when activating the in-world selector if you had a single slot available
     - pickup/drop selector items are no longer put into the player inventory when swapping them
     - technologies were defined with 4 mipmaps while having 1
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.1
 Date: 2023-10-27
   Changes:
-    - Item placed by the in-world selector are now centered on the tile
+    - Items placed by the in-world selector are now centered on the tile
   Bugfixes:
     - Now instead of destroying the item in your cursor it will be placed inside your inventory or dropped on the floor while using the in-world selector
-    - Fixed mod crash when using in world editor on miniloader (this feature is now disabled)
+    - Fixed mod crash when using the in-world editor on mini loader (this feature is now disabled)
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.0
 Date: 2023-10-26
   Added:
-    - a new way to change inserter drop/pickup without opening it's gui (to change the offset you need to use the shortcut)
+    - a new way to change inserter drop/pickup without opening its GUI (to change the offset you need to use the shortcut)
   Bugfixes:
     - Locked shortcut (hotkeys) behind technologies
   Changes:
-    - welcome message now is localized
+    - The welcome message now is localized
     - migrated inserter-config to smart-inserter (internal naming)
   Planned:
     - a shortcut (hotkey) to switch between the near and far side of the belt
     - Support for Slim/arrow inserter in the new positioning mode
     - Support for big inserter in the new positioning mode
   Known Issues:
-    - With size 5 grid you may experience performance issue in the world selector ( I need to optimize the code to fix this so this will take quite a while )
+    - With a size 5 grid you may experience performance issues in the world selector ( I need to optimize the code to fix this so this will take quite a while )
     - The new placer does not work with blueprint sandboxes
   Notes:
     - Since I have no friends (maybe) the world selector is not tested in multiplayer, expect bugs!
@@ -93,7 +96,7 @@ Date: 2023-10-26
 Version: 1.0.10
 Date: 2023-10-17
   Bugfixes:
-    - Fixed mod checking the hotkeys even when it should'nt
+    - Fixed mod-checking the hotkeys even when it shouldn't
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.9
 Date: 2023-10-16
@@ -103,10 +106,10 @@ Date: 2023-10-16
     - distance adjust hotkeys (if you know a way to read minds to implement the other diagonals tell me)
     - rotation adjust hotkeys
   Changes:
-    - Configuration UI is now disabled for miniloader and RenaiTramsportation mods
-    - Pick-Drop ui is now centred
-    - Slim inserter settings are now hidden if none are detected (sorta, it only checks if known slim inserter mod are present due to factorio limitation)
-    - Corrected some part of my terrible english in the changelog
+    - Configuration UI is now disabled for mini loader and RenaiTramsportation mods
+    - Pick-Drop UI is now centered
+    - Slim inserter settings are now hidden if none are detected (sorta, it only checks if known slim inserter mod are present due to Factorio limitations)
+    - Corrected some parts of my terrible English in the changelog
     - Small optimizations to the disable-long-inserter script
   Maybe:
     - Compatibility with RenaiTramsportation (this is going to be a headache...)
@@ -138,11 +141,11 @@ Date: 2023-09-27
   Changes:
     - Changelog changes 
     - Better localization for some settings (again)
-    - Removed the separator between pick/drop offset and centred pickup/drop offset
+    - Removed the separator between pick/drop offset and centered pickup/drop offset
   Migrations:
-    - Now when migrating from bob some technologies will be migrated to Smart inserter tech
+    - Now when migrating from Bob some technologies will be migrated to Smart Inserter tech
   Bugfixes:
-    - Crash when clicking on the ui with pick/drop offset disabled
+    - Crash when clicking on the UI with pick/drop offset disabled
   Maybe:
     - Centre the ui for pick/drop position
 ---------------------------------------------------------------------------------------------------
@@ -168,20 +171,20 @@ Date: 2023-09-20
 Version: 1.0.3
 Date: 2023-09-02
   Changes:
-    - Slim inserter now appear as a rounded square to avoid misleading direction by the arrow
-    - Now the offset is set to be the farthest position from the inserter to maintain vanilla item placement on belt (also I like it aesthetically)
+    - Slim inserter now appears as a rounded square to avoid misleading direction by the arrow
+    - Now the offset is set to be the farthest position from the inserter to maintain vanilla item placement on the belt (also I like it aesthetically)
     - Directional slim inserter is not true by default
   Bugfixes:
-    - Slim inserter position swap was wrong in some specific case (I hope this is the last time I need to fix this)
+    - Slim inserter position swap was wrong in some specific cases (I hope this is the last time I need to fix this)
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.2
 Date: 2023-08-20
   Added:
     - Technology to unlock inserters range (off by default)
     - Technology to unlock inserters diagonals (off by default)
-    - Setting to enable single lane in slim inserters (on by default, this is how slim inserters should work with this mod for its creator)
+    - Setting to enable single lane in slim inserters (ON by default, this is how slim inserters should work with this mod for its creator)
   Bugfixes:
-    - Some ui problems while using slim inserters
+    - Some UI problems while using slim inserters
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.1
 Date: 2023-08-15
@@ -198,6 +201,6 @@ Version: 1.0.0
 Date: 2023-08-12
   Notes:
     - First release
-    - This is a fork of "Inserter_Config" to fix a bug and to add some (+-QOL) features
+    - This is a fork of "Inserter_Config" to fix a bug and add some (+-QOL) features
   Maybe:
     - Technology to unlock different grid size
