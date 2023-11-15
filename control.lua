@@ -40,6 +40,9 @@ local function welcome()
 end
 
 local function on_configuration_changed(cfg_changed_data)
+    if not global.SI_Storage then 
+        global["SI_Storage"] = {} 
+    end
     storage_functions.populate_storage()
     inserter_functions.calculate_max_inserters_range()
     copy_gui.create_all()

@@ -9,6 +9,7 @@ Date: 2023-11-13
     - World selector was not working properly
     - The copy/past configurator is now back online and should work properly
     - Technologies were resetting after updating
+    - SI_Storage a nil value when on_configuration_changed ran
 ---------------------------------------------------------------------------------------------------
 Version: 1.2.6
 Date: 2023-11-12
