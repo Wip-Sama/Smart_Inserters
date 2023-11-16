@@ -78,13 +78,12 @@ function tech.migrate_all()
         for i = 1, 3 do
             local tech_name = "si-unlock-range-" .. i
             local original_tech_name = i == 1 and "near-inserters" or "long-inserters-" .. (i - 1)
-            force.technologies[tech_name].researched = force.technologies[original_tech_name].researched
+            force.technologies[tech_name].researched = force.technologies[original_tech_name].researched or force.technologies[tech_name].researched
         end
 
-        force.technologies["si-unlock-cross"].researched = force.technologies["more-inserters-1"].researched
-        force.technologies["si-unlock-x-diagonals"].researched = force.technologies["more-inserters-2"].researched
+        force.technologies["si-unlock-cross"].researched = force.technologies["more-inserters-1"].researched or force.technologies["si-unlock-cross"].researched
+        force.technologies["si-unlock-x-diagonals"].researched = force.technologies["more-inserters-2"].researched or force.technologies["si-unlock-x-diagonals"].researched
     end
 end
-
 
 return tech

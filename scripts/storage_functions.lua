@@ -18,14 +18,15 @@ function storage_functions.populate_storage()
     for player_index, _ in pairs(game.players) do
         storage_functions.add_player(player_index)
 
+        -- TODO 10 is a magic number, should be replaced with a variable
         local tmp = {}
-        for x = -5, 5 do
+        for x = -10, 10 do
             local x_string = tostring(x)
             global.SI_Storage[player_index].selected_inserter.position_grid[x_string] = {}
             tmp[x_string] = { loaded = false }
         end
 
-        for y = -5, 5 do
+        for y = -10, 10 do
             global.SI_Storage[player_index].selected_inserter.position_grid[tostring(y)] = deepcopy(tmp)
         end
 

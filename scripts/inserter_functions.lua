@@ -1,5 +1,6 @@
 local math2d = require("scripts.extended_math2d")
 local storage_functions = require("scripts.storage_functions")
+local util = require("scripts.util")
 local inserter_functions = {}
 
 function inserter_functions.get_prototype(inserter)
@@ -13,11 +14,12 @@ function inserter_functions.calculate_max_inserters_range()
     storage_functions.ensure_data()
     if settings.startup["si-range-adder"].value ~= "incremental" then
         global.SI_Storage["inserters_range"] = settings.startup["si-max-inserters-range"].value
+        return
     end
 
     local max_range = 0
     for _, prototype in pairs(game.entity_prototypes) do
-        if prototype.type == "inserter" then
+        if prototype.type == "inserter" and util.check_blacklist({type = prototype.type, name = prototype.name}) then
             local inserter = prototype
             local prototype = inserter.object_name == "LuaEntity" and inserter_functions.get_prototype(inserter) or inserter
             local pickup_pos = math2d.position.tilepos(math2d.position.add(prototype.inserter_pickup_position, { 0.5, 0.5 }))
@@ -189,8 +191,7 @@ function inserter_functions.calc_rotated_offset(inserter, new_position, target)
     return old_positions[target .. "_offset"]
 end
 
-
-function inserter_functions.inserter_default_range(inserter)
+function util.inserter_default_range(inserter)
     local collision_box_total = 0.2
 
     if inserter.collision_box then
