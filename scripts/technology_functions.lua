@@ -51,6 +51,9 @@ function tech.check_range_tech(force, cell_position, distance_offset)
     distance_offset = distance_offset or 0
     local distance = math.max(math.abs(cell_position.x), math.abs(cell_position.y)) - distance_offset
     distance = math.max(math.floor(distance), 1)
+    if distance == 1 then
+        return true
+    end
     local range_unlocked = false
     if settings.startup["si-range-adder"].value == "incremental" then
         if force.technologies["si-unlock-range-" .. math.min(4, distance)].researched and force.technologies["si-unlock-range-" .. math.min(4, distance)].prototype.hidden == false then
@@ -63,7 +66,15 @@ function tech.check_range_tech(force, cell_position, distance_offset)
             range_unlocked = true
         end
     else
-        range_unlocked = force.technologies["si-unlock-range-" .. math.min(4, distance)].researched
+        if force.technologies["si-unlock-range-4"].researched and distance <= 5 then
+            return true
+        elseif force.technologies["si-unlock-range-3"].researched and distance <= 4 then
+            return true
+        elseif force.technologies["si-unlock-range-2"].researched and distance <= 3 then
+            return true
+        elseif force.technologies["si-unlock-range-1"].researched and distance <= 2 then
+            return true
+        end
     end
 
     return distance <= 1 or range_unlocked

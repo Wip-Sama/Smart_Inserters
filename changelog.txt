@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.2.8
+Date: 2023-11-16
+  Bugfixes:
+    - Max range could not be unlocked in "equal" mode
+    - Fix offsets not being copied properly in some cases
+---------------------------------------------------------------------------------------------------
 Version: 1.2.7
 Date: 2023-11-13
   Changes:
@@ -80,7 +86,7 @@ Date: 2023-10-26
   Added:
     - a new way to change inserter drop/pickup without opening its GUI (to change the offset you need to use the shortcut)
   Bugfixes:
-    - Locked shortcut (hotkeys) behind technologies
+    - Locked shortcuts (hotkeys) behind technologies
   Changes:
     - The welcome message now is localized
     - migrated inserter-config to smart-inserter (internal naming)

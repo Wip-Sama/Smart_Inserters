@@ -130,16 +130,7 @@ local function on_pre_entity_settings_pasted(event)
 
     copy_event.si_direction = copy_settings.si_direction and event.source.direction or event.destination.direction
 
-    if copy_settings.si_direction then
-        drop = inserter_functions.calc_rotated_position(event.source, drop, event.destination.direction)
-        pickup = inserter_functions.calc_rotated_position(event.source, pickup, event.destination.direction)
-        drop_offset = inserter_functions.calc_rotated_offset(event.source, event.destination.direction, "drop")
-        pickup_offset = inserter_functions.calc_rotated_offset(event.source, event.destination.direction, "pickup")
-        drop_offset = math2d.position.add(math2d.position.multiply_scalar(drop_offset, 0.2), { 0.5, 0.5 })
-        pickup_offset = math2d.position.add(math2d.position.multiply_scalar(pickup_offset, 0.2), { 0.5, 0.5 })
-    end
-
-    if not copy_settings.si_direction and copy_settings.relative_si_direction then
+    if copy_settings.si_direction or copy_settings.relative_si_direction then
         drop = inserter_functions.calc_rotated_position(event.source, drop, event.destination.direction)
         pickup = inserter_functions.calc_rotated_position(event.source, pickup, event.destination.direction)
         drop_offset = inserter_functions.calc_rotated_offset(event.source, event.destination.direction, "drop")

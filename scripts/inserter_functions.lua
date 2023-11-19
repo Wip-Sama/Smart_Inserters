@@ -151,7 +151,9 @@ end
 function inserter_functions.calc_rotated_position(inserter, new_position, new_direction)
     new_direction = new_direction == 0 and 8 or new_direction
     local spostamento = (8 - inserter.direction) - (8 - new_direction)
-    if spostamento < 0 then spostamento = 8 + spostamento end
+    if spostamento < 0 then
+        spostamento = 8 + spostamento
+    end
     local tmp_pos = 0
 
     while spostamento ~= 0 do
@@ -175,7 +177,7 @@ function inserter_functions.calc_rotated_offset(inserter, new_position, target)
 
     local position = math2d.direction.from_vector(old_positions[target .. "_offset"])
 
-    local old_sector = math2d.direction.vector_to_vec1_position(old_positions[target], range)
+    local old_sector = math2d.direction.vector_to_vec1_position(old_positions[target .. "_offset"], range)
     if type(new_position) == "number" then
         new_position = inserter_functions.calc_rotated_position(inserter, old_positions[target .. "_offset"], new_position)
     end
