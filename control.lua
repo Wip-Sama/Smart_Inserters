@@ -149,7 +149,7 @@ local function on_pre_entity_settings_pasted(event)
         copy_event.inserter_filter_mode = copy_settings.inserter_filter_mode and event.source.inserter_filter_mode or event.destination.inserter_filter_mode
         for i = 1, 5, 1 do
             local filtered_slot = copy_event.filtered_slots[i]
-            if copy_settings.filtered_stuff and filtered_slot.copy and event.source.filter_slot_count >= i then
+            if copy_settings.filtered_stuff and filtered_slot.copy and event.source.filter_slot_count >= i and event.destination.filter_slot_count >= i then
                 filtered_slot.item = event.source.get_filter(i)
             elseif event.destination.filter_slot_count >= i then
                 filtered_slot.item = event.destination.get_filter(i)
@@ -224,6 +224,8 @@ local function on_gui_click(event)
         gui.on_switch_pick_position(player, event)
     elseif event.element.name == "si_configurator_toggle" then
         copy_gui.toggle_gui(player, event)
+    elseif event.element.name == "si-reset-button" then
+        copy_gui.reset_checkbox_status(event)
     elseif event.element.parent and event.element.parent.parent and event.element.parent.parent.name == "si_config_tab_pane" then
         copy_gui.update_checkbox_status(event)
     elseif event.element.name == "si-close-button" then

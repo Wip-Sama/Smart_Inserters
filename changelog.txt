@@ -1,4 +1,18 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.2.10
+Date: 2023-12-12
+  Added:
+    - Toggle button to the copy-paste configurator to toggle all the checkboxes in a tab
+    - Reset button in the copy-paste configurator to reset all the checkboxes to the default
+  Bugfixes:
+    - Crush on_gui_click due to missing entity (may not be fully fixed through, just a patch)
+---------------------------------------------------------------------------------------------------
+Version: 1.2.9
+Date: 2023-11-23
+  Bugfixes:
+    - Fixed crash while copying from inserters with more filter slots than the one you are pasting to
+    - Fixed huge grid size while using GhostOnWater and incremental setting
+---------------------------------------------------------------------------------------------------
 Version: 1.2.8
 Date: 2023-11-16
   Bugfixes:
@@ -115,7 +129,7 @@ Date: 2023-10-16
   Changes:
     - Configuration UI is now disabled for mini loader and RenaiTramsportation mods
     - Pick-Drop UI is now centered
-    - Slim inserter settings are now hidden if none are detected (sorta, it only checks if known slim inserter mod are present due to Factorio limitations)
+    - Slim inserter settings are now hidden if none are detected (sorta, it only checks if known slim inserter mods are present due to Factorio limitations)
     - Corrected some parts of my terrible English in the changelog
     - Small optimizations to the disable-long-inserter script
   Maybe:

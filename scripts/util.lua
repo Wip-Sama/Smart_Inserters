@@ -7,7 +7,7 @@ local cell_enabled_lookup_table = {}
 local util = {}
 
 local blacklist = {}
-blacklist.mods = { "miniloader", "RenaiTransportation" }
+blacklist.mods = { "miniloader", "RenaiTransportation", "GhostOnWater" }
 blacklist.entities = {}
 
 function util.extend_table(target, source)

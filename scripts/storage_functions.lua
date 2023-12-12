@@ -70,9 +70,11 @@ function storage_functions.add_player(player_index)
         pickup_offset = true,
         si_direction = true,
         relative_si_direction = true,
+
         inserter_filter_mode = true,
         filtered_stuff = true,
         inserter_stack_size_override = true,
+
         circuit_set_stack_size = true,
         circuit_read_hand_contents = true,
         circuit_mode_of_operation = true,

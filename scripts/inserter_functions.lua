@@ -26,7 +26,10 @@ function inserter_functions.calculate_max_inserters_range()
             local drop_pos = math2d.position.tilepos(math2d.position.add(prototype.inserter_drop_position, { 0.5, 0.5 }))
             local inserter_range = math.max(math.abs(pickup_pos.x), math.abs(pickup_pos.y), math.abs(drop_pos.x),
                 math.abs(drop_pos.y))
-            max_range = math.max(inserter_range, max_range)
+            if inserter_range > max_range then
+                print(prototype.name, inserter_range, max_range)
+                max_range = inserter_range
+            end
         end
     end
     local somma = settings.startup["si-max-inserters-range"].value+max_range

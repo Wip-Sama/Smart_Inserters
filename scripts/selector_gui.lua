@@ -2,7 +2,7 @@ local directional_slim_inserter = settings.startup["si-directional-slim-inserter
 local offset_selector = settings.startup["si-offset-selector"].value
 
 local blacklist = {}
-blacklist.mods = { "miniloader", "RenaiTransportation" }
+blacklist.mods = { "miniloader", "RenaiTransportation", "GhostOnWater" }
 blacklist.entities = {}
 
 local math2d = require("scripts.extended_math2d")
@@ -419,6 +419,7 @@ end
 
 function gui.on_button_position(player, event)
     local inserter = player.opened
+    if not inserter_functions.is_inserter(inserter) then return end
     local new_pos = gui.get_button_pos(event.element)
     local orientation = inserter_functions.get_inserter_orientation(inserter)
     local inserter_size = inserter_functions.get_inserter_size(inserter)
