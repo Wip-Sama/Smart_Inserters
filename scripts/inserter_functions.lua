@@ -322,7 +322,7 @@ function inserter_functions.set_arm_positions(inserter, positions)
 
     -- Fix stuff with rail and pickup --https://mods.factorio.com/mod/Smart_Inserters/discussion/656b192ef49ec2e9ceac7eac
     local direction = inserter.direction
-    inserter.direction = inserter.direction+2
+    inserter.direction = (inserter.direction+2)%4
     inserter.direction = direction
 
 end
