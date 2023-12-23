@@ -1,4 +1,14 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.2.11
+Date: 2023-12-22
+  Added:
+    - Now you can replace "long-inserter" with "inserter" -https://mods.factorio.com/mod/Smart_Inserters/discussion/657a5e73b39c571c939896d8
+  Changes:
+    - Now all the shortcuts are set to none, if you want to use them you need to set them at ( settings -> controls -> mods -> Smart Inserters )
+  Bugfixes:
+    - Pickup would be stuck when changed if near a rail -https://mods.factorio.com/mod/Smart_Inserters/discussion/656b192ef49ec2e9ceac7eac
+    - Copying inserter settings resets constant filters -https://mods.factorio.com/mod/Smart_Inserters/discussion/656515f9b9de9721d8ba3802
+---------------------------------------------------------------------------------------------------
 Version: 1.2.10
 Date: 2023-12-12
   Added:

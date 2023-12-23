@@ -1,4 +1,3 @@
-local math2d = require("math2d")
 local inserter_utils = require("lib.inserter_checker")
 
 local chases_belt_items = settings.startup["si-inserters-chase-belt-items"].value
@@ -9,6 +8,12 @@ for _, inserter in pairs(data.raw.inserter) do
 	inserter.allow_custom_vectors = true
 	inserter.extension_speed = inserter.extension_speed * 2
 	inserter.chases_belt_items = chases_belt_items
+	if inserter.fast_replaceable_group == "long-handed-inserter" then
+		inserter.fast_replaceable_group = "inserter"
+		if inserter.name == "long-handed-inserter" then
+			inserter.next_upgrade = "inserter"
+		end
+	end
 end
 
 if settings.startup["si-disable-long-inserters"].value then

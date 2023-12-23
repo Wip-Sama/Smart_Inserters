@@ -319,6 +319,12 @@ function inserter_functions.set_arm_positions(inserter, positions)
 
         inserter.drop_position = math2d.position.add(new_drop_tile, new_drop_offset)
     end
+
+    -- Fix stuff with rail and pickup --https://mods.factorio.com/mod/Smart_Inserters/discussion/656b192ef49ec2e9ceac7eac
+    local direction = inserter.direction
+    inserter.direction = inserter.direction+2
+    inserter.direction = direction
+
 end
 
 function inserter_functions.get_inserter_orientation(inserter)

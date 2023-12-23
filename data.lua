@@ -211,28 +211,28 @@ data:extend({
 	{
 		type = "custom-input",
 		name = "smart-inserters-pickup-rotate",
-		key_sequence = "CONTROL + R",
+		key_sequence = "",
 		consuming = "none",
 		order = "Ba"
 	},
 	{
 		type = "custom-input",
 		name = "smart-inserters-pickup-rotate-reverse",
-		key_sequence = "CONTROL + SHIFT + R",
+		key_sequence = "",
 		consuming = "none",
 		order = "Bb"
 	},
 	{
 		type = "custom-input",
 		name = "smart-inserters-drop-distance-adjust",
-		key_sequence = "F",
+		key_sequence = "",
 		consuming = "none",
 		order = "C"
 	},
 	{
 		type = "custom-input",
 		name = "smart-inserters-pickup-distance-adjust",
-		key_sequence = "CONTROL + F",
+		key_sequence = "",
 		consuming = "none",
 		order = "D"
 	},
@@ -267,14 +267,14 @@ data:extend({
 	{
 		type = "custom-input",
 		name = "smart-inserters-in-world-inserter-configurator-pickup",
-		key_sequence = "CONTROL + P",
+		key_sequence = "",
 		consuming = "none",
 		order = "Ga"
 	},
 	{
 		type = "custom-input",
 		name = "smart-inserters-in-world-inserter-configurator-drop",
-		key_sequence = "CONTROL + D",
+		key_sequence = "",
 		consuming = "none",
 		order = "Gb"
 	}

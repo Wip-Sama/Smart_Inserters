@@ -77,7 +77,7 @@ local function on_entity_settings_pasted(event)
     destination.direction = copy_event.si_direction
 
     -- Filter
-    if event.destination.inserter_filter_mode and event.source.inserter_filter_mode then
+    if event.destination.inserter_filter_mode then
         destination.inserter_filter_mode = copy_event.inserter_filter_mode
         for i = 1, 5, 1 do
             local filtered_slot = copy_event.filtered_slots[i]
@@ -86,6 +86,7 @@ local function on_entity_settings_pasted(event)
             end
         end
     end
+
     if event.destination.inserter_stack_size_override and event.source.inserter_stack_size_override then
         destination.inserter_stack_size_override = copy_event.inserter_stack_size_override
     end
@@ -147,6 +148,11 @@ local function on_pre_entity_settings_pasted(event)
     -- Filter
     if event.destination.inserter_filter_mode and event.source.inserter_filter_mode then
         copy_event.inserter_filter_mode = copy_settings.inserter_filter_mode and event.source.inserter_filter_mode or event.destination.inserter_filter_mode
+    elseif event.destination.inserter_filter_mode then
+        copy_event.inserter_filter_mode = event.destination.inserter_filter_mode
+    end
+    
+    if event.destination.inserter_filter_mode then
         for i = 1, 5, 1 do
             local filtered_slot = copy_event.filtered_slots[i]
             if copy_settings.filtered_stuff and filtered_slot.copy and event.source.filter_slot_count >= i and event.destination.filter_slot_count >= i then
