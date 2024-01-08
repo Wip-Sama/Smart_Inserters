@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.2.13
+Date: 2024-01-09
+  Bugfixes:
+    - Fixed crash then inserter range was bigger than max range -https://mods.factorio.com/mod/Smart_Inserters/discussion/659a0582cfee49884a10192a
+---------------------------------------------------------------------------------------------------
 Version: 1.2.12
 Date: 2023-12-23
   Bugfixes:

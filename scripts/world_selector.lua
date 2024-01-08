@@ -63,6 +63,7 @@ function world_editor.update_positions(player_index, inserter, changes)
         if changes.pickup.old then
             render_id = global.SI_Storage[player_index].selected_inserter.position_grid[tostring(changes.pickup.old.x)]
                 [tostring(changes.pickup.old.y)].render_id
+            if type(render_id) ~= "number" then return end
             rendering.destroy(render_id)
             enabled_cell = util.should_cell_be_enabled(changes.pickup.old, range, player.force, inserter)
             render_id = rendering.draw_rectangle {
@@ -86,6 +87,7 @@ function world_editor.update_positions(player_index, inserter, changes)
         if changes.pickup.new then
             render_id = global.SI_Storage[player_index].selected_inserter.position_grid[tostring(changes.pickup.new.x)]
                 [tostring(changes.pickup.new.y)].render_id
+            if type(render_id) ~= "number" then return end
             rendering.destroy(render_id)
             render_id = rendering.draw_rectangle {
                 color = colors["pickup"],
@@ -111,6 +113,7 @@ function world_editor.update_positions(player_index, inserter, changes)
         if changes.drop.old and not changes.pickup then
             render_id = global.SI_Storage[player_index].selected_inserter.position_grid[tostring(changes.drop.old.x)]
                 [tostring(changes.drop.old.y)].render_id
+            if type(render_id) ~= "number" then return end
             rendering.destroy(render_id)
             enabled_cell = util.should_cell_be_enabled(changes.drop.old, range, player.force, inserter)
             render_id = rendering.draw_rectangle {
@@ -134,6 +137,7 @@ function world_editor.update_positions(player_index, inserter, changes)
         if changes.drop.new then
             render_id = global.SI_Storage[player_index].selected_inserter.position_grid[tostring(changes.drop.new.x)]
                 [tostring(changes.drop.new.y)].render_id
+            if type(render_id) ~= "number" then return end
             rendering.destroy(render_id)
             render_id = rendering.draw_rectangle {
                 color = colors["drop"],
