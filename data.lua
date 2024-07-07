@@ -3,8 +3,9 @@ local drop_tint = { r = 155 / 255, g = 19 / 255, b = 7 / 255 }
 require("prototypes.technology")
 require("prototypes.style")
 
---sprites
+--Sprites
 data:extend({
+	--generic circle sprite
 	{
 		type = "sprite",
 		name = "circle",
@@ -192,7 +193,7 @@ data:extend({
 	}
 })
 
---inputs
+--Inputs
 data:extend({
 	{
 		type = "custom-input",
@@ -238,31 +239,45 @@ data:extend({
 	},
 	{
 		type = "custom-input",
-		name = "smart-inserters-drop-offset-adjust-lateral",
+		name = "smart-inserters-drop-offset-adjust-horizontal",
 		key_sequence = "",
 		consuming = "none",
 		order = "Ea"
 	},
 	{
 		type = "custom-input",
-		name = "smart-inserters-drop-offset-adjust-distance",
+		name = "smart-inserters-drop-offset-adjust-vertical",
 		key_sequence = "",
 		consuming = "none",
 		order = "Eb"
 	},
 	{
 		type = "custom-input",
-		name = "smart-inserters-pickup-offset-adjust-lateral",
+		name = "smart-inserters-drop-offset-adjust-distance",
+		key_sequence = "",
+		consuming = "none",
+		order = "Ec"
+	},
+	{
+		type = "custom-input",
+		name = "smart-inserters-pickup-offset-adjust-horizontal",
 		key_sequence = "",
 		consuming = "none",
 		order = "Fa"
 	},
 	{
 		type = "custom-input",
-		name = "smart-inserters-pickup-offset-adjust-distance",
+		name = "smart-inserters-pickup-offset-adjust-vertical",
 		key_sequence = "",
 		consuming = "none",
 		order = "Fb"
+	},
+	{
+		type = "custom-input",
+		name = "smart-inserters-pickup-offset-adjust-distance",
+		key_sequence = "",
+		consuming = "none",
+		order = "Ec"
 	},
 	{
 		type = "custom-input",

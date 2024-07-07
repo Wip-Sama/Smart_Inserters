@@ -1,5 +1,4 @@
 local inserter_utils = require("lib.inserter_checker")
-
 local chases_belt_items = settings.startup["si-inserters-chase-belt-items"].value
 
 local long_inserters = {}

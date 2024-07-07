@@ -4,7 +4,7 @@ data:extend({
         setting_type  = "startup",
         name          = "si-max-inserters-range",
         minimum_value = 1,
-        maximum_value = 5,
+        maximum_value = 6,
         default_value = 3,
         order         = "a"
     },

@@ -1,5 +1,8 @@
-local storage_functions = require("scripts/storage_functions")
+local storage_functions = require("scripts.storage_functions")
 local mod_gui = require("mod-gui")
+
+--local gui_builder = require("__yafla__/scripts/experimental/gui_builder")
+--local gui_components = require("__yafla__/scripts/experimental/gui_builder")
 
 local copy_gui = {}
 
@@ -51,7 +54,9 @@ function copy_gui.create_all()
 end
 
 function copy_gui.remove_gui(player)
-    player.gui.screen.si_copypaste_configurator.destroy()
+    if player.gui.screen.si_copypaste_configurator then
+        player.gui.screen.si_copypaste_configurator.destroy()
+    end
 end
 
 function copy_gui.add_gui(player)
@@ -131,7 +136,7 @@ function copy_gui.add_gui(player)
         style = "vertical_flow_with_extra_margins"
     }
     tab_pane.add_tab(basic_tab, basic_flow)
-    copy_gui.add_button(basic_flow, "toggle-basic", "si-toggle", "si-toggle-tooltip", player.index)
+    copy_gui.add_button(basic_flow, "toggle-basic", "si-toggle", "si-toggle-tooltip")
     copy_gui.add_checkbox(basic_flow, "drop", "si-drop", "si-drop-tooltip", player.index)
     copy_gui.add_checkbox(basic_flow, "drop_offset", "si-drop-offset", "si-drop-offset-tooltip", player.index)
     copy_gui.add_checkbox(basic_flow, "pickup", "si-pickup", "si-pickup-tooltip", player.index)
@@ -152,7 +157,7 @@ function copy_gui.add_gui(player)
         style = "vertical_flow_with_extra_margins"
     }
     tab_pane.add_tab(filter_tab, filter_flow)
-    copy_gui.add_button(filter_flow, "toggle-filter", "si-toggle", "si-toggle-tooltip", player.index)
+    copy_gui.add_button(filter_flow, "toggle-filter", "si-toggle", "si-toggle-tooltip")
     copy_gui.add_checkbox(filter_flow, "inserter_filter_mode", "si-filter-mode", "si-filter-mode-tooltip", player.index)
     copy_gui.add_checkbox(filter_flow, "filtered_stuff", "si-filtered-stuff", "si-filtered-stuff-tooltip", player.index)
     copy_gui.add_checkbox(filter_flow, "inserter_stack_size_override", "si-stack-size-override", "si-stack-size-override-tooltip", player.index)
@@ -170,7 +175,7 @@ function copy_gui.add_gui(player)
         style = "vertical_flow_with_extra_margins"
     }
     tab_pane.add_tab(logic_tab, logic_flow)
-    copy_gui.add_button(logic_flow, "toggle-circuit", "si-toggle", "si-toggle-tooltip", player.index)
+    copy_gui.add_button(logic_flow, "toggle-circuit", "si-toggle", "si-toggle-tooltip")
     copy_gui.add_checkbox(logic_flow, "circuit_set_stack_size", "si-set-stack-size", "si-set-stack-size-tooltip", player.index)
     copy_gui.add_checkbox(logic_flow, "circuit_read_hand_contents", "si-read-hand-contents", "si-read-hand-contents-tooltip", player.index)
     copy_gui.add_checkbox(logic_flow, "circuit_mode_of_operation", "si-mode-of-operation", "si-mode-of-operation-tooltip", player.index)
@@ -189,7 +194,7 @@ function copy_gui.add_checkbox(flow, name, caption_key, tooltip_key, player_inde
     }
 end
 
-function copy_gui.add_button(flow, name, caption_key, tooltip_key, player_index)
+function copy_gui.add_button(flow, name, caption_key, tooltip_key)
     flow.add {
         type = "button",
         name = name,
@@ -270,6 +275,5 @@ function copy_gui.toggle_gui(player, event)
         copy_gui.add_gui(player)
     end
 end
-
 
 return copy_gui

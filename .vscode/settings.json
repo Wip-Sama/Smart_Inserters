@@ -5,7 +5,9 @@
         "defines",
         "__DebugAdapter",
         "global",
-        "mods"
+        "mods",
+        "data",
+        "settings"
     ],
     "Lua.runtime.builtin": {
         "io": "disable",
