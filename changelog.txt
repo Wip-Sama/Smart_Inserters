@@ -1,4 +1,90 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.2.15
+Date: 2024-03-27
+  Bugfixes:
+    - en localization was displaying 3x3 where not needed
+    - it localization was displaying 3x3 where not needed
+    - Fixed a bug with the technology level 5
+    - Fixed a bug with the diagonal calculations
+  Changes:
+    - Downgraded incremental setting by 1 tile due to the new technology (now the increment start from 0 instead of 1)
+    - Removed 1.2.13 from the mod portal
+---------------------------------------------------------------------------------------------------
+Version: 1.2.14
+Date: 2024-03-26
+  Added:
+    - Support for slim inserter in the in-world selector
+    - Quick far/near hotkey for the offset ("smart-inserters-drop-..-adjust-distance")
+    - New technology for range = 6
+  Changes:
+    - RENAMED all the offset shortcuts internally 
+    - - "smart-inserters-..-offset-adjust-lateral" -> "smart-inserters-drop-..-adjust-horizontal"
+    - - "smart-inserters-..-offset-adjust-distance" -> "smart-inserters-drop-..-adjust-vertical"
+    - - "smart-inserters-drop-..-adjust-distance" now mean the general offset distance
+    - MASSIVE optimization for bigger grids (though 6 and 5 will probably still be quite slow in the in-world selector)
+    - Incremented max distance from 5 to 6
+    - Optimized the in-world selector
+    - Started migration of core components to YAFLA (Yet Another Factorio Library Attempt)
+    - Code cleanup
+    - Localized switch in bigger inserters
+  Bugfixes:
+    - For some reason, the Incremental setting added a tile to the max range (now the max incremental range is reachable)
+  Notes:
+    - If you plan on using QAI with this mod you may want to remap the shortcuts of the in-world configurator
+  Planned:
+    - Switch the toggle button to a checkbox in the copy-paste configurator
+    - A Remote to use some functions of SI and get information such as the max range of an inserter or general range/ matrix of allowed positions and so on...
+    - Firing an event when the player changes the inserter position (Also handle this event internally for better compatibility with other mods)
+    - A new mod appeared While I was doing this update (QAI) the author added compatibility with this mod itself
+    - - I was planning on moving some settings to "map settings" but I may not do this anymore or at least not now 
+    - Some of the features of QAI are not currently supported by SI
+    - - Pickup/Drop on the same tile will become a setting in the future
+    - - Long inserter can't catch items near them, I did not think of this feature I'll add a setting in the future
+    - If you use the new shortcut on slim inserter the first time the direction may not change and you might need to use it again (it's not the best but it greatly reduces code complexity, I'll fix it in the future) 
+  Maybe:
+    - - "Mirrored Inserters only" is not something that will be implemented for now since SI does not change the inserter starting position, but I may add some stuff like this in the copy-paste configurator
+    - I'm thinking of a way to select some inserters and change all their position at the same time, this feature will need quite a bit of development so if it ever comes to light it will be in the far future
+---------------------------------------------------------------------------------------------------
+Version: 1.2.13
+Date: 2024-01-09
+  Bugfixes:
+    - Fixed crash when inserter range was bigger than max range -https://mods.factorio.com/mod/Smart_Inserters/discussion/659a0582cfee49884a10192a
+---------------------------------------------------------------------------------------------------
+Version: 1.2.12
+Date: 2023-12-23
+  Bugfixes:
+    - Fixed rail rix... again -https://mods.factorio.com/mod/Smart_Inserters/discussion/6586f61a8146ffe803935088
+---------------------------------------------------------------------------------------------------
+Version: 1.2.11
+Date: 2023-12-23
+  Added:
+    - Now you can replace "long-inserter" with "inserter" -https://mods.factorio.com/mod/Smart_Inserters/discussion/657a5e73b39c571c939896d8
+  Changes:
+    - Now all the shortcuts are set to none, if you want to use them you need to set them at ( settings -> controls -> mods -> Smart Inserters )
+  Bugfixes:
+    - Pickup would be stuck when changed if near a rail -https://mods.factorio.com/mod/Smart_Inserters/discussion/656b192ef49ec2e9ceac7eac
+    - Copying inserter settings resets constant filters -https://mods.factorio.com/mod/Smart_Inserters/discussion/656515f9b9de9721d8ba3802
+---------------------------------------------------------------------------------------------------
+Version: 1.2.10
+Date: 2023-12-12
+  Added:
+    - Toggle button to the copy-paste configurator to toggle all the checkboxes in a tab
+    - Reset button in the copy-paste configurator to reset all the checkboxes to the default
+  Bugfixes:
+    - Crush on_gui_click due to missing entity (may not be fully fixed through, just a patch)
+---------------------------------------------------------------------------------------------------
+Version: 1.2.9
+Date: 2023-11-23
+  Bugfixes:
+    - Fixed crash while copying from inserters with more filter slots than the one you are pasting to
+    - Fixed huge grid size while using GhostOnWater and incremental setting
+---------------------------------------------------------------------------------------------------
+Version: 1.2.8
+Date: 2023-11-16
+  Bugfixes:
+    - Max range could not be unlocked in "equal" mode
+    - Fix offsets not being copied properly in some cases
+---------------------------------------------------------------------------------------------------
 Version: 1.2.7
 Date: 2023-11-13
   Changes:
@@ -80,7 +166,7 @@ Date: 2023-10-26
   Added:
     - a new way to change inserter drop/pickup without opening its GUI (to change the offset you need to use the shortcut)
   Bugfixes:
-    - Locked shortcut (hotkeys) behind technologies
+    - Locked shortcuts (hotkeys) behind technologies
   Changes:
     - The welcome message now is localized
     - migrated inserter-config to smart-inserter (internal naming)
@@ -109,7 +195,7 @@ Date: 2023-10-16
   Changes:
     - Configuration UI is now disabled for mini loader and RenaiTramsportation mods
     - Pick-Drop UI is now centered
-    - Slim inserter settings are now hidden if none are detected (sorta, it only checks if known slim inserter mod are present due to Factorio limitations)
+    - Slim inserter settings are now hidden if none are detected (sorta, it only checks if known slim inserter mods are present due to Factorio limitations)
     - Corrected some parts of my terrible English in the changelog
     - Small optimizations to the disable-long-inserter script
   Maybe:
@@ -127,7 +213,7 @@ Date: 2023-10-04
   Changes:
     - New disable-long-inserter script
   Planned:
-    - Hide slim inserters settings if none are detected
+    - Hide slim inserters settings if none are detected (DONE)
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.7
 Date: 2023-09-27
@@ -138,7 +224,7 @@ Version: 1.0.6
 Date: 2023-09-27
   Added:
     - Offset technologies
-    - Settings to enable offsets technologies
+    - Settings to enable offset technologies
   Changes:
     - Changelog changes 
     - Better localization for some settings (again)
@@ -159,8 +245,8 @@ Date: 2023-09-21
   Changes:
     - Better localization for some settings
   Planned:
-    - Offset technology
-    - Rewrite of the code to disable long inserters
+    - Offset technology (DONE)
+    - Rewrite the code to disable long inserters (DONE)
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.4
 Date: 2023-09-20

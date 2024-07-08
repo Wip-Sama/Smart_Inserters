@@ -3,7 +3,11 @@
         "script",
         "__Profiler",
         "defines",
-        "__DebugAdapter"
+        "__DebugAdapter",
+        "global",
+        "mods",
+        "data",
+        "settings"
     ],
     "Lua.runtime.builtin": {
         "io": "disable",

@@ -1,6 +1,6 @@
 {
 	"name": "Smart_Inserters",
-	"version": "1.2.7",
+	"version": "1.2.15",
 	"title": "Smart Inserters",
 	"author": "WipMod",
 	"description": "Change pickup/drop position for each inserter, copy paste settings, custom inserter lenght. Enjoy!",
@@ -8,6 +8,7 @@
 	"contact": "https://t.me/smastermega",
 	"dependencies": [
 		"base >= 1.1.0",
+		"yafla >= 0.1.2",
 		"!Side Inserters",
 		"!bobinserters",
 		"!Inserter_Config"

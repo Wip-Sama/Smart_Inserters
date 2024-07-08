@@ -62,6 +62,16 @@ difficulty["range"] = {
             { "utility-science-pack",    1 }
         }
     },
+    { --13x13
+        count = 1000,
+        ingredients = {
+            { "automation-science-pack", 1 },
+            { "logistic-science-pack",   1 },
+            { "chemical-science-pack",   1 },
+            { "utility-science-pack",    1 },
+            { "space-science-pack",      1 }
+        },
+    }
 }
 
 ----Hard difficulty----
@@ -132,6 +142,16 @@ if settings.startup["si-technologies-difficulty"].value == "hard" then
                 { "utility-science-pack",    1 }
             }
         },
+        { --13x13
+            count = 2000,
+            ingredients = {
+                { "automation-science-pack", 1 },
+                { "logistic-science-pack",   1 },
+                { "chemical-science-pack",   1 },
+                { "utility-science-pack",    1 },
+                { "space-science-pack",      1 }
+            },
+        }
     }
 end
 
@@ -309,6 +329,27 @@ data:extend({
         unit = {
             count = difficulty.range[4].count,
             ingredients = difficulty.range[4].ingredients,
+            time = 30
+        },
+        order = "a-b-c-d"
+    },
+    {
+        type = "technology",
+        name = "si-unlock-range-5",
+        icon_size = 256,
+        mipmap = 1,
+        icon = "__Smart_Inserters__/graphics/technology/unlock_range_6.png",
+        hidden = false,
+        effects = {
+            {
+                type = "nothing",
+                effect_description = { "technology-effect-description.si-unlock-range-5" }
+            }
+        },
+        prerequisites = { "si-unlock-range-4" },
+        unit = {
+            count = difficulty.range[5].count,
+            ingredients = difficulty.range[5].ingredients,
             time = 30
         },
         order = "a-b-c-d"

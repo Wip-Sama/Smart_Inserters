@@ -1,5 +1,5 @@
 *.psd
-
+*test
 # Compiled Lua sources
 luac.out
 

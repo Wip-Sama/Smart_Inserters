@@ -19,15 +19,15 @@ function storage_functions.populate_storage()
         storage_functions.add_player(player_index)
 
         -- TODO 10 is a magic number, should be replaced with a variable
+        -- Dumb me... I know it's a magic number, but what is it for?
         local tmp = {}
         for x = -10, 10 do
-            local x_string = tostring(x)
-            global.SI_Storage[player_index].selected_inserter.position_grid[x_string] = {}
-            tmp[x_string] = { loaded = false }
+            global.SI_Storage[player_index].selected_inserter.position_grid[x] = {}
+            tmp[x] = { loaded = false }
         end
 
         for y = -10, 10 do
-            global.SI_Storage[player_index].selected_inserter.position_grid[tostring(y)] = deepcopy(tmp)
+            global.SI_Storage[player_index].selected_inserter.position_grid[y] = deepcopy(tmp)
         end
 
         rendering.clear("Smart_Inserters")
@@ -70,9 +70,11 @@ function storage_functions.add_player(player_index)
         pickup_offset = true,
         si_direction = true,
         relative_si_direction = true,
+
         inserter_filter_mode = true,
         filtered_stuff = true,
         inserter_stack_size_override = true,
+
         circuit_set_stack_size = true,
         circuit_read_hand_contents = true,
         circuit_mode_of_operation = true,
@@ -92,10 +94,12 @@ function storage_functions.add_player(player_index)
     }
 
     for x = -global.SI_Storage["inserters_range"], global.SI_Storage["inserters_range"] do
-        local x_string = tostring(x)
-        storage.selected_inserter.position_grid[x_string] = {}
+        storage.selected_inserter.position_grid[x] = {}
         for y = -global.SI_Storage["inserters_range"], global.SI_Storage["inserters_range"] do
-            storage.selected_inserter.position_grid[x_string][tostring(y)] = { loaded = false }
+            storage.selected_inserter.position_grid[x][y] = {
+                loaded = false,
+                render_id = nil
+            }
         end
     end
 end

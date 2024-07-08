@@ -1,15 +1,14 @@
 local directional_slim_inserter = settings.startup["si-directional-slim-inserter"].value
 local offset_selector = settings.startup["si-offset-selector"].value
 
-local blacklist = {}
-blacklist.mods = { "miniloader", "RenaiTransportation" }
-blacklist.entities = {}
+local math2d = require("__yafla__/scripts/extended_math2d")
+--local gui_builder = require("__yafla__/scripts/experimental/gui_builder")
+--local gui_components = require("__yafla__/scripts/experimental/gui_builder")
 
-local math2d = require("scripts.extended_math2d")
 local tech = require("scripts.technology_functions")
 local inserter_functions = require("scripts.inserter_functions")
 local world_selector = require("scripts.world_selector")
-local util = require("scripts.util")
+local util = require("scripts.si_util")
 
 local gui = {}
 
@@ -99,6 +98,8 @@ function gui.create_offset_editor(flow_offset, offset_name)
     end
 end
 
+
+--This could probably be revritten with YAFLA gui framework
 function gui.create(player)
     local frame_main_anchor = {
         gui = defines.relative_gui_type.inserter_gui,
@@ -194,6 +195,7 @@ function gui.create(player)
 end
 
 function gui.delete(player)
+    --This if could be removed probably
     if player.gui.relative.inserter_config then
         player.gui.relative.inserter_config.destroy()
     end
@@ -203,102 +205,274 @@ function gui.delete(player)
 end
 
 function gui.create_all()
-    for idx, player in pairs(game.players) do
+    for _, player in pairs(game.players) do
         gui.delete(player)
         gui.create(player)
     end
 end
 
+--Optimized (Not cleaned up yet)
 function gui.update(player, inserter)
     local gui_instance = player.gui.relative.smart_inserters.frame_content.flow_content
-    local table_range = (gui_instance.pick_drop_flow.pick_drop_housing.table_position.column_count - 1) / 2
+    local pick_drop_housing = gui_instance.pick_drop_flow.pick_drop_housing
+    local table_range = (pick_drop_housing.table_position.column_count - 1) / 2
     local inserter_range = inserter_functions.get_max_range(inserter, player.force)
     local arm_positions = inserter_functions.get_arm_positions(inserter)
-    local orientation = inserter_functions.get_inserter_orientation(inserter)
     local inserter_size = inserter_functions.get_inserter_size(inserter)
     local slim = inserter_functions.is_slim(inserter)
-    local slimn = slim and orientation == "N"
-    local slime = slim and orientation == "E"
-    local slims = slim and orientation == "S"
-    local slimo = slim and orientation == "O"
+    local vertical = (inserter.direction==0 or inserter.direction==4)
+    local orizontal = (inserter.direction==2 or inserter.direction==6)
+    local enabled_cells = util.enabled_cell_matrix(player.force, orizontal, vertical, slim)
 
-    player.gui.relative.smart_inserters.visible = gui.should_show(inserter)
-    gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position.allow_none_state = false
-    gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position.visible = false
-    gui_instance.pick_drop_flow.pick_drop_housing.inserter_drop_switch_position.allow_none_state = false
-    gui_instance.pick_drop_flow.pick_drop_housing.inserter_drop_switch_position.visible = false
+    player.gui.relative.smart_inserters.visible = util.check_blacklist(inserter)
+    pick_drop_housing.inserter_pick_switch_position.allow_none_state = false
+    pick_drop_housing.inserter_pick_switch_position.visible = false
+    pick_drop_housing.inserter_drop_switch_position.allow_none_state = false
+    pick_drop_housing.inserter_drop_switch_position.visible = false
 
-    if slim then                                                   -- adjust position
-        if (slims or slimn) and arm_positions.drop.y >= 0 then     -- parte bassa / lower half
+    if slim then
+        if vertical and arm_positions.drop.y >= 0 then     -- parte bassa / lower half
             arm_positions.drop.y = arm_positions.drop.y + 1
-        elseif (slime or slimo) and arm_positions.drop.x >= 0 then -- parte destra / right
+        elseif orizontal and arm_positions.drop.x >= 0 then -- parte destra / right
             arm_positions.drop.x = arm_positions.drop.x + 1
         end
-        if (slims or slimn) and arm_positions.pickup.y >= 0 then     -- parte bassa / lower half
+        if vertical and arm_positions.pickup.y >= 0 then     -- parte bassa / lower half
             arm_positions.pickup.y = arm_positions.pickup.y + 1
-        elseif (slime or slimo) and arm_positions.pickup.x >= 0 then -- parte destra / right
+        elseif orizontal and arm_positions.pickup.x >= 0 then -- parte destra / right
             arm_positions.pickup.x = arm_positions.pickup.x + 1
         end
-    elseif inserter_size.z >= 2 then
-        if inserter_size.z == 3 then
-            gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position.allow_none_state = true
-            gui_instance.pick_drop_flow.pick_drop_housing.inserter_drop_switch_position.allow_none_state = true
+    elseif inserter_size >= 2 then
+        if inserter_size == 3 then
+            pick_drop_housing.inserter_pick_switch_position.allow_none_state = true
+            pick_drop_housing.inserter_drop_switch_position.allow_none_state = true
         end
 
+        --pickup
         if arm_positions.pickup.x < 0 then
-            arm_positions.pickup.x = arm_positions.pickup.x + (inserter_size.z - 1)
+            arm_positions.pickup.x = arm_positions.pickup.x + (inserter_size - 1)
         end
         if arm_positions.pickup.y < 0 then
-            arm_positions.pickup.y = arm_positions.pickup.y + (inserter_size.z - 1)
+            arm_positions.pickup.y = arm_positions.pickup.y + (inserter_size - 1)
         end
         if arm_positions.pickup.y == 0 then
-            gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position.visible = true
-            gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position.right_label_caption =
-            "Buttom pickup"
-            gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position.left_label_caption = "Top pickup"
+            pick_drop_housing.inserter_pick_switch_position.visible = true
+            pick_drop_housing.inserter_pick_switch_position.right_label_caption = { "gui-smart-inserters.buttom-pickup" }
+            pick_drop_housing.inserter_pick_switch_position.left_label_caption = { "gui-smart-inserters.top-pickup" }
+            pick_drop_housing.inserter_pick_switch_position.switch_state = "left"
             if arm_positions.base.y == arm_positions.pure_pickup.y then
-                gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position.switch_state = "right"
-            else
-                gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position.switch_state = "left"
+                pick_drop_housing.inserter_pick_switch_position.switch_state = "right"
             end
         elseif arm_positions.pickup.x == 0 then
-            gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position.visible = true
-            gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position.right_label_caption =
-            "Right pickup"
-            gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position.left_label_caption =
-            "Left pickup"
+            pick_drop_housing.inserter_pick_switch_position.visible = true
+            pick_drop_housing.inserter_pick_switch_position.right_label_caption = { "gui-smart-inserters.right-pickup" }
+            pick_drop_housing.inserter_pick_switch_position.left_label_caption = { "gui-smart-inserters.left-pickup" }
+            pick_drop_housing.inserter_pick_switch_position.switch_state = "left"
             if arm_positions.base.x == arm_positions.pure_pickup.x then
-                gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position.switch_state = "right"
-            else
-                gui_instance.pick_drop_flow.pick_drop_housing.inserter_pick_switch_position.switch_state = "left"
+                pick_drop_housing.inserter_pick_switch_position.switch_state = "right"
             end
         end
 
+        --drop
         if arm_positions.drop.x < 0 then
-            arm_positions.drop.x = arm_positions.drop.x + (inserter_size.z - 1)
+            arm_positions.drop.x = arm_positions.drop.x + (inserter_size - 1)
         end
         if arm_positions.drop.y < 0 then
-            arm_positions.drop.y = arm_positions.drop.y + (inserter_size.z - 1)
+            arm_positions.drop.y = arm_positions.drop.y + (inserter_size - 1)
         end
         if arm_positions.drop.y == 0 then
-            gui_instance.pick_drop_flow.pick_drop_housing.inserter_drop_switch_position.visible = true
-            gui_instance.pick_drop_flow.pick_drop_housing.inserter_drop_switch_position.right_label_caption =
-            "Buttom drop"
-            gui_instance.pick_drop_flow.pick_drop_housing.inserter_drop_switch_position.left_label_caption = "Top drop"
+            pick_drop_housing.inserter_drop_switch_position.visible = true
+            pick_drop_housing.inserter_drop_switch_position.right_label_caption = { "gui-smart-inserters.buttom-drop" }
+            pick_drop_housing.inserter_drop_switch_position.left_label_caption = { "gui-smart-inserters.top-drop" }
+            pick_drop_housing.inserter_drop_switch_position.switch_state = "left"
             if arm_positions.base.y == arm_positions.pure_drop.y then
-                gui_instance.pick_drop_flow.pick_drop_housing.inserter_drop_switch_position.switch_state = "right"
-            else
-                gui_instance.pick_drop_flow.pick_drop_housing.inserter_drop_switch_position.switch_state = "left"
+                pick_drop_housing.inserter_drop_switch_position.switch_state = "right"
             end
         elseif arm_positions.drop.x == 0 then
-            gui_instance.pick_drop_flow.pick_drop_housing.inserter_drop_switch_position.visible = true
-            gui_instance.pick_drop_flow.pick_drop_housing.inserter_drop_switch_position.right_label_caption =
-            "Right drop"
-            gui_instance.pick_drop_flow.pick_drop_housing.inserter_drop_switch_position.left_label_caption = "Left drop"
+            pick_drop_housing.inserter_drop_switch_position.visible = true
+            pick_drop_housing.inserter_drop_switch_position.right_label_caption = { "gui-smart-inserters.right-drop" }
+            pick_drop_housing.inserter_drop_switch_position.left_label_caption = { "gui-smart-inserters.left-drop" }
+            pick_drop_housing.inserter_drop_switch_position.switch_state = "left"
             if arm_positions.base.x == arm_positions.pure_drop.x then
-                gui_instance.pick_drop_flow.pick_drop_housing.inserter_drop_switch_position.switch_state = "right"
+                pick_drop_housing.inserter_drop_switch_position.switch_state = "right"
+            end
+        end
+    end
+
+    local idx = 0
+    local button = pick_drop_housing.table_position.children[1]
+    for y = -table_range, table_range, 1 do
+        for x = -table_range, table_range, 1 do
+            idx = idx + 1
+            button = pick_drop_housing.table_position.children[idx]
+            if button.type == "sprite-button" then
+                if math.max(math.abs(x), math.abs(y)) > inserter_range then
+                    button.enabled = false
+                else
+                    button.enabled = enabled_cells[y][x]
+                end
+
+                if math2d.position.equal(arm_positions.drop, { x, y }) then
+                    button.sprite = "drop"
+                    if directional_slim_inserter and slim then
+                        button.sprite = "selected-drop"
+                    end
+                elseif math2d.position.equal(arm_positions.pickup, { x, y }) then
+                    button.sprite = "pickup"
+                    if directional_slim_inserter and slim then
+                        button.sprite = "selected-pickup"
+                    end
+                elseif x ~= 0 or y ~= 0 then
+                    if directional_slim_inserter and slim and button.enabled == true then
+                        button.sprite = nil
+                        if inserter.direction == 0 and y > 0 then
+                            button.sprite = "background-drop"
+                        elseif inserter.direction == 0 and y < 0 then
+                            button.sprite = "background-pickup"
+                        elseif inserter.direction == 4 and y < 0 then
+                            button.sprite = "background-drop"
+                        elseif inserter.direction == 4 and y > 0 then
+                            button.sprite = "background-pickup"
+                        elseif inserter.direction == 2 and x < 0 then
+                            button.sprite = "background-drop"
+                        elseif inserter.direction == 2 and x > 0 then
+                            button.sprite = "background-pickup"
+                        elseif inserter.direction == 6 and x > 0 then
+                            button.sprite = "background-drop"
+                        elseif inserter.direction == 6 and x < 0 then
+                            button.sprite = "background-pickup"
+                        end
+                    else
+                        button.sprite = nil
+                    end
+                end
+            end
+        end
+    end
+
+    local icon = "item/inserter"
+    if slim then
+        icon = "circle"
+    elseif inserter.prototype.items_to_place_this then
+        icon = "item/" .. inserter.prototype.items_to_place_this[1].name
+    end
+    gui_instance.pick_drop_flow.pick_drop_housing.table_position.sprite_inserter.sprite = icon
+
+    if offset_selector == false then
+        return
+    end
+
+    local offset_tech_unlocked = tech.check_offset_tech(player.force)
+
+    local idx = 0
+    for y = -1, 1, 1 do
+        for x = -1, 1, 1 do
+            idx = idx + 1
+
+            gui_instance.flow_offset.flow_pick.table_pick.children[idx].enabled = offset_tech_unlocked
+            if math2d.position.equal(arm_positions.pickup_offset, { x, y }) then
+                gui_instance.flow_offset.flow_pick.table_pick.children[idx].sprite = "pickup"
             else
-                gui_instance.pick_drop_flow.pick_drop_housing.inserter_drop_switch_position.switch_state = "left"
+                gui_instance.flow_offset.flow_pick.table_pick.children[idx].sprite = nil
+            end
+        end
+    end
+
+    local idx = 0
+    for y = -1, 1, 1 do
+        for x = -1, 1, 1 do
+            idx = idx + 1
+
+            gui_instance.flow_offset.flow_drop.table_drop.children[idx].enabled = offset_tech_unlocked
+            if math2d.position.equal(arm_positions.drop_offset, { x, y }) then
+                gui_instance.flow_offset.flow_drop.table_drop.children[idx].sprite = "drop"
+            else
+                gui_instance.flow_offset.flow_drop.table_drop.children[idx].sprite = nil
+            end
+        end
+    end
+end
+
+function gui.update_legacy(player, inserter)
+    local gui_instance = player.gui.relative.smart_inserters.frame_content.flow_content
+    local pick_drop_housing = gui_instance.pick_drop_flow.pick_drop_housing
+    local table_range = (pick_drop_housing.table_position.column_count - 1) / 2
+    local inserter_range = inserter_functions.get_max_range(inserter, player.force)
+    local arm_positions = inserter_functions.get_arm_positions(inserter)
+    local inserter_size = inserter_functions.get_inserter_size(inserter)
+    local slim = inserter_functions.is_slim(inserter)
+    local vertical = (inserter.direction==0 or inserter.direction==4)
+    local orizontal = (inserter.direction==2 or inserter.direction==6)
+
+    player.gui.relative.smart_inserters.visible = util.check_blacklist(inserter)
+    pick_drop_housing.inserter_pick_switch_position.allow_none_state = false
+    pick_drop_housing.inserter_pick_switch_position.visible = false
+    pick_drop_housing.inserter_drop_switch_position.allow_none_state = false
+    pick_drop_housing.inserter_drop_switch_position.visible = false
+
+    if slim then
+        if vertical and arm_positions.drop.y >= 0 then     -- parte bassa / lower half
+            arm_positions.drop.y = arm_positions.drop.y + 1
+        elseif orizontal and arm_positions.drop.x >= 0 then -- parte destra / right
+            arm_positions.drop.x = arm_positions.drop.x + 1
+        end
+        if vertical and arm_positions.pickup.y >= 0 then     -- parte bassa / lower half
+            arm_positions.pickup.y = arm_positions.pickup.y + 1
+        elseif orizontal and arm_positions.pickup.x >= 0 then -- parte destra / right
+            arm_positions.pickup.x = arm_positions.pickup.x + 1
+        end
+    elseif inserter_size >= 2 then
+        if inserter_size == 3 then
+            pick_drop_housing.inserter_pick_switch_position.allow_none_state = true
+            pick_drop_housing.inserter_drop_switch_position.allow_none_state = true
+        end
+
+        --pickup
+        if arm_positions.pickup.x < 0 then
+            arm_positions.pickup.x = arm_positions.pickup.x + (inserter_size - 1)
+        end
+        if arm_positions.pickup.y < 0 then
+            arm_positions.pickup.y = arm_positions.pickup.y + (inserter_size - 1)
+        end
+        if arm_positions.pickup.y == 0 then
+            pick_drop_housing.inserter_pick_switch_position.visible = true
+            pick_drop_housing.inserter_pick_switch_position.right_label_caption = { "gui-smart-inserters.buttom-pickup" }
+            pick_drop_housing.inserter_pick_switch_position.left_label_caption = { "gui-smart-inserters.top-pickup" }
+            pick_drop_housing.inserter_pick_switch_position.switch_state = "left"
+            if arm_positions.base.y == arm_positions.pure_pickup.y then
+                pick_drop_housing.inserter_pick_switch_position.switch_state = "right"
+            end
+        elseif arm_positions.pickup.x == 0 then
+            pick_drop_housing.inserter_pick_switch_position.visible = true
+            pick_drop_housing.inserter_pick_switch_position.right_label_caption = { "gui-smart-inserters.right-pickup" }
+            pick_drop_housing.inserter_pick_switch_position.left_label_caption = { "gui-smart-inserters.left-pickup" }
+            pick_drop_housing.inserter_pick_switch_position.switch_state = "left"
+            if arm_positions.base.x == arm_positions.pure_pickup.x then
+                pick_drop_housing.inserter_pick_switch_position.switch_state = "right"
+            end
+        end
+
+        --drop
+        if arm_positions.drop.x < 0 then
+            arm_positions.drop.x = arm_positions.drop.x + (inserter_size - 1)
+        end
+        if arm_positions.drop.y < 0 then
+            arm_positions.drop.y = arm_positions.drop.y + (inserter_size - 1)
+        end
+        if arm_positions.drop.y == 0 then
+            pick_drop_housing.inserter_drop_switch_position.visible = true
+            pick_drop_housing.inserter_drop_switch_position.right_label_caption = { "gui-smart-inserters.buttom-drop" }
+            pick_drop_housing.inserter_drop_switch_position.left_label_caption = { "gui-smart-inserters.top-drop" }
+            pick_drop_housing.inserter_drop_switch_position.switch_state = "left"
+            if arm_positions.base.y == arm_positions.pure_drop.y then
+                pick_drop_housing.inserter_drop_switch_position.switch_state = "right"
+            end
+        elseif arm_positions.drop.x == 0 then
+            pick_drop_housing.inserter_drop_switch_position.visible = true
+            pick_drop_housing.inserter_drop_switch_position.right_label_caption = { "gui-smart-inserters.right-drop" }
+            pick_drop_housing.inserter_drop_switch_position.left_label_caption = { "gui-smart-inserters.left-drop" }
+            pick_drop_housing.inserter_drop_switch_position.switch_state = "left"
+            if arm_positions.base.x == arm_positions.pure_drop.x then
+                pick_drop_housing.inserter_drop_switch_position.switch_state = "right"
             end
         end
     end
@@ -314,42 +488,39 @@ function gui.update(player, inserter)
                     button.enabled = false
                 else
                     button.enabled = util.should_cell_be_enabled({ x = x, y = y }, inserter_range, player.force, inserter,
-                        (slimn or slims), (slimo or slime), slim
+                        vertical, orizontal, slim
                     )
                 end
 
                 if math2d.position.equal(arm_positions.drop, { x, y }) then
+                    button.sprite = "drop"
                     if directional_slim_inserter and slim then
                         button.sprite = "selected-drop"
-                    else
-                        button.sprite = "drop"
                     end
                 elseif math2d.position.equal(arm_positions.pickup, { x, y }) then
+                    button.sprite = "pickup"
                     if directional_slim_inserter and slim then
                         button.sprite = "selected-pickup"
-                    else
-                        button.sprite = "pickup"
                     end
                 elseif x ~= 0 or y ~= 0 then
                     if directional_slim_inserter and slim and button.enabled == true then
-                        if slimn and y > 0 then
+                        button.sprite = nil
+                        if inserter.direction == 0 and y > 0 then
                             button.sprite = "background-drop"
-                        elseif slimn and y < 0 then
+                        elseif inserter.direction == 0 and y < 0 then
                             button.sprite = "background-pickup"
-                        elseif slims and y < 0 then
+                        elseif inserter.direction == 4 and y < 0 then
                             button.sprite = "background-drop"
-                        elseif slims and y > 0 then
+                        elseif inserter.direction == 4 and y > 0 then
                             button.sprite = "background-pickup"
-                        elseif slime and x < 0 then
+                        elseif inserter.direction == 2 and x < 0 then
                             button.sprite = "background-drop"
-                        elseif slime and x > 0 then
+                        elseif inserter.direction == 2 and x > 0 then
                             button.sprite = "background-pickup"
-                        elseif slimo and x > 0 then
+                        elseif inserter.direction == 6 and x > 0 then
                             button.sprite = "background-drop"
-                        elseif slimo and x < 0 then
+                        elseif inserter.direction == 6 and x < 0 then
                             button.sprite = "background-pickup"
-                        else
-                            button.sprite = nil
                         end
                     else
                         button.sprite = nil
@@ -419,15 +590,13 @@ end
 
 function gui.on_button_position(player, event)
     local inserter = player.opened
+    if not inserter_functions.is_inserter(inserter) then return end
     local new_pos = gui.get_button_pos(event.element)
-    local orientation = inserter_functions.get_inserter_orientation(inserter)
     local inserter_size = inserter_functions.get_inserter_size(inserter)
     local inserter_positions = inserter_functions.get_arm_positions(inserter)
-    local slim = inserter_functions.is_slim(inserter)
-    local slimn = slim and orientation == "N"
-    local slime = slim and orientation == "E"
-    local slims = slim and orientation == "S"
-    local slimo = slim and orientation == "O"
+    local slim = (inserter_size == 0)
+    local vertical = (inserter.direction==0 or inserter.direction==4)
+    local orizontal = (inserter.direction==2 or inserter.direction==6)
     local new_positions
 
     if event.button == defines.mouse_button_type.left and not event.control and not event.shift then
@@ -439,16 +608,15 @@ function gui.on_button_position(player, event)
 
         if event.element.sprite == "pickup" then
             new_positions.pickup = inserter_positions.drop
-
-            if new_positions.pickup.y >= 0 and (slimn or slims) then
+            if vertical and slim and new_positions.pickup.y >= 0 then
                 new_positions.pickup.y = new_positions.pickup.y + 1
-            elseif new_positions.pickup.x >= 0 and (slimo or slime) then
+            elseif orizontal and slim and new_positions.pickup.x >= 0 then
                 new_positions.pickup.x = new_positions.pickup.x + 1
             end
-            if (new_positions.pickup.y <= -1) and (inserter_size.z >= 2) then
+            if (new_positions.pickup.y <= -1) and (inserter_size >= 2) then
                 new_positions.pickup.y = new_positions.pickup.y + 1
             end
-            if (new_positions.pickup.x <= -1) and (inserter_size.z >= 2) then
+            if (new_positions.pickup.x <= -1) and (inserter_size >= 2) then
                 new_positions.pickup.x = new_positions.pickup.x + 1
             end
         end
@@ -456,15 +624,15 @@ function gui.on_button_position(player, event)
         new_positions.drop_offset = { x = 0, y = 0 }
         --Set the drop offset to the farthest side
         --[
-        if new_pos.x < 0 and not (slimo or slime) then
+        if new_pos.x < 0 and not (orizontal and slim) then
             new_positions.drop_offset.x = -1
-        elseif new_pos.x > 0 and not (slimo or slime) then
+        elseif new_pos.x > 0 and not (orizontal and slim) then
             new_positions.drop_offset.x = 1
         end
 
-        if new_pos.y < 0 and not (slimn or slims) then
+        if new_pos.y < 0 and not (vertical and slim) then
             new_positions.drop_offset.y = -1
-        elseif new_pos.y > 0 and not (slimn or slims) then
+        elseif new_pos.y > 0 and not (vertical and slim) then
             new_positions.drop_offset.y = 1
         end
         --]
@@ -484,28 +652,28 @@ function gui.on_button_position(player, event)
         if event.element.sprite == "drop" then
             new_positions.drop = inserter_positions.pickup
 
-            if new_positions.drop.y >= 0 and (slimn or slims) then
+            if new_positions.drop.y >= 0 and vertical and slim then
                 new_positions.drop.y = new_positions.drop.y + 1
-            elseif new_positions.drop.x >= 0 and (slimo or slime) then
+            elseif new_positions.drop.x >= 0 and orizontal and slim then
                 new_positions.drop.x = new_positions.drop.x + 1
             end
-            if (new_positions.drop.y <= -1) and (inserter_size.z >= 2) then
+            if (new_positions.drop.y <= -1) and (inserter_size >= 2) then
                 new_positions.drop.y = new_positions.drop.y + 1
             end
-            if (new_positions.drop.x <= -1) and (inserter_size.z >= 2) then
+            if (new_positions.drop.x <= -1) and (inserter_size >= 2) then
                 new_positions.drop.x = new_positions.drop.x + 1
             end
 
             new_positions.drop_offset = { x = 0, y = 0 }
-            if new_positions.drop.x < 0 and not (slimo or slime) then
+            if new_positions.drop.x < 0 and not (orizontal and slim) then
                 new_positions.drop_offset.x = -1
-            elseif new_positions.drop.x > 0 and not (slimo or slime) then
+            elseif new_positions.drop.x > 0 and not (orizontal and slim) then
                 new_positions.drop_offset.x = 1
             end
 
-            if new_positions.drop.y < 0 and not (slimn or slims) then
+            if new_positions.drop.y < 0 and not (vertical and slim) then
                 new_positions.drop_offset.y = -1
-            elseif new_positions.drop.y > 0 and not (slimn or slims) then
+            elseif new_positions.drop.y > 0 and not (vertical and slim) then
                 new_positions.drop_offset.y = 1
             end
         end
@@ -565,15 +733,13 @@ function gui.on_button_position(player, event)
 end
 
 function gui.on_button_drop_offset(player, event)
-    local new_drop_offset = gui.get_button_pos(event.element)
-    inserter_functions.set_arm_positions(player.opened, { drop_offset = new_drop_offset })
+    inserter_functions.set_arm_positions(player.opened, { drop_offset = gui.get_button_pos(event.element) })
 
     gui.update(player, player.opened)
 end
 
 function gui.on_button_pick_offset(player, event)
-    local new_pickup_offset = gui.get_button_pos(event.element)
-    inserter_functions.set_arm_positions(player.opened, { pickup_offset = new_pickup_offset })
+    inserter_functions.set_arm_positions(player.opened, { pickup_offset = gui.get_button_pos(event.element) })
 
     gui.update(player, player.opened)
 end
@@ -666,59 +832,34 @@ function gui.validate_button_placement(inserter, positions)
     if not directional_slim_inserter then
         return true
     end
-
-    local orientation = inserter_functions.get_inserter_orientation(inserter)
     local slim = inserter_functions.is_slim(inserter)
-    local slimn = slim and orientation == "N"
-    local slime = slim and orientation == "E"
-    local slims = slim and orientation == "S"
-    local slimo = slim and orientation == "O"
 
-    if positions.pickup ~= nil then
-        if slims and positions.pickup.y < 0 then
+    if positions.pickup ~= nil and slim then
+        if inserter.direction == 4 and positions.pickup.y < 0 then
             return false
         end
-        if slimn and positions.pickup.y > 0 then
+        if inserter.direction == 0 and positions.pickup.y > 0 then
             return false
         end
-        if slimo and positions.pickup.x > 0 then
+        if inserter.direction == 6 and positions.pickup.x > 0 then
             return false
         end
-        if slime and positions.pickup.x < 0 then
+        if inserter.direction == 2 and positions.pickup.x < 0 then
             return false
         end
     end
 
-    if positions.drop ~= nil then
-        if slims and positions.drop.y > 0 then
+    if positions.drop ~= nil and slim then
+        if inserter.direction == 4 and positions.drop.y > 0 then
             return false
         end
-        if slimn and positions.drop.y < 0 then
+        if inserter.direction == 0 and positions.drop.y < 0 then
             return false
         end
-        if slimo and positions.drop.x < 0 then
+        if inserter.direction == 6 and positions.drop.x < 0 then
             return false
         end
-        if slime and positions.drop.x > 0 then
-            return false
-        end
-    end
-
-    return true
-end
-
-function gui.should_show(entity)
-    --What an ugly ass piece of code... I rellay hate checking strings in this way to filter something, it's reliability is below 0...
-    local prototype_history = script.get_prototype_history(entity.type, entity.name)
-
-    for _, v in pairs(blacklist.mods) do
-        if string.find(prototype_history.created, v) then
-            return false
-        end
-    end
-
-    for _, v in pairs(blacklist.entities) do
-        if string.find(entity.name, v) then
+        if inserter.direction == 2 and positions.drop.x > 0 then
             return false
         end
     end
