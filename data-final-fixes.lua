@@ -2,7 +2,6 @@ local inserter_utils = require("lib.inserter_checker")
 local chases_belt_items = settings.startup["si-inserters-chase-belt-items"].value
 
 local long_inserters = {}
-
 for _, inserter in pairs(data.raw.inserter) do
 	inserter.allow_custom_vectors = true
 	inserter.extension_speed = inserter.extension_speed * 2
@@ -39,5 +38,15 @@ if settings.startup["si-disable-long-inserters"].value then
 				recipe.hidden = true
 			end
 		end
+	end
+end
+
+if settings.startup["si-disable-inserters-consumption"].value then
+	for _, inserter in pairs(data.raw.inserter) do
+		inserter.energy_per_movement = "0J"
+		inserter.energy_per_rotation = "0J"
+		inserter.energy_source = {
+			type = "void"
+		}
 	end
 end

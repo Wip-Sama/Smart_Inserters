@@ -104,6 +104,7 @@ function inserter_functions.get_arm_positions(inserter)
     return result
 end
 
+
 function inserter_functions.get_max_range(inserter, force)
     local range_adder_setting = settings.startup["si-range-adder"].value
 
@@ -143,6 +144,20 @@ end
 --ToClean
 function inserter_functions.enforce_max_range(inserter, force)
     local arm_positions = inserter_functions.get_arm_positions(inserter)
+
+    local slim = inserter_functions.is_slim(inserter)
+    if slim then
+        if inserter.direction == 0 then
+            arm_positions.drop.y = arm_positions.drop.y + 1
+        elseif inserter.direction == 4 then
+            arm_positions.pickup.y = arm_positions.pickup.y + 1
+        elseif inserter.direction == 2 then
+            arm_positions.pickup.x = arm_positions.pickup.x + 1
+        elseif inserter.direction == 6 then
+            arm_positions.drop.x = arm_positions.drop.x + 1
+        end
+    end
+
     local max_range = inserter_functions.get_max_range(inserter, force)
 
     local function enforce_position_limit(position)

@@ -64,7 +64,14 @@ data:extend({
         setting_type  = "startup",
         name          = "si-disable-long-inserters",
         default_value = true,
-        order         = "d"
+        order         = "da"
+    },
+    {
+        type          = "bool-setting",
+        setting_type  = "startup",
+        name          = "si-disable-inserters-consumption",
+        default_value = false,
+        order         = "db"
     },
     {
         type          = "bool-setting",
