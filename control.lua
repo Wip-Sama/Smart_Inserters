@@ -159,7 +159,7 @@ local function on_pre_entity_settings_pasted(event)
     elseif event.destination.inserter_filter_mode then
         copy_event.inserter_filter_mode = event.destination.inserter_filter_mode
     end
-    
+
     if event.destination.inserter_filter_mode then
         for i = 1, 5, 1 do
             local filtered_slot = copy_event.filtered_slots[i]
@@ -207,7 +207,7 @@ local function on_pre_entity_settings_pasted(event)
 
     if destination_behavior.circuit_stack_control_signal then
         copy_event.destination_behavior.circuit_stack_control_signal = game.table_to_json(destination_behavior.circuit_stack_control_signal)
-    end    
+    end
 end
 
 -- Gui Events
