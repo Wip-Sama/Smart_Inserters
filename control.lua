@@ -78,11 +78,7 @@ local function on_entity_settings_pasted(event)
     local player_storage = global.SI_Storage[player_index]
     local destination = event.destination
     local copy_event = player_storage.copy_event
-
-    -- Basic
-    destination.drop_position = copy_event.drop
-    destination.pickup_position = copy_event.pickup
-    destination.direction = copy_event.si_direction
+    local copy_settings = player_storage.copy_settings
 
     -- Filter
     if event.destination.inserter_filter_mode then
@@ -113,8 +109,41 @@ local function on_entity_settings_pasted(event)
         destination_behavior.circuit_stack_control_signal = game.json_to_table(dest_behavior_copy.circuit_stack_control_signal)
     end
 
+    -- Basic
+    -- If direction is set before setting positions factorio will not rotate the pickup/drop
+    local slim = inserter_functions.is_slim(destination)
+    local disable_dir = false
+    local disable_rel = false
+    if slim then
+        local d = (event.destination.direction == 2 or event.destination.direction == 6)
+        local s = (event.source.direction == 2 or event.source.direction == 6)
+        print("d", d)
+        print("s", s)
+        if d ~= s then
+            disable_rel = true
+        else
+            disable_dir = true
+        end
+        print("dr", disable_rel)
+        print("dd", disable_dir)
+    end
+
+    if (not disable_rel) and copy_settings.relative_si_direction then
+        destination.direction = (not disable_dir) and copy_event.si_direction or event.source.direction
+    end
+
+    destination.drop_position = copy_event.drop
+    destination.pickup_position = copy_event.pickup
+
+    local arm_positions = inserter_functions.enforce_max_range(destination, game.players[player_index].force)
+    inserter_functions.set_arm_positions(destination, arm_positions)
+
+    if not copy_settings.relative_si_direction then
+        destination.direction = (not disable_dir) and copy_event.si_direction or event.source.direction
+    end
+
+    -- Clear and Update
     storage_functions.purge_copy_event_data(player_index)
-    inserter_functions.enforce_max_range(destination, game.players[player_index].force)
     gui.update_all(destination)
 end
 
@@ -122,7 +151,6 @@ local function on_pre_entity_settings_pasted(event)
     if not (inserter_functions.is_inserter(event.source) and inserter_functions.is_inserter(event.destination)) then
         return
     end
-
     local player_index = event.player_index
     local player_storage = global.SI_Storage[player_index]
     local source_arm = inserter_functions.get_arm_positions(event.source)
@@ -139,7 +167,8 @@ local function on_pre_entity_settings_pasted(event)
 
     copy_event.si_direction = copy_settings.si_direction and event.source.direction or event.destination.direction
 
-    if copy_settings.si_direction or copy_settings.relative_si_direction then
+    --if copy_settings.relative_si_direction then
+    if false then
         drop = inserter_functions.calc_rotated_position(event.source, drop, event.destination.direction)
         pickup = inserter_functions.calc_rotated_position(event.source, pickup, event.destination.direction)
         drop_offset = inserter_functions.calc_rotated_offset(event.source, event.destination.direction, "drop")
@@ -152,6 +181,19 @@ local function on_pre_entity_settings_pasted(event)
     local new_pickup = math2d.position.add(pickup, pickup_offset)
     copy_event.drop = math2d.position.add(new_drop, destination_arm.base)
     copy_event.pickup = math2d.position.add(new_pickup, destination_arm.base)
+
+    local slim = inserter_functions.is_slim(event.source)
+    if slim then
+        if event.source.direction == 0 and (event.destination.direction == 2 or event.destination.direction == 6) then
+            copy_event.pickup.y = copy_event.pickup.y + 1
+        elseif event.source.direction == 4 and (event.destination.direction == 2 or event.destination.direction == 6) then
+            copy_event.drop.y = copy_event.drop.y + 1
+        elseif event.source.direction == 2 and (event.destination.direction == 0 or event.destination.direction == 4) then
+            copy_event.pickup.x = copy_event.pickup.x - 1
+        elseif event.source.direction == 6 and (event.destination.direction == 0 or event.destination.direction == 4) then
+            copy_event.drop.x = copy_event.drop.x - 1
+        end
+    end
 
     -- Filter
     if event.destination.inserter_filter_mode and event.source.inserter_filter_mode then
@@ -328,6 +370,7 @@ local function on_distance_adjust(event)
     if inserter_functions.is_inserter(player.selected) then
         local inserter = player.selected
 
+
         local slim = inserter_functions.is_slim(inserter)
         local size = inserter_functions.get_inserter_size(inserter)
 
@@ -351,6 +394,7 @@ local function on_distance_adjust(event)
             })
             return
         end
+
 
         local is_drop = string.find(event.input_name, "drop", 17) and true or false
 
@@ -435,6 +479,7 @@ local function on_offset_adjust(event)
             local target_range = math.max(math.abs(arm_positions[target].x), math.abs(arm_positions[target].y))
             local arm_dir = math2d.direction.downscale_to_vec1(arm_positions[target], target_range)
             local offset_dir = math2d.direction.from_vector(offset)
+            
             local slim = inserter_functions.is_slim(inserter)
             if not arm_dir then
                 arm_dir = inserter.direction
@@ -516,7 +561,7 @@ local function on_in_world_editor(event)
     end
     if player.selected and inserter_functions.is_inserter(player.selected) and player.selected.position and util.check_blacklist(player.selected) then
         local size = inserter_functions.get_inserter_size(player.selected)
-        --[[
+
             if size <= 0 then
             ---@diagnostic disable-next-line: missing-fields
             player.surface.create_entity({
@@ -527,7 +572,7 @@ local function on_in_world_editor(event)
             })
             return
         end
-        --]]
+
         if size >= 2 then
             ---@diagnostic disable-next-line: missing-fields
             player.surface.create_entity({
@@ -610,6 +655,7 @@ local function on_built_entity(event)
     end
 
     local max_range = inserter_functions.get_max_range(inserter, player.force)
+
     if slim then
         if vertical and diff.y >= 0 then     -- parte bassa / lower half
             max_range = max_range - 1
@@ -617,6 +663,7 @@ local function on_built_entity(event)
             max_range = max_range - 1
         end
     end
+
     local range = math.max(math.abs(diff.x), math.abs(diff.y))
     if range <= max_range then
         if util.should_cell_be_enabled(diff, max_range, player.force, inserter, vertical, orizontal, slim) then
@@ -680,6 +727,8 @@ local function on_built_entity(event)
                 end
             end
 
+            
+            --[[
             if slim then
                 if set.drop then
                     if vertical and set.drop.y >= 0 then     -- parte bassa / lower half
@@ -710,6 +759,8 @@ local function on_built_entity(event)
                     end
                 end
             end
+            --]]
+
             if gui.validate_button_placement(inserter, set) then
                 inserter_functions.set_arm_positions(inserter, set)
                 --world_editor.update_positions(event.player_index, inserter, changes)

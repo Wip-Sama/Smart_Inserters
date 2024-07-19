@@ -46,6 +46,7 @@ end
 
 --Cleaned
 function inserter_functions.is_slim(inserter)
+
     return (inserter.tile_height == 0 or inserter.tile_width == 0)
 end
 
@@ -146,6 +147,7 @@ function inserter_functions.enforce_max_range(inserter, force)
     local arm_positions = inserter_functions.get_arm_positions(inserter)
 
     local slim = inserter_functions.is_slim(inserter)
+
     if slim then
         if inserter.direction == 0 then
             arm_positions.drop.y = arm_positions.drop.y + 1
@@ -177,7 +179,7 @@ function inserter_functions.enforce_max_range(inserter, force)
         arm_positions.pickup = { x = -arm_positions.drop.x, y = -arm_positions.drop.y }
     end
 
-    inserter_functions.set_arm_positions(inserter, arm_positions)
+    return arm_positions
 end
 
 --ToClean
@@ -291,7 +293,9 @@ end
 function inserter_functions.set_arm_positions(inserter, positions)
     local inserter_size = inserter_functions.get_inserter_size(inserter)
     local base, _ = math2d.position.split(inserter.position)
+
     local slim = inserter_functions.is_slim(inserter)
+
     local vertical = (inserter.direction==0 or inserter.direction==4)
     local orizontal = (inserter.direction==2 or inserter.direction==6)
 

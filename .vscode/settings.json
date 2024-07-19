@@ -7,7 +7,8 @@
         "global",
         "mods",
         "data",
-        "settings"
+        "settings",
+        "game"
     ],
     "Lua.runtime.builtin": {
         "io": "disable",

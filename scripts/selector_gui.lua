@@ -219,7 +219,9 @@ function gui.update(player, inserter)
     local inserter_range = inserter_functions.get_max_range(inserter, player.force)
     local arm_positions = inserter_functions.get_arm_positions(inserter)
     local inserter_size = inserter_functions.get_inserter_size(inserter)
+
     local slim = inserter_functions.is_slim(inserter)
+
     local vertical = (inserter.direction==0 or inserter.direction==4)
     local orizontal = (inserter.direction==2 or inserter.direction==6)
     local enabled_cells = util.enabled_cell_matrix(player.force, orizontal, vertical, slim)
@@ -399,7 +401,9 @@ function gui.update_legacy(player, inserter)
     local inserter_range = inserter_functions.get_max_range(inserter, player.force)
     local arm_positions = inserter_functions.get_arm_positions(inserter)
     local inserter_size = inserter_functions.get_inserter_size(inserter)
+
     local slim = inserter_functions.is_slim(inserter)
+
     local vertical = (inserter.direction==0 or inserter.direction==4)
     local orizontal = (inserter.direction==2 or inserter.direction==6)
 
@@ -594,7 +598,9 @@ function gui.on_button_position(player, event)
     local new_pos = gui.get_button_pos(event.element)
     local inserter_size = inserter_functions.get_inserter_size(inserter)
     local inserter_positions = inserter_functions.get_arm_positions(inserter)
+
     local slim = (inserter_size == 0)
+
     local vertical = (inserter.direction==0 or inserter.direction==4)
     local orizontal = (inserter.direction==2 or inserter.direction==6)
     local new_positions
@@ -832,6 +838,7 @@ function gui.validate_button_placement(inserter, positions)
     if not directional_slim_inserter then
         return true
     end
+
     local slim = inserter_functions.is_slim(inserter)
 
     if positions.pickup ~= nil and slim then

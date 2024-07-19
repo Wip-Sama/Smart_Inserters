@@ -185,6 +185,17 @@ function copy_gui.add_gui(player)
 end
 
 function copy_gui.add_checkbox(flow, name, caption_key, tooltip_key, player_index)
+    if name == "relative_si_direction" or name == "si_direction" then
+        flow.add {
+            type = "checkbox",
+            name = name,
+            caption = { "gui-copy-smart-inserters." .. caption_key },
+            tooltip = { "gui-copy-smart-inserters." .. tooltip_key },
+            state = true,
+            enabled = false
+        }
+        return
+    end
     flow.add {
         type = "checkbox",
         name = name,
@@ -228,8 +239,14 @@ function copy_gui.toggle_checkbox_status(event)
                 buttons = vb.children[2].children[1].children[6]
             end
             for k, v in pairs(copy_gui.elememts[string.sub(event.element.name,8)]) do
+                if v == "relative_si_direction" or v == "si_direction" then
+                    buttons.children[k+1].state = true
+                    global.SI_Storage[player_index].copy_settings[v] = true
+                    goto cont
+                end
                 buttons.children[k+1].state = not status
                 global.SI_Storage[player_index].copy_settings[v] = not status
+                ::cont::
             end
             break
         end

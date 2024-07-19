@@ -26,6 +26,7 @@ function world_editor.draw_positions(player_index, inserter, hand)
     local player_storage = global.SI_Storage[player_index]
 
     local slim = inserter_functions.is_slim(inserter)
+
     local inserter_size = inserter_functions.get_inserter_size(inserter)
     local vertical = inserter.direction == defines.direction.north or inserter.direction == defines.direction.south
     local orizontal = inserter.direction == defines.direction.east or inserter.direction == defines.direction.west
@@ -182,7 +183,7 @@ function world_editor.update_positions(player_index, inserter, changes)
         -- Perché ho messo and not changes.pickup??? da controllare
         if changes.drop.old and not changes.pickup then
             --[[
-
+            
                 if size == 0 then
                     local vertical = (inserter.direction==0 or inserter.direction==4)
                     local orizontal = (inserter.direction==2 or inserter.direction==6)
@@ -223,7 +224,7 @@ function world_editor.update_positions(player_index, inserter, changes)
         end
         if changes.drop.new then
             --[[
-                
+
                 if size == 0 then
                     local vertical = (inserter.direction==0 or inserter.direction==4)
                     local orizontal = (inserter.direction==2 or inserter.direction==6)

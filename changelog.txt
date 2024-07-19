@@ -3,8 +3,10 @@ Version: 1.2.16
 Date: 2024-07-09
   Bugfixes:
     - Slim inserter copy past was broken
+  Disabled:
+    - Copy paste configurator direction / relative position settings
   Added:
-    - A setting to disable inserter power usare (false by default)
+    - A setting to disable inserter power usage (false by default)
 ---------------------------------------------------------------------------------------------------
 Version: 1.2.15
 Date: 2024-03-27
