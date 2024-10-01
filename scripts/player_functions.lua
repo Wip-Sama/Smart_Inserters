@@ -1,31 +1,29 @@
 local player_functions = {}
 
+---@param player LuaPlayer
+---@param item LuaItemStack | nil
 function player_functions.safely_change_cursor(player, item)
-    item = item or false
+    item = item or nil
     local inventory = player.get_main_inventory()
+    assert(inventory, "Inventory is nil")
 
     if player.cursor_stack.valid_for_read then
         local available_space = inventory.get_insertable_count(player.cursor_stack.name)
-
         local skip = player.cursor_stack.prototype.flags and player.cursor_stack.prototype.flags["only-in-cursor"]
 
-        if skip then
-            goto skip_change
+        if not skip then
+            if available_space >= player.cursor_stack.count * 2 then
+                inventory.insert({ name = player.cursor_stack.name, count = player.cursor_stack.count })
+            else
+                local bonus = player.force.character_inventory_slots_bonus
+                player.force.character_inventory_slots_bonus = bonus + 1
+
+                inventory.insert(player.cursor_stack)
+                player.cursor_stack.clear()
+
+                player.force.character_inventory_slots_bonus = bonus
+            end
         end
-
-        if available_space >= player.cursor_stack.count * 2 then
-            inventory.insert({ name = player.cursor_stack.name, count = player.cursor_stack.count })
-        else
-            local bonus = player.force.character_inventory_slots_bonus
-            player.force.character_inventory_slots_bonus = bonus + 1
-
-            inventory.insert(player.cursor_stack)
-            player.cursor_stack.clear()
-
-            player.force.character_inventory_slots_bonus = bonus
-        end
-
-        ::skip_change::
     end
 
     player.cursor_stack.clear()
@@ -35,8 +33,12 @@ function player_functions.safely_change_cursor(player, item)
     end
 end
 
+
+---@param player LuaPlayer
+---@param is_drop string
 function player_functions.configure_pickup_drop_changer(player, is_drop)
     local cursor_stack = player.cursor_stack
+    assert(cursor_stack, "Cursor stack is nil")
 
     if cursor_stack.is_blueprint then
         cursor_stack.set_blueprint_entities({

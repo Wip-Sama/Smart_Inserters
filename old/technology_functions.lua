@@ -3,6 +3,7 @@ local range_technologies = settings.startup["si-range-technologies"].value
 local offset_selector_technologies = settings.startup["si-offset-technologies"].value
 local max_inserter_range = settings.startup["si-max-inserters-range"].value
 
+local inserter_functions = require("__Smart_Inserters__/scripts/inserter_functions")
 local math2d = require("__yafla__/scripts/extended_math2d")
 
 ---@type tech_lookup_table
@@ -10,71 +11,6 @@ tech_lookup_table = tech_lookup_table or {}
 local tech = {}
 local util = require("__core__/lualib/util")
 
----@param position Position
----@param base Position
----@return boolean 
-function cross_diagonals(position, base)
-    local width, height = base.x, base.y
-    local x, y = position.x, position.y
-
-    local lower_width = base%2==0 and width/2 or width/2-0.5
-    local higher_width = width%2==0 and width/2 or width/2+0.5
-
-    local lower_height = height%2==0 and height/2 or height/2-0.5
-    local higher_height = height%2==0 and height/2 or height/2+0.5
-
-    if (y >=-lower_height and y <= higher_height) and (-lower_width > x or higher_width < x) then
-        return true
-    end
-    if (x >=-lower_width and x <= higher_width) and (-lower_height > y or higher_height < y) then
-        return true
-    end
-    return false
-end
-
----@param position Position
----@param base Position
----@return boolean
-function x_diagonals(position, base)
-    --Do not use cross_diagonals here becouse all the lower / higher would be calculated twice
-    local width, height = base.x, base.y
-    local x, y = position.x, position.y
-
-    local lower_width = width%2==0 and width/2 or width/2-0.5
-    local higher_width = width%2==0 and width/2 or width/2+0.5
-
-    local lower_height = height%2==0 and height/2 or height/2-0.5
-    local higher_height = height%2==0 and height/2 or height/2+0.5
-
-    if (y >=-lower_height and y <= higher_height) and (-lower_width > x or higher_width < x) then
-        return true
-    end
-    if (x >=-lower_width and x <= higher_width) and (-lower_height > y or higher_height < y) then
-        return true
-    end
-
-    if (x < -lower_width) then
-        x = position.x + lower_width
-    elseif (x >= higher_width) then
-        -- il +1 serve perchè il quadrato si sposterebbe a sinistra di troppo
-        -- l'uguale include 1 di errore
-        -- nota: che anche se x > e non x >= il +1 serve lo stesso ma ci sono casi in cui va fuori range
-        -- todo: verificare se il +1 funziona con gli slim, potrebbe andar bene math.min(width, height, 1)
-        x = position.x - higher_width + 1
-    end
-
-    if (y < -lower_height) then
-        y = position.y + lower_height
-    elseif (y >= higher_height) then
-        y = position.y - higher_height + 1
-    end
-
-    return (math.abs(x) == math.abs(y))
-
-end
-
----@param force LuaForce
----@return boolean
 function tech.check_offset_tech(force)
     if not offset_selector_technologies then
         return true
@@ -83,9 +19,7 @@ function tech.check_offset_tech(force)
     return force.technologies["si-unlock-offsets"].researched
 end
 
----@param force LuaForce
----@param cell_position Position
----@return boolean
+--Legacy
 function tech.check_diagonal_tech(force, cell_position)
     if not diagonal_technologies then
         return true
@@ -100,10 +34,7 @@ function tech.check_diagonal_tech(force, cell_position)
         all_diagonals_unlocked
 end
 
----@param force LuaForce
----@param cell_position Position
----@param distance_offset number
----@return boolean
+--Legacy
 function tech.check_range_tech(force, cell_position, distance_offset)
     if not range_technologies then
         return true
@@ -146,27 +77,6 @@ function tech.check_range_tech(force, cell_position, distance_offset)
     return distance <= 1
 end
 
---Distance offset is to trick the function into ticking that incremental range is in inserter_range
----@param force LuaForce
----@param cell_position Position
----@param distance_offset number
----@return boolean
-function tech.check_tech(force, cell_position, distance_offset)
-    -- if validate_tech_lookup_table(force) then
-    --     return util.copy(tech_lookup_table[force.index].check)
-    -- else
-    --     tech.generate_tech_lookup_table(force)
-    --     return util.copy(tech_lookup_table[force.index].check)
-    -- end
-    return tech.check_range_tech(force, cell_position, distance_offset) and tech.check_diagonal_tech(force, cell_position)
-end
-
-
-
-----------------------------------------------------------
---------------------- LOOKUP TABLES ---------------------- !INCOMPLETE
-----------------------------------------------------------
-
 ---@param force LuaForce
 ---@return boolean
 local function validate_tech_lookup_table(force)
@@ -191,8 +101,9 @@ end
 ---@param force LuaForce
 ---@return nil
 function tech.generate_tech_lookup_table(force)
+
     tech_lookup_table[force.index] = {
-        range = {},
+        range = {false, false, false, false},
         diagonal = {
             force.technologies["si-unlock-cross"].researched,
             force.technologies["si-unlock-x-diagonals"].researched,
@@ -200,50 +111,60 @@ function tech.generate_tech_lookup_table(force)
         },
         check = {}
     }
+
+    tech_lookup_table[force.index].diagonal = {
+        force.technologies["si-unlock-cross"].researched,
+        force.technologies["si-unlock-x-diagonals"].researched,
+        force.technologies["si-unlock-all-diagonals"].researched,
+    }
     for t = 1, 5 do
         tech_lookup_table[force.index].range[t] = force.technologies["si-unlock-range-" .. tostring(t)].researched
     end
 
-    if range_technologies then
+    local valid_distance = 1
+
+    if not range_technologies then
+        valid_distance = inserter_functions.get_max_inserters_range()
+    else
         --5 is the max tech
         for t = 5, 1, -1 do
             if force.technologies["si-unlock-range-" .. math.min(5, t)].researched and force.technologies["si-unlock-range-" .. math.min(5, t)].prototype.hidden == false then
-                max_inserter_range = math.min(4, t)+1
+                valid_distance = math.min(4, t)+1
                 break
             end
         end
         if settings.startup["si-range-adder"].value == "incremental" then
-            max_inserter_range = max_inserter_range-5+(max_inserter_range-1) --It might need to be turned back to 4
+            valid_distance = inserter_functions.get_max_inserters_range()-5+(valid_distance-1) --It might need to be turned back to 4
         end
     end
 
-    ---@return boolean
-    local diagonal_function = function()
-        return true
-    end
-    if diagonal_technologies then
+    local diagonal_function
+    if not diagonal_technologies then
+        ---@return boolean
+        diagonal_function = function()
+            return true
+        end
+    else
+        local cross_unlocked = tech_lookup_table[force.index].diagonal[1]
+        local x_diagonals_unlocked = tech_lookup_table[force.index].diagonal[2]
+        local all_diagonals_unlocked = tech_lookup_table[force.index].diagonal[3]
         ---@return boolean
         diagonal_function = function()
             return false
         end
-        if tech_lookup_table[force.index].diagonal[2] then
+        if all_diagonals_unlocked then
+            ---@return boolean
+            diagonal_function = function()
+                return true
+            end
+        elseif x_diagonals_unlocked then
             diagonal_function = x_diagonals
-        elseif tech_lookup_table[force.index].diagonal[1] then
+        elseif cross_unlocked then
             diagonal_function = cross_diagonals
-        end
-    end
-
-    for x = -max_inserter_range, max_inserter_range do
-        tech_lookup_table[force.index].check[x] = {}
-        for y = -max_inserter_range, max_inserter_range do
-            tech_lookup_table[force.index].check[x][y] = diagonal_function({x = x, y = y}, {x = max_inserter_range, y = max_inserter_range}) and tech.check_range_tech(force, {x = x, y = y}, 0)
         end
     end
 end
 
----comment
----@param force LuaForce
----@return table|unknown
 function tech.get_tech_lookup_table(force)
     if validate_tech_lookup_table(force) then
         return util.copy(tech_lookup_table[force.index].check)
@@ -251,7 +172,14 @@ function tech.get_tech_lookup_table(force)
     return tech.generate_tech_lookup_table(force)
 end
 
---Migrate tech from bob
+--Distance offset is to trick the function into ticking that incremental range is in inserter_range
+function tech.check_tech(force, cell_position, distance_offset)
+    if validate_tech_lookup_table(force) then
+        return tech_lookup_table[force.index].check[cell_position.x][cell_position.y]
+    end
+    return tech.check_range_tech(force, cell_position, distance_offset) and tech.check_diagonal_tech(force, cell_position)
+end
+
 function tech.migrate_all()
     for _, force in pairs(game.forces) do
         tech.generate_tech_lookup_table(force)

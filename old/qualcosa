@@ -1,0 +1,209 @@
+-- Also known as 3x3 table approach
+-- I do not want to hink again bout these for so this will remain here even if outdated (for now)
+---@param width number
+---@param height number
+---@return table
+function gui.generate_tables_x_y_inserter_grid(width, height)
+    local inserters_max_range = inserter_functions.get_max_inserters_range()
+
+    local lower_width = width%2==0 and width/2 or width/2-0.5
+    local higher_width = width%2==0 and width/2 or width/2+0.5
+
+    local lower_height = height%2==0 and height/2 or height/2-0.5
+    local higher_height = height%2==0 and height/2 or height/2+0.5
+
+    local tl = {}
+    local tc = {}
+    local tr = {}
+
+    local cl = {}
+    local cc = {}
+    local cr = {}
+
+    local bl = {}
+    local bc = {}
+    local br = {}
+
+
+    for y = -inserters_max_range-lower_height, -lower_height-1, 1 do
+        for x = -inserters_max_range-lower_width, -lower_width-1, 1 do
+            table.insert(tl,
+                SPRITE_BUTTON {
+                    name = tostring(x) .. "_" .. tostring(y),
+                    style = "slot_sized_button",
+                    on_click = "change_pickup_drop",
+                    size = { 32, 32 }
+                }
+            )
+        end
+    end
+    for y = -inserters_max_range-lower_height, -lower_height-1, 1 do
+        for x = -lower_width, higher_width-1, 1 do
+            table.insert(tc,
+                SPRITE_BUTTON {
+                    name = tostring(x) .. "_" .. tostring(y),
+                    style = "slot_sized_button",
+                    on_click = "change_pickup_drop",
+                    size = { 32, 32 }
+                }
+            )
+        end
+    end
+    for y = -inserters_max_range-lower_height, -lower_height-1, 1 do
+        for x = higher_width, inserters_max_range+higher_width-1, 1 do
+            table.insert(tr,
+                SPRITE_BUTTON {
+                    name = tostring(x) .. "_" .. tostring(y),
+                    style = "slot_sized_button",
+                    on_click = "change_pickup_drop",
+                    size = { 32, 32 }
+                }
+            )
+        end
+    end
+
+
+    for y = -lower_height, higher_height-1, 1 do
+        for x = -inserters_max_range-lower_width, -lower_width-1, 1 do
+            table.insert(cl,
+                SPRITE_BUTTON {
+                    name = tostring(x) .. "_" .. tostring(y),
+                    style = "slot_sized_button",
+                    on_click = "change_pickup_drop",
+                    size = { 32, 32 }
+                }
+            )
+        end
+    end
+    for y = -lower_height, higher_height-1, 1 do
+        for x = -lower_width, higher_width-1, 1 do
+            if x ~= 0 or y ~= 0 then
+                table.insert(cc,
+                    EMPTY_WIDGET {
+                        name = "sprite_inserter_"..tostring(x) .. "_" .. tostring(y),
+                        size = { 32, 32 },
+                    }
+                )
+            else
+                table.insert(cc,
+                    FLOW {
+                        top_margin = -(32+33*(math.min(width, height)-1))/2,
+                        left_margin = -(32+33*(math.min(width, height)-1))/2,
+                        SPRITE {
+                            sprite = "item.inserter",
+                            size = 32+33*(math.min(width, height)-1),
+                            resize_to_sprite = false
+                        }
+                    }
+                )
+            end
+        end
+    end
+    for y = -lower_height, higher_height-1, 1 do
+        for x = higher_width, inserters_max_range+higher_width-1, 1 do
+            table.insert(cr,
+                SPRITE_BUTTON {
+                    name = tostring(x) .. "_" .. tostring(y),
+                    style = "slot_sized_button",
+                    on_click = "change_pickup_drop",
+                    size = { 32, 32 }
+                }
+            )
+        end
+    end
+
+
+    for y = higher_height, inserters_max_range+higher_height-1, 1 do
+        for x = -inserters_max_range-lower_width, -lower_width-1, 1 do
+            table.insert(bl,
+                SPRITE_BUTTON {
+                    name = tostring(x) .. "_" .. tostring(y),
+                    style = "slot_sized_button",
+                    on_click = "change_pickup_drop",
+                    size = { 32, 32 }
+                }
+            )
+        end
+    end
+    for y = higher_height, inserters_max_range+higher_height-1, 1 do
+        for x = -lower_width, higher_width-1, 1 do
+            table.insert(bc,
+                SPRITE_BUTTON {
+                    name = tostring(x) .. "_" .. tostring(y),
+                    style = "slot_sized_button",
+                    on_click = "change_pickup_drop",
+                    size = { 32, 32 }
+                }
+            )
+        end
+    end
+    for y = higher_height, inserters_max_range+higher_height-1, 1 do
+        for x = higher_width, inserters_max_range+higher_width-1, 1 do
+            table.insert(br,
+                SPRITE_BUTTON {
+                    name = tostring(x) .. "_" .. tostring(y),
+                    style = "slot_sized_button",
+                    on_click = "change_pickup_drop",
+                    size = { 32, 32 }
+                }
+            )
+        end
+    end
+
+    return {
+        TABLE {
+            column_count = inserters_max_range,
+            horizontal_spacing = 1,
+            vertical_spacing = 1,
+            tl
+        },
+        TABLE {
+            column_count = width,
+            horizontal_spacing = 1,
+            vertical_spacing = 1,
+            tc
+        },
+        TABLE {
+            column_count = inserters_max_range,
+            horizontal_spacing = 1,
+            vertical_spacing = 1,
+            tr
+        },
+        TABLE {
+            column_count = inserters_max_range,
+            horizontal_spacing = 1,
+            vertical_spacing = 1,
+            cl
+        },
+        TABLE {
+            column_count = width,
+            horizontal_spacing = 1,
+            vertical_spacing = 1,
+            cc
+        },
+        TABLE {
+            column_count = inserters_max_range,
+            horizontal_spacing = 1,
+            vertical_spacing = 1,
+            cr
+        },
+        TABLE {
+            column_count = inserters_max_range,
+            horizontal_spacing = 1,
+            vertical_spacing = 1,
+            bl
+        },
+        TABLE {
+            column_count = width,
+            horizontal_spacing = 1,
+            vertical_spacing = 1,
+            bc
+        },
+        TABLE {
+            column_count = inserters_max_range,
+            horizontal_spacing = 1,
+            vertical_spacing = 1,
+            br
+        }
+    }
+end

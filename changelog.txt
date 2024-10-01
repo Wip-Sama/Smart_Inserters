@@ -1,4 +1,34 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.0
+Date: 2024-xx-xx
+  Warning:
+    - This is a full rewrite of the mod, some features have changed so it may take some time to get used to it (it shouldn't be hard)
+    - The mod SHOULD be stable and backward compatible but if you're on a big world or an important one you should make a backup before updating
+  Changes:
+    - New UI, it may look similar but it's Yafla inside
+    - New icons
+    - Right-click change pickup
+    - Left click change drop
+    - Shift inveert right/lesft click
+    - Control on any will switch pick and drop
+    - offset will not change when changing position/rotation (may change)
+  Added:
+    - Pick/Drop on the same tile
+    - Support for 2x2, 2x3, 3x2, slim, and any strange inserters up to 6x6, it SHOULD work for bigger inserters but do not quote me on that
+    - shortcut to adjust the distance in the opposite direction (expand and retract, before it worked only expand)
+  Removed:
+    - Copy-paste selector, this caused more problems than anything so it was not worth the time and problems it caused
+    - shortcut to fien control offsets, only near and far are available now, the shortcut should be fast if you want granular control open the GUI
+  Modding:
+    - If you want to add support for your mod you can use events.on_inserter_arm_changed to be notified when something happens, this is used internally for GUI updates so you should not miss anything
+  Notes:
+    - I did not test slim inserters of odd shapes like 3-0, or 0-3, consider these as not supported if you encounter any of them, the current code is not far away from supporting them, but I don't feel like spending the time to implement a use case that does not exist    
+  Known Issues:
+    - coping settings from inserters of different sizes (2x2 to 3x3) will probably move the pickup/drop out of the grid
+    - If the inserter position is invalid the pickup/drop will not appear on the grid so you will not be able to change it
+    - if the offset is too close to the border the first time you rotate it may change position, this ONLY HAPPENS when the position is not set with this mod
+    - This update made the mod kinda slow again while rewriting the code I disabled matrix caching, I'll re-enable it in the future
+---------------------------------------------------------------------------------------------------
 Version: 1.2.16
 Date: 2024-07-09
   Bugfixes:
@@ -45,7 +75,7 @@ Date: 2024-03-26
     - A new mod appeared While I was doing this update (QAI) the author added compatibility with this mod itself
     - - I was planning on moving some settings to "map settings" but I may not do this anymore or at least not now 
     - Some of the features of QAI are not currently supported by SI
-    - - Pickup/Drop on the same tile will become a setting in the future
+    - - pickup/Drop on the same tile will become a setting in the future
     - - Long inserter can't catch items near them, I did not think of this feature I'll add a setting in the future
     - If you use the new shortcut on slim inserter the first time the direction may not change and you might need to use it again (it's not the best but it greatly reduces code complexity, I'll fix it in the future) 
   Maybe:
@@ -69,7 +99,7 @@ Date: 2023-12-23
   Changes:
     - Now all the shortcuts are set to none, if you want to use them you need to set them at ( settings -> controls -> mods -> Smart Inserters )
   Bugfixes:
-    - Pickup would be stuck when changed if near a rail -https://mods.factorio.com/mod/Smart_Inserters/discussion/656b192ef49ec2e9ceac7eac
+    - pickup would be stuck when changed if near a rail -https://mods.factorio.com/mod/Smart_Inserters/discussion/656b192ef49ec2e9ceac7eac
     - Copying inserter settings resets constant filters -https://mods.factorio.com/mod/Smart_Inserters/discussion/656515f9b9de9721d8ba3802
 ---------------------------------------------------------------------------------------------------
 Version: 1.2.10
@@ -201,7 +231,7 @@ Date: 2023-10-16
     - rotation adjust hotkeys
   Changes:
     - Configuration UI is now disabled for mini loader and RenaiTramsportation mods
-    - Pick-Drop UI is now centered
+    - pickup-Drop UI is now centered
     - Slim inserter settings are now hidden if none are detected (sorta, it only checks if known slim inserter mods are present due to Factorio limitations)
     - Corrected some parts of my terrible English in the changelog
     - Small optimizations to the disable-long-inserter script
@@ -235,13 +265,13 @@ Date: 2023-09-27
   Changes:
     - Changelog changes 
     - Better localization for some settings (again)
-    - Removed the separator between pick/drop offset and centered pickup/drop offset
+    - Removed the separator between pickup/drop offset and centered pickup/drop offset
   Migrations:
     - Now when migrating from Bob some technologies will be migrated to Smart Inserter tech
   Bugfixes:
-    - Crash when clicking on the UI with pick/drop offset disabled
+    - Crash when clicking on the UI with pickup/drop offset disabled
   Maybe:
-    - Centre the ui for pick/drop position
+    - Centre the ui for pickup/drop position
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.5
 Date: 2023-09-21
@@ -258,7 +288,7 @@ Date: 2023-09-21
 Version: 1.0.4
 Date: 2023-09-20
   Changes:
-    - Disabled cells now show the pick/drop icon
+    - Disabled cells now show the pickup/drop icon
   Maybe:
     - Support for 2x2 inserters
 ---------------------------------------------------------------------------------------------------

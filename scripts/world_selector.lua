@@ -198,8 +198,7 @@ function world_editor.update_positions(player_index, inserter, changes)
                         [changes.drop.old.y].render_id
                 end
             ]]
-            render_id = global.SI_Storage[player_index].selected_inserter.position_grid[changes.drop.old.x]
-            [changes.drop.old.y].render_id
+            render_id = global.SI_Storage[player_index].selected_inserter.position_grid[changes.drop.old.x][changes.drop.old.y].render_id
             if type(render_id) ~= "number" then return end
             rendering.destroy(render_id)
             enabled_cell = util.should_cell_be_enabled(changes.drop.old, range, player.force, inserter)
