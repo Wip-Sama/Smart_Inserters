@@ -600,7 +600,7 @@ local function on_built_entity(event)
     end
     local range = math.max(math.abs(diff.x), math.abs(diff.y))
     if range <= max_range then
-        if util.should_cell_be_enabled(diff, max_range, player.force, inserter, vertical, orizontal, slim) then
+        if inserter_functions.should_cell_be_enabled(diff, max_range, player.force, inserter, vertical, orizontal, slim) then
             local set = {}
             local changes = {}
             if math2d.position.equal(arm_positions[is_pickup], diff) then
@@ -784,33 +784,7 @@ end
 
 ---@param event InserterArmChanged
 local function on_inserter_arm_changed(event)
-    local player = game.get_player(event.player_index)
-    assert(player, "Player not found")
-
-    if event.old_drop ~= nil then
-        local button = event.old_drop.x.."_"..event.old_drop.y
-        gui_helper.find_element_recursive(player.gui.relative.smart_inserters, button).sprite = ""
-    end
-
-    if event.old_pickup ~= nil then
-        local button = event.old_pickup.x.."_"..event.old_pickup.y
-        gui_helper.find_element_recursive(player.gui.relative.smart_inserters, button).sprite = ""
-    end
-
-    local offset_flow = gui_helper.find_element_recursive(player.gui.relative.smart_inserters, "offset_flow")
-    assert(offset_flow, "Offset flow not found")
-
-    if event.old_drop_offset ~= nil then
-        local button = event.old_drop_offset.x.."_"..event.old_drop_offset.y
-        offset_flow.flow_drop.table_drop[button].sprite = ""
-    end
-
-    if event.old_pickup_offset ~= nil then
-        local button = event.old_pickup_offset.x.."_"..event.old_pickup_offset.y
-        offset_flow.flow_pickup.table_pickup[button].sprite = ""
-    end
-
-    selector_gui.update(event)
+    selector_gui.update_all(event.inserter, event)
 end
 
 

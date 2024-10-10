@@ -101,6 +101,42 @@ function tech.check_diagonal_tech(force, cell_position)
 end
 
 ---@param force LuaForce
+---@return integer
+function tech.get_actual_increment(force)
+    if not range_technologies then
+        return 5
+    end
+    if force.technologies["si-unlock-range-5"].researched and force.technologies["si-unlock-range-5"].prototype.hidden == false then
+        return 5
+    elseif force.technologies["si-unlock-range-4"].researched and force.technologies["si-unlock-range-4"].prototype.hidden == false then
+        return 4
+    elseif force.technologies["si-unlock-range-3"].researched and force.technologies["si-unlock-range-3"].prototype.hidden == false then
+        return 3
+    elseif force.technologies["si-unlock-range-2"].researched and force.technologies["si-unlock-range-2"].prototype.hidden == false then
+        return 2
+    elseif force.technologies["si-unlock-range-1"].researched and force.technologies["si-unlock-range-1"].prototype.hidden == false then
+        return 1
+    end
+    return 0
+end
+
+---@param force LuaForce
+---@return integer
+function tech.get_diagonal_increment(force)
+    if not diagonal_technologies then
+        return 3
+    end
+    if force.technologies["si-unlock-all-diagonals"].researched and force.technologies["si-unlock-all-diagonals"].prototype.hidden == false then
+        return 3
+    elseif force.technologies["si-unlock-x-diagonals"].researched and force.technologies["si-unlock-x-diagonals"].prototype.hidden == false then
+        return 2
+    elseif force.technologies["si-unlock-cross"].researched and force.technologies["si-unlock-cross"].prototype.hidden == false then
+        return 1
+    end
+    return 0
+end
+
+---@param force LuaForce
 ---@param cell_position Position
 ---@param distance_offset number
 ---@return boolean
@@ -109,15 +145,22 @@ function tech.check_range_tech(force, cell_position, distance_offset)
         return true
     end
 
-    cell_position = math2d.position.ensure_xy(cell_position)
-    distance_offset = distance_offset or 0
-    local distance = math.max(math.abs(cell_position.x), math.abs(cell_position.y)) - distance_offset
+    cell_position = math2d.position.abs(cell_position)
+    local distance = math.max(cell_position.x, cell_position.y)
     distance = math.max(math.floor(distance), 1)
     if distance == 1 then
         return true
     end
 
-    if settings.startup["si-range-adder"].value == "incremental" then
+    if settings.startup["si-range-adder"].value == "incremental" or settings.startup["si-range-adder"].value == "incremental-with-rebase" then
+        cell_position = math2d.position.abs(cell_position)
+        distance_offset = distance_offset or 0
+        local distance = math.max(cell_position.x, cell_position.y) - distance_offset
+        distance = math.max(math.floor(distance), 1)
+        if distance == 1 then
+            return true
+        end
+
         if force.technologies["si-unlock-range-" .. math.min(5, distance)].researched and force.technologies["si-unlock-range-" .. math.min(5, distance)].prototype.hidden == false then
             return true
         elseif force.technologies["si-unlock-range-4"].researched and force.technologies["si-unlock-range-4"].prototype.hidden == false then

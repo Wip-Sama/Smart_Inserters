@@ -16,29 +16,38 @@ local gui = {}
 ---@param inserter LuaEntity
 ---@return table
 function gui.generate_slim_inserter_grid(inserter)
-    local inserters_max_range = inserter_functions.get_max_inserters_range()
+    local max_inserter_range, min_inserter_range = inserter_functions.get_max_and_min_inserter_range(inserter)
     local table_position = {}
+    local direction = inserter.direction
+    local width, height = math.ceil(inserter.tile_width), math.ceil(inserter.tile_height)
+    width, height = math.max(1, width), math.max(1, height)
     local vertical = inserter.tile_width > 0
-    for y = -inserters_max_range, inserters_max_range, 1 do
-        for x = -inserters_max_range, inserters_max_range, 1 do
+    for y = -max_inserter_range, max_inserter_range, 1 do
+        for x = -max_inserter_range, max_inserter_range, 1 do
             if x == 0 and y == 0 then
                 table.insert(table_position,
                     SPRITE {
                         name = "sprite_inserter",
-                        sprite = "item/inserter",
+                        sprite = "item/" .. inserter.prototype.items_to_place_this[1].name,
                         stretch_image_to_widget_size = true,
                         size = { 32, 32 },
                     }
+                    -- CAMERA {
+                    --     position = inserter.position,
+                    --     width = 32+33*(width-1),
+                    --     height = 32+33*(height-1),
+                    --     zoom = 1,
+                    -- }
                 )
             else
                 if (x ~= 0 and not vertical) or (y ~= 0 and vertical) then
                     if not vertical and x > 0 then
-                        if (util.should_cell_be_enabled(inserter, {x = x-1, y = y}, inserter_functions.get_max_inserters_range())) then
+                        if (inserter_functions.should_cell_be_enabled(inserter, {x = x-1, y = y})) then
                             table.insert(table_position,
                                 SPRITE_BUTTON {
                                     name = tostring(x-1) .. "_" .. tostring(y),
-                                    style = "slot_sized_button",
-                                    on_click = "change_pickup_drop",
+                                    style = directional_slim_inserter and (inserter.direction == 2 and "slot_sized_button_pickup" or "slot_sized_button_drop") or "slot_sized_button",
+                                    on_click = directional_slim_inserter and (inserter.direction == 2 and "change_drop" or "change_pickup") or "change_pickup_drop",
                                     size = { 32, 32 }
                                 }
                             )
@@ -50,12 +59,12 @@ function gui.generate_slim_inserter_grid(inserter)
                             )
                         end
                     elseif vertical and y > 0 then
-                        if (util.should_cell_be_enabled(inserter, {x = x, y = y-1}, inserter_functions.get_max_inserters_range())) then
+                        if (inserter_functions.should_cell_be_enabled(inserter, {x = x, y = y-1})) then
                             table.insert(table_position,
                                 SPRITE_BUTTON {
                                     name = tostring(x) .. "_" .. tostring(y-1),
-                                    style = "slot_sized_button",
-                                    on_click = "change_pickup_drop",
+                                    style = directional_slim_inserter and (inserter.direction == 4 and "slot_sized_button_pickup" or "slot_sized_button_drop") or "slot_sized_button",
+                                    on_click = directional_slim_inserter and (inserter.direction == 4 and "change_drop" or "change_pickup") or "change_pickup_drop",
                                     size = { 32, 32 }
                                 }
                             )
@@ -67,12 +76,12 @@ function gui.generate_slim_inserter_grid(inserter)
                             )
                         end
                     else
-                        if (util.should_cell_be_enabled(inserter, {x = x, y = y}, inserter_functions.get_max_inserters_range())) then
+                        if (inserter_functions.should_cell_be_enabled(inserter, {x = x, y = y})) then
                             table.insert(table_position,
                                 SPRITE_BUTTON {
                                     name = tostring(x) .. "_" .. tostring(y),
-                                    style = "slot_sized_button",
-                                    on_click = "change_pickup_drop",
+                                    style = directional_slim_inserter and ((inserter.direction == 6 or inserter.direction == 0) and "slot_sized_button_pickup" or "slot_sized_button_drop") or "slot_sized_button",
+                                    on_click = directional_slim_inserter and ((inserter.direction == 6 or inserter.direction == 0) and "change_drop" or "change_pickup") or "change_pickup_drop",
                                     size = { 32, 32 }
                                 }
                             )
@@ -101,7 +110,7 @@ end
 ---@param inserter LuaEntity
 ---@return table
 function gui.generate_x_y_inserter_grid(inserter)
-    local inserters_max_range = inserter_functions.get_max_inserters_range()
+    local max_inserter_range, min_inserter_range = inserter_functions.get_max_and_min_inserter_range(inserter)
     local width, height = math.ceil(inserter.tile_width), math.ceil(inserter.tile_height)
 
     local lower_width = width%2==0 and width/2 or width/2-0.5
@@ -111,20 +120,26 @@ function gui.generate_x_y_inserter_grid(inserter)
     local higher_height = height%2==0 and height/2 or height/2+0.5
 
     local table_position = {}
-    for y = -inserters_max_range-lower_height, inserters_max_range+higher_height-1, 1 do
-        for x = -inserters_max_range-lower_width, inserters_max_range+higher_width-1, 1 do
+    for y = -max_inserter_range-lower_height, max_inserter_range+higher_height-1, 1 do
+        for x = -max_inserter_range-lower_width, max_inserter_range+higher_width-1, 1 do
             if (-lower_width <= x and x < higher_width) and (-lower_height <= y and y < higher_height) then
                 if x == higher_width-1 and y == higher_height-1 then
                     table.insert(table_position,
                         FLOW {
                             top_margin = (height-1)*-33,
-                            left_margin = width/2*-33*math.min(1, width-1),
+                            left_margin = width/2*-33*math.min(1, width-1), -- use with sprite
+                            --left_margin = (width-1)*-33, -- use with camera
                             SPRITE {
                                 name = "sprite_inserter_"..tostring(x) .. "_" .. tostring(y),
-                                sprite = "item.inserter",
+                                sprite = "item/" .. inserter.prototype.items_to_place_this[1].name,
                                 size = 32+33*(math.min(width, height)-1),
                                 resize_to_sprite = false
                             }
+                            -- CAMERA {
+                            --     position = inserter.position,
+                            --     width = 32+33*(width-1),
+                            --     height = 32+33*(height-1),
+                            -- }
                         }
                     )
                 else
@@ -135,7 +150,7 @@ function gui.generate_x_y_inserter_grid(inserter)
                     )
                 end
             else
-                if (util.should_cell_be_enabled(inserter, {x = x, y = y}, inserter_functions.get_max_inserters_range())) then
+                if (inserter_functions.should_cell_be_enabled(inserter, {x = x, y = y})) then
                     table.insert(table_position,
                         SPRITE_BUTTON {
                             name = tostring(x) .. "_" .. tostring(y),
@@ -160,8 +175,7 @@ end
 ---@param inserter LuaEntity
 ---@return table
 function gui.create_pickup_drop_editor(inserter)
-    local inserters_max_range = inserter_functions.get_max_inserters_range()
-
+    local max_inserter_range, min_inserter_range = inserter_functions.get_max_and_min_inserter_range(inserter)
 
     --TODO: in an ideal world "generate_slim_inserter_grid" should not exist, the actual x_y funxion is quite good but lack some features need for slim inserters
     grid = inserter_functions.is_slim(inserter) and gui.generate_slim_inserter_grid(inserter) or gui.generate_x_y_inserter_grid(inserter)
@@ -180,7 +194,7 @@ function gui.create_pickup_drop_editor(inserter)
             name = "table_position",
             horizontal_spacing = 1,
             vertical_spacing = 1,
-            column_count = inserters_max_range*2+width,
+            column_count = max_inserter_range*2+width,
             --3 if I want to use the 3x3 table approach, it could be useful for slim inserter so need to keep an eye on it
             --column_count = 3,
             grid
@@ -286,10 +300,10 @@ function gui.create(player, inserter)
                         horizontally_stretchable = true
                     },
                 },
-                LINE {
+                offset_selector and LINE {
                     name = "line",
-                },
-                FLOW {
+                } or nil,
+                offset_selector and FLOW {
                     padding = 10,
                     name = "offset_flow",
                     EMPTY_WIDGET {
@@ -306,15 +320,12 @@ function gui.create(player, inserter)
                         name = "offset_pusher_right",
                         horizontally_stretchable = true
                     },
-                }
+                } or nil
             }
         }
     }
     gui_builder.build(player.gui.relative, selector_gui)
-    script.raise_event(events.on_inserter_arm_changed, {
-        player_index = player.index,
-        inserter = inserter
-    })
+    gui.update(player, inserter)
 end
 
 ---@param player LuaPlayer
@@ -327,7 +338,6 @@ function gui.update(player, inserter, event)
     local p_name = res.pickup.x.."_"..res.pickup.y
     local do_name = res.drop_offset.x.."_"..res.drop_offset.y
     local po_name = res.pickup_offset.x.."_"..res.pickup_offset.y
-
 
     if event then
         ----Clean up sprites
@@ -361,26 +371,27 @@ function gui.update(player, inserter, event)
         end
     end
 
-
     ----Positions
     local tp = gui_helper.find_element_recursive(player.gui.relative.smart_inserters, "table_position")
-    assert(tp~=nil, "table_position is nil")
-    if tp[d_name] then
-        tp[d_name].sprite = "drop"
-    end
-    if tp[p_name] then
-        if tp[p_name].sprite == "drop" then
-            tp[p_name].sprite = "combo"
-        else
-            tp[p_name].sprite = "pickup"
+    if tp~=nil and (event == nil or event.do_not_popolate == nil or not event.do_not_popolate) then
+        if tp[d_name] then
+            tp[d_name].sprite = "drop"
+        end
+        if tp[p_name] then
+            if tp[p_name].sprite == "drop" then
+                tp[p_name].sprite = "combo"
+            else
+                tp[p_name].sprite = "pickup"
+            end
         end
     end
 
     ----Offsets
     local offset_flow = gui_helper.find_element_recursive(player.gui.relative.smart_inserters, "offset_flow")
-    assert(offset_flow~=nil, "offset_flow is nil")
-    offset_flow.flow_drop.table_drop[do_name].sprite = "drop"
-    offset_flow.flow_pickup.table_pickup[po_name].sprite = "pickup"
+    if offset_flow~=nil and (event == nil or event.do_not_popolate == nil or not event.do_not_popolate) then
+        offset_flow.flow_drop.table_drop[do_name].sprite = "drop"
+        offset_flow.flow_pickup.table_pickup[po_name].sprite = "pickup"
+    end
 end
 
 ---@param inserter LuaEntity
@@ -465,12 +476,72 @@ local function change_pickup_drop(event)
 
 
     inserter_functions.set_arm_positions(positions, inserter)
-    script.raise_event(events.on_inserter_arm_changed, {
-        player_index = player.index,
-        inserter = inserter,
-        old_pickup = inserter_pos.pickup,
-        old_drop = inserter_pos.drop
-    })
+end
+
+local function change_drop(event)
+    ---@type LuaPlayer | nil
+    local player = game.get_player(event.player_index)
+
+    assert(player~=nil, "Player "..event.player_index.." is nil")
+
+    ---@diagnostic disable-next-line: param-type-mismatch
+    assert(player.opened~=nil and inserter_functions.is_inserter(player.opened), "Opened is nil")
+
+    ---@type LuaGuiElement
+    local sprite_button = event.element
+
+    --- @type LuaEntity
+    --- @diagnostic disable-next-line: assign-type-mismatch
+    local inserter = player.opened
+
+    local pos = string.find(sprite_button.name, "_")
+    local x = string.sub(sprite_button.name, 0, pos-1)
+    local y = string.sub(sprite_button.name, pos+1, #sprite_button.name)
+    local button_pos = { x = tonumber(x), y = tonumber(y) }
+
+    --- @type ChangeArmPosition
+    local positions = {
+        pickup = nil,
+        drop = nil,
+        pickup_offset = nil,
+        drop_offset = nil
+    }
+
+    positions.drop = button_pos
+    inserter_functions.set_arm_positions(positions, inserter)
+end
+
+local function change_pickup(event)
+    ---@type LuaPlayer | nil
+    local player = game.get_player(event.player_index)
+
+    assert(player~=nil, "Player "..event.player_index.." is nil")
+
+    ---@diagnostic disable-next-line: param-type-mismatch
+    assert(player.opened~=nil and inserter_functions.is_inserter(player.opened), "Opened is nil")
+
+    ---@type LuaGuiElement
+    local sprite_button = event.element
+
+    --- @type LuaEntity
+    --- @diagnostic disable-next-line: assign-type-mismatch
+    local inserter = player.opened
+
+    local pos = string.find(sprite_button.name, "_")
+    local x = string.sub(sprite_button.name, 0, pos-1)
+    local y = string.sub(sprite_button.name, pos+1, #sprite_button.name)
+    local button_pos = { x = tonumber(x), y = tonumber(y) }
+
+    --- @type ChangeArmPosition
+    local positions = {
+        pickup = nil,
+        drop = nil,
+        pickup_offset = nil,
+        drop_offset = nil
+    }
+
+    positions.pickup = button_pos
+    inserter_functions.set_arm_positions(positions, inserter)
 end
 
 local function change_pickup_offset(event)
@@ -501,11 +572,6 @@ local function change_pickup_offset(event)
     }
 
     inserter_functions.set_arm_positions(positions, inserter)
-    script.raise_event(events.on_inserter_arm_changed, {
-        player_index = player.index,
-        inserter = inserter,
-        old_pickup_offset = inserter_pos.pickup_offset,
-    })
 end
 
 local function change_drop_offset(event)
@@ -536,14 +602,11 @@ local function change_drop_offset(event)
     }
 
     inserter_functions.set_arm_positions(positions, inserter)
-    script.raise_event(events.on_inserter_arm_changed, {
-        player_index = player.index,
-        inserter = inserter,
-        old_drop_offset = inserter_pos.drop_offset,
-    })
 end
 
 gui_builder.register_handler("change_pickup_drop", change_pickup_drop)
+gui_builder.register_handler("change_pickup", change_drop)
+gui_builder.register_handler("change_drop", change_pickup)
 gui_builder.register_handler("change_pickup_offset", change_pickup_offset)
 gui_builder.register_handler("change_drop_offset", change_drop_offset)
 

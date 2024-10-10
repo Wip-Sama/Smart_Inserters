@@ -134,7 +134,7 @@ function world_editor.update_positions(player_index, inserter, changes)
                 [changes.pickup.old.y].render_id
             if type(render_id) ~= "number" then return end
             rendering.destroy(render_id)
-            enabled_cell = util.should_cell_be_enabled(changes.pickup.old, range, player.force, inserter)
+            enabled_cell = inserter_functions.should_cell_be_enabled(changes.pickup.old, range, player.force, inserter)
             render_id = rendering.draw_rectangle {
                 color = colors[enabled_cell and "can_select" or "cant_select"],
                 filled = true,
@@ -201,7 +201,7 @@ function world_editor.update_positions(player_index, inserter, changes)
             render_id = global.SI_Storage[player_index].selected_inserter.position_grid[changes.drop.old.x][changes.drop.old.y].render_id
             if type(render_id) ~= "number" then return end
             rendering.destroy(render_id)
-            enabled_cell = util.should_cell_be_enabled(changes.drop.old, range, player.force, inserter)
+            enabled_cell = inserter_functions.should_cell_be_enabled(changes.drop.old, range, player.force, inserter)
             render_id = rendering.draw_rectangle {
                 color = colors[enabled_cell and "can_select" or "cant_select"],
                 filled = true,

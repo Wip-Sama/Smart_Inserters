@@ -13,7 +13,7 @@ data:extend({
         setting_type   = "startup",
         name           = "si-range-adder",
         default_value  = "equal",
-        allowed_values = { "inserter", "incremental", "equal" },
+        allowed_values = { "inserter", "incremental", "equal", "rebase", "incremental-with-rebase", "inserter-with-rebase" },
         order          = "ba"
     },
     {
