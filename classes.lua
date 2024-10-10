@@ -37,12 +37,19 @@
 ---@field y number
 
 
+---@class RenderedPosition
+---@field background_render number
+---@field border_render number
+---@field drop_render number?
+---@field pickup_render number?
+
+
 ---@class SelectedInserter
 ---@field position Position?
 ---@field surface LuaSurface?
 ---@field drop Position?
 ---@field pickup Position?
 ---@field inserter LuaEntity?
----@field displayed_elements table
+---@field displayed_elements table<table<RenderedPosition>>
 ---@field name string? --Not user but may become useful
 

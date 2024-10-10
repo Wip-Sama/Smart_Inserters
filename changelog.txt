@@ -13,12 +13,14 @@ Date: 2024-xx-xx
     - Control on any will switch pick and drop
     - Offset will not change when changing position/rotation (may change)
     - Shortcut now support slim and oddly shaped inserters
+    - New UI for the in-world selector
   Added:
     - Rebase setting / incremental-with-rebase / inserter-with-rebase, the rabese setting will prevent an inserter to move it's range below is default range, so a long inserter wont' be able to place to the tiles adjacent itself
     - Pick/Drop on the same tile
     - Support for 2x2, 2x3, 3x2, slim, and any strange inserters up to 6x6, it SHOULD work for bigger inserters but do not quote me on that
     - Shortcut now support slim and oddly shaped inserters
     - Shortcut to adjust the distance in the opposite direction (expand and retract, before it worked only expand)
+    - Support for in-world selector on slim or odd shaped inserters
   Removed:
     - Copy-paste selector, this caused more problems than anything so it was not worth the time and problems it caused
     - shortcut to fien control offsets, only near and far are available now, the shortcut should be fast if you want granular control open the GUI

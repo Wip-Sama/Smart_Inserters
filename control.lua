@@ -76,6 +76,7 @@ end
 ---@param event InserterArmChanged
 local function on_inserter_arm_changed(event)
     selector_gui.update_all(event.entity, event)
+    world_editor.update_all(event.entity, event)
 end
 
 local function on_player_rotated_entity(event)
@@ -644,11 +645,29 @@ end
 -- To check if the player placed an in world selector blueprint
 local function on_built_entity(event)
     local entity = event.created_entity and event.created_entity or event.entity
-    if entity.name ~= "entity-ghost" then return end
-    if entity.ghost_name ~= "si-in-world-drop-entity" and entity.ghost_name ~= "si-in-world-pickup-entity" then
+    if entity.name ~= "entity-ghost" or (entity.ghost_name ~= "si-in-world-drop-entity" and entity.ghost_name ~= "si-in-world-pickup-entity") then
         return
     end
-    
+
+    storage_functions.ensure_data(event.player_index)
+    local inserter = global.SI_Storage[event.player_index].selected_inserter.inserter
+    local update = string.find(entity.ghost_name, "d", 13) == 13 and "drop" or "pickup"
+    local arm_positions = inserter_functions.get_arm_positions(inserter)
+    --math2d.position.subtract(entity.position, {0.5, 0.5})
+    arm_positions[update] = math2d.position.subtract(entity.position, inserter.position)
+    arm_positions[update].x = arm_positions[update].x - (inserter.tile_width ~= 1 and 0.5 or 0)
+    arm_positions[update].y = arm_positions[update].y - (inserter.tile_height ~= 1 and 0.5 or 0)
+    if inserter_functions.should_cell_be_enabled(inserter, arm_positions[update]) then
+        inserter_functions.set_arm_positions(arm_positions, inserter)
+    else
+        inserter.surface.create_entity({
+            name = "flying-text",
+            position = inserter.position,
+            text = { "flying-text-smart-inserters.invalid-position" },
+            color = { 0.8, 0.8, 0.8 }
+        })
+    end
+    entity.destroy()
 end
 
 local function on_entity_destroyed(event)
@@ -666,85 +685,27 @@ end
 
 local function on_in_world_editor(event)
     local player = game.get_player(event.player_index)
-    local update = string.find(event.input_name, "d", 31) == 31 and "drop" or "pickup"
-    local storage = storage_functions.ensure_data(event.player_index)
+    local update = string.find(event.input_name, "d", 48) == 48 and "drop" or "pickup"
+    storage_functions.ensure_data(event.player_index)
     if player == nil then return end
 
-    -- Give pickup or drop blueprint
-    -- switch pickup/drop blueprint when pressed again
-
     if player.cursor_stack.is_blueprint then
-        local changing_drop = (player.cursor_stack.name == "si-in-world-drop-changer")
-        local changing_pickup = (player.cursor_stack.name == "si-in-world-pickup-changer")
-        if changing_drop and update == "pickup" then
-            player_functions.safely_change_cursor(player, "si-in-world-pickup-changer")
-            player_functions.configure_pickup_drop_changer(player, update)
-            local inserter = player.surface.find_entity(storage.selected_inserter.name, storage.selected_inserter.position)
-            local inserter_ghost = player.surface.find_entity("entity-ghost", storage.selected_inserter.position)
-            inserter = inserter and inserter or inserter_ghost
-            if inserter_functions.is_slim(inserter) then
-                world_editor.clear_positions(event.player_index)
-                world_editor.draw_positions(event.player_index, inserter, update)
-            end
-            return
-        elseif changing_drop and update == "drop" then
-            storage["is_selected"] = false
+        local changing = string.find(player.cursor_stack.name, "d", 13) == 13 and "drop" or "pickup"
+        if changing == update then
             player_functions.safely_change_cursor(player)
             world_editor.clear_positions(event.player_index)
             return
-        elseif changing_pickup and update == "drop" then
-            player_functions.safely_change_cursor(player, "si-in-world-drop-changer")
+        else
+            player_functions.safely_change_cursor(player, "si-in-world-"..update.."-changer")
             player_functions.configure_pickup_drop_changer(player, update)
-            local inserter = player.surface.find_entity(storage.selected_inserter.name, storage.selected_inserter.position)
-            local inserter_ghost = player.surface.find_entity("entity-ghost", storage.selected_inserter.position)
-            inserter = inserter and inserter or inserter_ghost
-            if inserter_functions.is_slim(inserter) then
-                world_editor.clear_positions(event.player_index)
-                world_editor.draw_positions(event.player_index, inserter, update)
-            end
-            return
-        elseif changing_pickup and update == "pickup" then
-            storage["is_selected"] = false
-            player_functions.safely_change_cursor(player)
-            world_editor.clear_positions(event.player_index)
             return
         end
     end
-    if player.selected and inserter_functions.is_inserter(player.selected) and player.selected.position and util.check_blacklist(player.selected) then
-        local size = inserter_functions.get_inserter_size(player.selected)
-        --[[
-            if size <= 0 then
-            ---@diagnostic disable-next-line: missing-fields
-            player.surface.create_entity({
-                name = "flying-text",
-                position = player.selected.position,
-                text = { "flying-text-smart-inserters.no-hotkey-on-slim-inserter" },
-                color = { 0.8, 0.8, 0.8 }
-            })
-            return
-        end
-        --]]
-        if size >= 2 then
-            ---@diagnostic disable-next-line: missing-fields
-            player.surface.create_entity({
-                name = "flying-text",
-                position = player.selected.position,
-                text = { "flying-text-smart-inserters.no-hotkey-on-big-inserter" },
-                color = { 0.8, 0.8, 0.8 }
-            })
-            return
-        end
 
-        local arm_positions = inserter_functions.get_arm_positions(player.selected)
-        storage.is_selected = true
-        storage.selected_inserter.name = player.selected.name
-        storage.selected_inserter.surface = player.selected.surface
-        storage.selected_inserter.position = math2d.position.ensure_xy(player.selected.position)
-        storage.selected_inserter.drop = arm_positions.drop
-        storage.selected_inserter.pickup = arm_positions.pickup
-        world_editor.draw_positions(event.player_index, player.selected, is_drop)
-        player_functions.safely_change_cursor(player, "si-in-world-" .. is_drop .. "-changer")
-        player_functions.configure_pickup_drop_changer(player, is_drop)
+    if player.selected and inserter_functions.is_inserter(player.selected) and player.selected.position and si_util.check_blacklist(player.selected) then
+        world_editor.draw_positions(event.player_index, player.selected)
+        player_functions.safely_change_cursor(player, "si-in-world-" .. update .. "-changer")
+        player_functions.configure_pickup_drop_changer(player, update)
     end
 end
 
@@ -756,7 +717,7 @@ local function on_player_cursor_stack_changed(event)
             return
         end
     else
-        --world_editor.clear_positions(event.player_index)
+        world_editor.clear_positions(event.player_index)
     end
 end
 
@@ -806,9 +767,9 @@ script.on_event(defines.events.on_player_mined_entity, on_entity_destroyed)
 script.on_event(defines.events.on_robot_mined_entity, on_entity_destroyed)
 script.on_event(defines.events.on_player_cursor_stack_changed, on_player_cursor_stack_changed)
 
---[[
 script.on_event("smart-inserters-in-world-inserter-configurator-pickup", on_in_world_editor)
 script.on_event("smart-inserters-in-world-inserter-configurator-drop", on_in_world_editor)
+--[[
 
 --]]
 --script.on_event(defines.events.on_entity_died, on_entity_destroyed)

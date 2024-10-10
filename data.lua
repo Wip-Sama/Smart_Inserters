@@ -9,7 +9,6 @@ data:extend({
 	{
 		type = "sprite",
 		name = "circle",
-
 		filename = "__Smart_Inserters__/graphics/icons/circle.png",
 		flags = { "gui-icon" },
 		width = 64,
@@ -21,7 +20,6 @@ data:extend({
 	{
 		type = "sprite",
 		name = "pickup",
-
 		filename = "__Smart_Inserters__/graphics/icons/pickup.png",
 		flags = { "gui-icon" },
 		size = 128,
@@ -30,7 +28,6 @@ data:extend({
 	{
 		type = "sprite",
 		name = "pickup-background",
-
 		filename = "__Smart_Inserters__/graphics/icons/pickup_background.png",
 		flags = { "gui-icon" },
 		size = 128,
@@ -39,7 +36,6 @@ data:extend({
 	{
 		type = "sprite",
 		name = "half-pickup-background",
-
 		filename = "__Smart_Inserters__/graphics/icons/half_pickup_background.png",
 		flags = { "gui-icon" },
 		size = 128,
@@ -49,7 +45,6 @@ data:extend({
 	{
 		type = "sprite",
 		name = "drop",
-
 		filename = "__Smart_Inserters__/graphics/icons/drop.png",
 		flags = { "gui-icon" },
 		size = 128,
@@ -58,7 +53,6 @@ data:extend({
 	{
 		type = "sprite",
 		name = "drop-background",
-
 		filename = "__Smart_Inserters__/graphics/icons/drop_background.png",
 		flags = { "gui-icon" },
 		size = 128,
@@ -67,17 +61,15 @@ data:extend({
 	{
 		type = "sprite",
 		name = "half-drop-background",
-
 		filename = "__Smart_Inserters__/graphics/icons/half_drop_background.png",
 		flags = { "gui-icon" },
 		size = 128,
 		priority = "extra-high-no-scale"
 	},
 	--combo
-	{	
+	{
 		type = "sprite",
 		name = "combo",
-
 		filename = "__Smart_Inserters__/graphics/icons/combo.png",
 		flags = { "gui-icon" },
 		size = 128,
@@ -86,7 +78,6 @@ data:extend({
 	{
 		type = "sprite",
 		name = "combo-background",
-
 		filename = "__Smart_Inserters__/graphics/icons/combo_background.png",
 		flags = { "gui-icon" },
 		size = 128,
@@ -103,6 +94,7 @@ data:extend({
 		icon = "__Smart_Inserters__/graphics/icons/pickup.png",
 		icon_size = 128,
 		flags = { "hidden", "not-stackable", "only-in-cursor" },
+		scale = 0.2,
 		stack_size = 1,
 		selection_color = { 0, 1, 0 },
 		alt_selection_color = { 0, 1, 0 },
@@ -115,6 +107,7 @@ data:extend({
 		type = "item",
 		name = "si-in-world-pickup-selector",
 		icon = "__Smart_Inserters__/graphics/icons/pickup.png",
+		scale = 0.2,
 		icon_size = 128,
 		order = "a-b",
 		flags = { "hidden" },
@@ -126,6 +119,7 @@ data:extend({
 		name = "si-in-world-pickup-entity",
 		icon = "__Smart_Inserters__/graphics/icons/pickup.png",
 		icon_size = 128,
+		scale = 0.2,
 		flags = { "hidden", "not-on-map", "player-creation" },
 		collision_mask = {},
 		collision_box = { { -0.5, -0.5 }, { 0.5, 0.5 } },
@@ -137,7 +131,7 @@ data:extend({
 		picture = {
 			filename = "__Smart_Inserters__/graphics/icons/pickup.png",
 			size = 128,
-			scale = 0.6
+			scale = 0.2,
 		}
 	},
 	--drop
@@ -146,6 +140,7 @@ data:extend({
 		name = "si-in-world-drop-changer",
 		icon = "__Smart_Inserters__/graphics/icons/drop.png",
 		icon_size = 128,
+		scale = 0.2,
 		flags = { "hidden", "not-stackable", "only-in-cursor" },
 		stack_size = 1,
 		selection_color = { 0, 1, 0 },
@@ -160,6 +155,7 @@ data:extend({
 		name = "si-in-world-drop-selector",
 		icon = "__Smart_Inserters__/graphics/icons/drop.png",
 		icon_size = 128,
+		scale = 0.2,
 		order = "a-b",
 		flags = { "hidden" },
 		place_result = "si-in-world-drop-entity",
@@ -170,6 +166,7 @@ data:extend({
 		name = "si-in-world-drop-entity",
 		icon = "__Smart_Inserters__/graphics/icons/drop.png",
 		icon_size = 128,
+		scale = 0.2,
 		flags = { "hidden", "not-on-map", "player-creation" },
 		collision_mask = {},
 		collision_box = { { -0.5, -0.5 }, { 0.5, 0.5 } },
@@ -181,7 +178,7 @@ data:extend({
 		picture = {
 			filename = "__Smart_Inserters__/graphics/icons/drop.png",
 			size = 128,
-			scale = 0.6
+			scale = 0.2,
 		}
 	}
 })

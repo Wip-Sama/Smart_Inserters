@@ -306,6 +306,10 @@ function inserter_functions.should_cell_be_enabled(inserter, position)
     local lower_height = height % 2 == 0 and height / 2 or height / 2 - 0.5
     local higher_height = height % 2 == 0 and height / 2 or height / 2 + 0.5
 
+    if position.x >= -lower_width and position.x < higher_width and position.y >= -lower_height and position.y < higher_height then
+        return false
+    end
+
     if (position.y >= -lower_height and position.y < higher_height) then
         position.y = 0
     elseif (position.y < -lower_height) then
@@ -380,6 +384,13 @@ function inserter_functions.should_cell_be_enabled(inserter, position)
         if position.y ~= 0 then
             return false
         end
+    end
+
+    cell_position = math2d.position.abs(position)
+    local distance = math.max(cell_position.x, cell_position.y)
+    distance = math.max(math.floor(distance), 1)
+    if distance > max_range or distance < min_range then
+        return false
     end
 
     return technology_functions.check_tech(inserter.force, position, default_range)
