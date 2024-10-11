@@ -20,6 +20,7 @@ local si_util = require("scripts.si_util")
 -- Settings
 -- ------------------------------
 local offset_selector = settings.startup["si-offset-selector"].value
+local directional_slim_inserter = settings.startup["si-directional-slim-inserter"].value
 
 -- ------------------------------
 -- Event Handlers
@@ -48,13 +49,12 @@ local function on_player_created(event)
 end
 
 local function on_research_finished(event)
-    technology_functions.generate_Tech_lookup_table(event.research.force)
+    --technology_functions.generate_Tech_lookup_table(event.research.force)
 end
 
 local function on_research_reversed(event)
-    technology_functions.generate_Tech_lookup_table(event.research.force)
+    --technology_functions.generate_Tech_lookup_table(event.research.force)
 end
-
 
 local function on_gui_opened(event)
     local player = game.get_player(event.player_index)
@@ -653,11 +653,38 @@ local function on_built_entity(event)
     local inserter = global.SI_Storage[event.player_index].selected_inserter.inserter
     local update = string.find(entity.ghost_name, "d", 13) == 13 and "drop" or "pickup"
     local arm_positions = inserter_functions.get_arm_positions(inserter)
-    --math2d.position.subtract(entity.position, {0.5, 0.5})
     arm_positions[update] = math2d.position.subtract(entity.position, inserter.position)
     arm_positions[update].x = arm_positions[update].x - (inserter.tile_width ~= 1 and 0.5 or 0)
     arm_positions[update].y = arm_positions[update].y - (inserter.tile_height ~= 1 and 0.5 or 0)
-    if inserter_functions.should_cell_be_enabled(inserter, arm_positions[update]) then
+    local check_directional_slim = true
+    if inserter_functions.is_slim(inserter) and directional_slim_inserter then
+        if inserter.direction == defines.direction.north then
+            if arm_positions[update].y < 0 then
+                check_directional_slim = ("pickup" == update)
+            else
+                check_directional_slim = ("drop" == update)
+            end
+        elseif inserter.direction == defines.direction.south then
+            if arm_positions[update].y < 0 then
+                check_directional_slim = ("drop" == update)
+            else
+                check_directional_slim = ("pickup" == update)
+            end
+        elseif inserter.direction == defines.direction.east then
+            if arm_positions[update].x < 0 then
+                check_directional_slim = ("drop" == update)
+            else
+                check_directional_slim = ("pickup" == update)
+            end
+        elseif inserter.direction == defines.direction.west then
+            if arm_positions[update].x < 0 then
+                check_directional_slim = ("pickup" == update)
+            else
+                check_directional_slim = ("drop" == update)
+            end
+        end
+    end
+    if inserter_functions.should_cell_be_enabled(inserter, arm_positions[update]) and check_directional_slim then
         inserter_functions.set_arm_positions(arm_positions, inserter)
     else
         inserter.surface.create_entity({
