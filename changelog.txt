@@ -1,6 +1,6 @@
 ---------------------------------------------------------------------------------------------------
 Version: 2.0.0
-Date: 2024-xx-xx
+Date: 2024-10-20
   Warning:
     - This is a full rewrite of the mod, some features have changed so it may take some time to get used to it (it shouldn't be hard)
     - The mod SHOULD be stable and backward compatible but if you're on a big world or an important one you should make a backup before updating
@@ -22,8 +22,8 @@ Date: 2024-xx-xx
     - Shortcut to adjust the distance in the opposite direction (expand and retract, before it worked only expand)
     - Support for in-world selector on slim or odd shaped inserters
   Removed:
-    - Copy-paste selector, this caused more problems than anything so it was not worth the time and problems it caused
-    - shortcut to fien control offsets, only near and far are available now, the shortcut should be fast if you want granular control open the GUI
+    - Copy-paste selector, this caused more problems than anything so it was not worth the time and problems it caused, it may come back in the future
+    - shortcut to fine control offsets, only near and far are available now, the shortcut should be fast if you want granular control open the GUI
   Modding:
     - If you want to add support for your mod you can use events.on_inserter_arm_changed to be notified when something happens, this is used internally for GUI updates so you should not miss anything
   Notes:
@@ -33,6 +33,8 @@ Date: 2024-xx-xx
     - If the inserter position is invalid the pickup/drop will not appear on the grid so you will not be able to change it
     - if the offset is too close to the border the first time you rotate it may change position, this ONLY HAPPENS when the position is not set with this mod
     - This update made the mod kinda slow again while rewriting the code I disabled matrix caching, I'll re-enable it in the future
+  Planned:
+    - Inserter presets, i'ts just an idea for now, I'm brainstorming ideas to implement it
 ---------------------------------------------------------------------------------------------------
 Version: 1.2.16
 Date: 2024-07-09

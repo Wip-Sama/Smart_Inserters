@@ -23,7 +23,7 @@ function gui.generate_slim_inserter_grid(inserter)
                 table.insert(table_position,
                     SPRITE {
                         name = "sprite_inserter",
-                        sprite = "item/" .. inserter.prototype.items_to_place_this[1].name,
+                        sprite = "item/" .. inserter_functions.get_prototype(inserter).items_to_place_this[1].name,
                         stretch_image_to_widget_size = true,
                         size = { 32, 32 },
                     }
@@ -126,7 +126,7 @@ function gui.generate_x_y_inserter_grid(inserter)
                             --left_margin = (width-1)*-33, -- use with camera
                             SPRITE {
                                 name = "sprite_inserter_"..tostring(x) .. "_" .. tostring(y),
-                                sprite = "item/" .. inserter.prototype.items_to_place_this[1].name,
+                                sprite = "item/" .. inserter_functions.get_prototype(inserter).items_to_place_this[1].name,
                                 size = 32+33*(math.min(width, height)-1),
                                 resize_to_sprite = false
                             }

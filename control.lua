@@ -1,20 +1,20 @@
 -- ------------------------------
--- Dependencies
+-- External Dependencies
 -- ------------------------------
-local events = require("scripts.events")
+local util = require("__core__/lualib/util")
 local math2d = require("__yafla__/scripts/extended_math2d")
 
 -- ------------------------------
--- Functions Group
+-- Internal Dependencies
 -- ------------------------------
 local technology_functions = require("scripts.technology_functions")
 local selector_gui = require("scripts.selector_gui")
 local inserter_functions = require("scripts.inserter_functions")
-local util = require("__core__/lualib/util")
 local player_functions = require("scripts.player_functions")
 local world_editor = require("scripts.world_selector")
 local storage_functions = require("scripts.storage_functions")
 local si_util = require("scripts.si_util")
+local events = require("scripts.events")
 
 -- ------------------------------
 -- Settings
@@ -48,12 +48,8 @@ local function on_player_created(event)
     storage_functions.add_player(game.get_player(event.player_index))
 end
 
-local function on_research_finished(event)
-    --technology_functions.generate_Tech_lookup_table(event.research.force)
-end
-
-local function on_research_reversed(event)
-    --technology_functions.generate_Tech_lookup_table(event.research.force)
+local function on_research_changes(event)
+    -- technology_functions.generate_Tech_lookup_table(event.research.force)
 end
 
 local function on_gui_opened(event)
@@ -428,8 +424,9 @@ local function on_rotation_adjust(event)
                 end
             end
 
-            if count >= 100 then
-                print("exited")
+            if count > 100 then
+                game.print(
+                    "Something went wrong and the rotation function exceeded 100 iterations, please report this to the mod author")
                 break
             end
         end
@@ -697,6 +694,7 @@ local function on_built_entity(event)
     entity.destroy()
 end
 
+-- To check if the player destroyed an inserter to clear the in world selector
 local function on_entity_destroyed(event)
     if not inserter_functions.is_inserter(event.entity) then
         return
@@ -723,7 +721,7 @@ local function on_in_world_editor(event)
             world_editor.clear_positions(event.player_index)
             return
         else
-            player_functions.safely_change_cursor(player, "si-in-world-"..update.."-changer")
+            player_functions.safely_change_cursor(player, "si-in-world-" .. update .. "-changer")
             player_functions.configure_pickup_drop_changer(player, update)
             return
         end
@@ -749,20 +747,15 @@ local function on_player_cursor_stack_changed(event)
 end
 
 -- ------------------------------
--- Eventhandler registration
+-- Event Handlers registration
 -- ------------------------------
 
 -- Player and Init events
-script.on_init(on_init)
-script.on_configuration_changed(on_configuration_changed)
-script.on_event(defines.events.on_player_created, on_player_created)
---[[
-script.on_event(defines.events.on_research_finished, on_research_finished)
-script.on_event(defines.events.on_research_reversed, on_research_reversed)
-]]
-script.on_event(defines.events.on_cutscene_cancelled, welcome) --[DONE]
-script.on_event(defines.events.on_cutscene_finished, welcome)  --[DONE]
-
+script.on_init(on_init)                                              --[DONE]
+script.on_configuration_changed(on_configuration_changed)            --[DONE]
+script.on_event(defines.events.on_player_created, on_player_created) --[DONE]
+script.on_event(defines.events.on_cutscene_cancelled, welcome)       --[DONE]
+script.on_event(defines.events.on_cutscene_finished, welcome)        --[DONE]
 
 -- Gui events
 script.on_event(defines.events.on_gui_opened, on_gui_opened)                                 --[DONE]
@@ -771,7 +764,6 @@ script.on_event(events.on_inserter_arm_changed, on_inserter_arm_changed)        
 script.on_event(defines.events.on_player_rotated_entity, on_player_rotated_entity)           --[PROBABLY INCOMPLETE]
 script.on_event(defines.events.on_entity_settings_pasted, on_entity_settings_pasted)         --[PROBABLY INCOMPLETE]
 script.on_event(defines.events.on_pre_entity_settings_pasted, on_pre_entity_settings_pasted) --[PROBABLY INCOMPLETE]
-
 
 -- Shortcut events
 script.on_event("smart-inserters-drop-rotate", on_rotation_adjust)                    --[DONE] [UNTESTED: SLIM DIRECTIONAL/SINGLE LINE INSERTER]
@@ -785,26 +777,23 @@ script.on_event("smart-inserters-pickup-distance-adjust", on_distance_adjust)   
 script.on_event("smart-inserters-pickup-distance-adjust-reverse", on_distance_adjust) --[UNTESTED]
 script.on_event("smart-inserters-pickup-offset-adjust", on_offset_adjust)             --[UNTESTED]
 
-
 -- World editor events
-script.on_event(defines.events.on_built_entity, on_built_entity)
-script.on_event(defines.events.script_raised_built, on_built_entity)
-script.on_event(defines.events.script_raised_destroy, on_entity_destroyed)
-script.on_event(defines.events.on_player_mined_entity, on_entity_destroyed)
-script.on_event(defines.events.on_robot_mined_entity, on_entity_destroyed)
-script.on_event(defines.events.on_player_cursor_stack_changed, on_player_cursor_stack_changed)
-
-script.on_event("smart-inserters-in-world-inserter-configurator-pickup", on_in_world_editor)
-script.on_event("smart-inserters-in-world-inserter-configurator-drop", on_in_world_editor)
---[[
-
---]]
+script.on_event(defines.events.on_built_entity, on_built_entity)                               --[DONE]
+script.on_event(defines.events.script_raised_built, on_built_entity)                           --[DONE]
+script.on_event(defines.events.script_raised_destroy, on_entity_destroyed)                     --[DONE]
+script.on_event(defines.events.on_player_mined_entity, on_entity_destroyed)                    --[DONE]
+script.on_event(defines.events.on_robot_mined_entity, on_entity_destroyed)                     --[DONE]
 --script.on_event(defines.events.on_entity_died, on_entity_destroyed)
 --script.on_event(defines.events.on_entity_destroyed, on_entity_destroyed)
+script.on_event(defines.events.on_player_cursor_stack_changed, on_player_cursor_stack_changed) --[DONE]
+script.on_event("smart-inserters-in-world-inserter-configurator-pickup", on_in_world_editor)   --[DONE]
+script.on_event("smart-inserters-in-world-inserter-configurator-drop", on_in_world_editor)     --[DONE]
+
+-- Optimization
+script.on_event(defines.events.on_research_finished, on_research_changes)
+script.on_event(defines.events.on_research_reversed, on_research_changes)
 
 
 -- TODO: optimize should cell be enabled
--- in-world selector for slim inserter
--- in world selector for 2x2 inserter
 -- compatibility with renai trasportation
 -- compatibility with ghost entity

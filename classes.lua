@@ -11,7 +11,7 @@
 ---@field old_drop Position | nil
 ---@field old_pickup_offset Position | nil
 ---@field old_drop_offset Position | nil
----@field do_not_popolate boolean | nil -- Meand that it only cleans the GUI
+---@field do_not_popolate boolean | nil -- Do not add back new pick/drop positions
 
 
 ---@class ArmPosition

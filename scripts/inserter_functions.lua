@@ -112,7 +112,6 @@ function inserter_functions.is_inserter_mini(inserter)
     return false
 end
 
-
 --- @param inserter LuaEntity
 --- @return LuaEntityPrototype | LuaTilePrototype
 function inserter_functions.get_prototype(inserter)
@@ -331,7 +330,7 @@ function inserter_functions.should_cell_be_enabled(inserter, position)
 
     --Inserter
     --Tech range up to inserter range
-    if settings.startup["si-range-adder"].value == "inserter" and inserter.prototype then
+    if settings.startup["si-range-adder"].value == "inserter" and inserter_functions.get_prototype(inserter) then
         if not (math.max(math.abs(position.x), math.abs(position.y)) <= max_range) then
             return false
         end
@@ -339,8 +338,8 @@ function inserter_functions.should_cell_be_enabled(inserter, position)
 
     --Incremental
     --Inserter base range + tech range
-    if settings.startup["si-range-adder"].value == "incremental" and inserter.prototype then
-        default_range = inserter_functions.inseter_default_range(inserter.prototype)
+    if settings.startup["si-range-adder"].value == "incremental" and inserter_functions.get_prototype(inserter) then
+        default_range = inserter_functions.inseter_default_range(inserter_functions.get_prototype(inserter))
     end
 
     --Rebase
@@ -351,7 +350,7 @@ function inserter_functions.should_cell_be_enabled(inserter, position)
         elseif math.abs(position.x) < min_range and math.abs(position.y) < min_range then
             return false
         end
-        default_range = inserter_functions.inseter_default_range(inserter.prototype)
+        default_range = inserter_functions.inseter_default_range(inserter_functions.get_prototype(inserter))
     end
 
     --inserter min range up to max range + incremet
@@ -361,7 +360,7 @@ function inserter_functions.should_cell_be_enabled(inserter, position)
         elseif math.abs(position.x) < min_range and math.abs(position.y) < min_range then
             return false
         end
-        default_range = inserter_functions.inseter_default_range(inserter.prototype)
+        default_range = inserter_functions.inseter_default_range(inserter_functions.get_prototype(inserter))
     end
 
     --inserter min range up to max range + incremet
@@ -371,7 +370,7 @@ function inserter_functions.should_cell_be_enabled(inserter, position)
         elseif math.abs(position.x) < min_range and math.abs(position.y) < min_range then
             return false
         end
-        default_range = inserter_functions.inseter_default_range(inserter.prototype)
+        default_range = inserter_functions.inseter_default_range(inserter_functions.get_prototype(inserter))
     end
 
     if height == 0 and single_line_slim_inserter then
@@ -396,11 +395,11 @@ function inserter_functions.should_cell_be_enabled(inserter, position)
     return technology_functions.check_tech(inserter.force, position, default_range)
 end
 
----Return max and min inserter range considering the unlocked technologies
+---Return max and min inserter range considering the unlocked technologies and settings
 ---@param inserter LuaEntity
 ---@return number, number
 function inserter_functions.get_max_and_min_inserter_range(inserter)
-    local default_range = inserter_functions.inseter_default_range(inserter.prototype)
+    local default_range = inserter_functions.inseter_default_range(inserter_functions.get_prototype(inserter))
     local max_range = inserter_functions.get_max_inserters_range()
     local max = inserter_functions.get_max_inserters_range() -- equal
     local min = 0
@@ -426,8 +425,10 @@ function inserter_functions.get_max_and_min_inserter_range(inserter)
     return new_max, min
 end
 
+---Never implemented, could be useful so I leave it there only as an idea
 ---@param inserter LuaEntity
-function inserter_functions.drop_to_1x1_inserter(inserter)
+---@deprecated
+function inserter_functions.cast_to_1x1_inserter(inserter)
     local width, height = math.ceil(inserter.tile_width), math.ceil(inserter.tile_height)
 
     local lower_width = width%2==0 and width/2 or width/2-0.5
@@ -435,10 +436,6 @@ function inserter_functions.drop_to_1x1_inserter(inserter)
 
     local lower_height = height%2==0 and height/2 or height/2-0.5
     local higher_height = height%2==0 and height/2 or height/2+0.5
-
-
-
-
 end
 
 return inserter_functions
