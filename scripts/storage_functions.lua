@@ -2,13 +2,13 @@ local util = require("__core__/lualib/util")
 
 local storage_functions = {}
 
-SI_Storage = SI_Storage or {}
+storage.SI_Storage = storage.SI_Storage or {}
 
 ---@param player_index number
 function storage_functions.add_player(player_index)
-    SI_Storage[player_index] = {}
+    storage.SI_Storage[player_index] = {}
     ---@type SelectedInserter
-    SI_Storage[player_index].selected_inserter = {
+    storage.SI_Storage[player_index].selected_inserter = {
         ---@type LuaEntity
         inserter = nil,
         ---@type table<table<RenderedPosition>>
@@ -27,13 +27,13 @@ end
 ---@param player_index number
 ---@return unknown
 function storage_functions.ensure_data(player_index)
-    SI_Storage = SI_Storage or {}
+    storage.SI_Storage = storage.SI_Storage or {}
 
-    if not SI_Storage[player_index] then
+    if not storage.SI_Storage[player_index] then
         storage_functions.add_player(player_index)
     end
 
-    return SI_Storage[player_index]
+    return storage.SI_Storage[player_index]
 end
 
 return storage_functions

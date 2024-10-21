@@ -297,7 +297,7 @@ end
 --Migrate tech from bob
 function tech.migrate_all()
     for _, force in pairs(game.forces) do
-        tech.generate_tech_lookup_table(force)
+        --tech.generate_tech_lookup_table(force)
         for i = 1, 3 do
             local tech_name = "si-unlock-range-" .. i
             local original_tech_name = i == 1 and "near-inserters" or "long-inserters-" .. (i - 1)

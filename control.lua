@@ -27,7 +27,7 @@ local directional_slim_inserter = settings.startup["si-directional-slim-inserter
 -- ------------------------------
 
 local function on_init()
-    SI_Storage = SI_Storage or {}
+    storage.SI_Storage = storage.SI_Storage or {}
     storage_functions.populate_storage()
     technology_functions.migrate_all()
 end
@@ -38,7 +38,7 @@ local function welcome()
 end
 
 local function on_configuration_changed(event)
-    SI_Storage = SI_Storage or {}
+    storage.SI_Storage = storage.SI_Storage or {}
     storage_functions.populate_storage()
     technology_functions.migrate_all()
     --game.print({ "smart-inserters.experimental" })
@@ -645,7 +645,7 @@ local function on_built_entity(event)
     storage_functions.ensure_data(event.player_index)
     local player = game.get_player(event.player_index)
     if player == nil then return end
-    local inserter = SI_Storage[event.player_index].selected_inserter.inserter
+    local inserter = storage.SI_Storage[event.player_index].selected_inserter.inserter
     local update = string.find(entity.ghost_name, "d", 13) == 13 and "drop" or "pickup"
     local arm_positions = inserter_functions.get_arm_positions(inserter)
     arm_positions[update] = math2d.position.subtract(entity.position, inserter.position)
@@ -698,7 +698,7 @@ local function on_entity_destroyed(event)
     end
     for player_index, player in pairs(game.players) do
         storage_functions.ensure_data(player_index)
-        if SI_Storage[player_index].is_selected == true and math2d.position.equal(SI_Storage[player_index].selected_inserter.position, event.entity.position) then
+        if storage.SI_Storage[player_index].is_selected == true and math2d.position.equal(storage.SI_Storage[player_index].selected_inserter.position, event.entity.position) then
             --world_editor.clear_positions(player_index)
             player_functions.safely_change_cursor(player)
         end

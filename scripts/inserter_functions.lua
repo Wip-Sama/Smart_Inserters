@@ -210,15 +210,15 @@ function inserter_functions.get_arm_positions(inserter)
     local function convert_offset(offset)
         local offset_vec = { x = 0.5, y = 0.5 }
 
-        if offset.x > 0.5 then
+        if offset.x > 0.55 then
             offset_vec.x = 0.75
-        elseif offset.x < 0.5 then
+        elseif offset.x < 0.45 then
             offset_vec.x = 0.25
         end
 
-        if offset.y > 0.5 then
+        if offset.y > 0.55 then
             offset_vec.y = 0.75
-        elseif offset.y < 0.5 then
+        elseif offset.y < 0.45 then
             offset_vec.y = 0.25
         end
 
@@ -230,11 +230,11 @@ function inserter_functions.get_arm_positions(inserter)
 
     return {
         base = base_tile,
+        drop = drop_tile,
+        pickup = pickup_tile,
         base_offset = base_offset,
         drop_offset = convert_offset(drop_offset),
         pickup_offset = convert_offset(pickup_offset),
-        drop = drop_tile,
-        pickup = pickup_tile,
         drop_direction = inserter_functions.calculate_arm_direction(inserter, drop_tile),
         pickup_direction = inserter_functions.calculate_arm_direction(inserter, pickup_tile),
     }

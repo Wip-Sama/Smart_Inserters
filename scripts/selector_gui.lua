@@ -13,7 +13,6 @@ local gui = {}
 function gui.generate_slim_inserter_grid(inserter)
     local max_inserter_range, min_inserter_range = inserter_functions.get_max_and_min_inserter_range(inserter)
     local table_position = {}
-    local direction = inserter.direction
     local width, height = math.ceil(inserter.tile_width), math.ceil(inserter.tile_height)
     width, height = math.max(1, width), math.max(1, height)
     local vertical = inserter.tile_width > 0
@@ -319,7 +318,7 @@ function gui.create(player, inserter)
             }
         }
     }
-    gui_builder.build(player.gui.relative, selector_gui)
+    gui_builder.build(player.gui.relative, selector_gui, player.index)
     gui.update(player, inserter)
 end
 
@@ -333,7 +332,6 @@ function gui.update(player, inserter, event)
     local p_name = res.pickup.x.."_"..res.pickup.y
     local do_name = res.drop_offset.x.."_"..res.drop_offset.y
     local po_name = res.pickup_offset.x.."_"..res.pickup_offset.y
-
     if event then
         ----Clean up sprites
         if event.old_drop ~= nil then
@@ -555,7 +553,6 @@ local function change_pickup_offset(event)
     --- @diagnostic disable-next-line: assign-type-mismatch
     local inserter = player.opened
 
-    local inserter_pos = inserter_functions.get_arm_positions(inserter)
     local pos = string.find(sprite_button.name, "_")
     local x = string.sub(sprite_button.name, 0, pos-1)
     local y = string.sub(sprite_button.name, pos+1, #sprite_button.name)
@@ -585,7 +582,6 @@ local function change_drop_offset(event)
     --- @diagnostic disable-next-line: assign-type-mismatch
     local inserter = player.opened
 
-    local inserter_pos = inserter_functions.get_arm_positions(inserter)
     local pos = string.find(sprite_button.name, "_")
     local x = string.sub(sprite_button.name, 0, pos-1)
     local y = string.sub(sprite_button.name, pos+1, #sprite_button.name)
