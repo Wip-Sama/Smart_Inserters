@@ -93,15 +93,22 @@ data:extend({
 		name = "si-in-world-pickup-changer",
 		icon = "__Smart_Inserters__/graphics/icons/pickup.png",
 		icon_size = 128,
-		flags = { "hidden", "not-stackable", "only-in-cursor" },
+		flags = { "not-stackable", "only-in-cursor" },
+		hidden = true;
 		scale = 0.2,
 		stack_size = 1,
-		selection_color = { 0, 1, 0 },
-		alt_selection_color = { 0, 1, 0 },
-		selection_mode = { "blueprint" },
-		alt_selection_mode = { "blueprint" },
-		selection_cursor_box_type = "logistics",
-		alt_selection_cursor_box_type = "logistics"
+		select = {
+		  border_color = {0 , 0, 0 },
+		  count_button_color = { 0, 0, 0 },
+		  mode = {"blueprint"},
+		  cursor_box_type = "logistics",
+		},
+		alt_select = {
+		  border_color = { 0, 0, 0 },
+		  count_button_color = { 0, 0, 0 },
+		  mode = {"blueprint"},
+		  cursor_box_type = "logistics",
+		},
 	},
 	{
 		type = "item",
@@ -110,7 +117,7 @@ data:extend({
 		scale = 0.2,
 		icon_size = 128,
 		order = "a-b",
-		flags = { "hidden" },
+		hidden = true;
 		place_result = "si-in-world-pickup-entity",
 		stack_size = 1
 	},
@@ -120,8 +127,8 @@ data:extend({
 		icon = "__Smart_Inserters__/graphics/icons/pickup.png",
 		icon_size = 128,
 		scale = 0.2,
-		flags = { "hidden", "not-on-map", "player-creation" },
-		collision_mask = {},
+		flags = { "not-on-map", "player-creation" },
+		hidden = true;
 		collision_box = { { -0.5, -0.5 }, { 0.5, 0.5 } },
 		selection_box = { { -0.5, -0.5 }, { 0.5, 0.5 } },
 		placeable_by = {
@@ -141,14 +148,21 @@ data:extend({
 		icon = "__Smart_Inserters__/graphics/icons/drop.png",
 		icon_size = 128,
 		scale = 0.2,
-		flags = { "hidden", "not-stackable", "only-in-cursor" },
+		flags = { "not-stackable", "only-in-cursor" },
+		hidden = true;
 		stack_size = 1,
-		selection_color = { 0, 1, 0 },
-		alt_selection_color = { 0, 1, 0 },
-		selection_mode = { "blueprint" },
-		alt_selection_mode = { "blueprint" },
-		selection_cursor_box_type = "logistics",
-		alt_selection_cursor_box_type = "logistics"
+		select = {
+			border_color = {0 , 0, 0 },
+			count_button_color = { 0, 0, 0 },
+			mode = {"blueprint"},
+			cursor_box_type = "logistics",
+		},
+			alt_select = {
+			border_color = { 0, 0, 0 },
+			count_button_color = { 0, 0, 0 },
+			mode = {"blueprint"},
+			cursor_box_type = "logistics",
+		},
 	},
 	{
 		type = "item",
@@ -157,7 +171,7 @@ data:extend({
 		icon_size = 128,
 		scale = 0.2,
 		order = "a-b",
-		flags = { "hidden" },
+		hidden = true;
 		place_result = "si-in-world-drop-entity",
 		stack_size = 1
 	},
@@ -167,8 +181,8 @@ data:extend({
 		icon = "__Smart_Inserters__/graphics/icons/drop.png",
 		icon_size = 128,
 		scale = 0.2,
-		flags = { "hidden", "not-on-map", "player-creation" },
-		collision_mask = {},
+		flags = { "not-on-map", "player-creation" },
+		hidden = true;
 		collision_box = { { -0.5, -0.5 }, { 0.5, 0.5 } },
 		selection_box = { { -0.5, -0.5 }, { 0.5, 0.5 } },
 		placeable_by = {

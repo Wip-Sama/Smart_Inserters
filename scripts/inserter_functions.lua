@@ -402,7 +402,7 @@ function inserter_functions.get_max_and_min_inserter_range(inserter)
     local default_range = inserter_functions.inseter_default_range(inserter_functions.get_prototype(inserter))
     local max_range = inserter_functions.get_max_inserters_range()
     local max = inserter_functions.get_max_inserters_range() -- equal
-    local min = 0
+    local min = 1
 
     if settings.startup["si-range-adder"].value == "inserter" then
         max = default_range
