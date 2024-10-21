@@ -27,7 +27,7 @@ local directional_slim_inserter = settings.startup["si-directional-slim-inserter
 -- ------------------------------
 
 local function on_init()
-    global.SI_Storage = global.SI_Storage or {}
+    SI_Storage = SI_Storage or {}
     storage_functions.populate_storage()
     technology_functions.migrate_all()
 end
@@ -38,7 +38,7 @@ local function welcome()
 end
 
 local function on_configuration_changed(event)
-    global.SI_Storage = global.SI_Storage or {}
+    SI_Storage = SI_Storage or {}
     storage_functions.populate_storage()
     technology_functions.migrate_all()
     --game.print({ "smart-inserters.experimental" })
@@ -146,10 +146,9 @@ local function on_rotation_adjust(event)
         assert(inserter, "[control.lua:on_rotation_adjust] Inserter is nil")
         if technology_functions.get_diagonal_increment(inserter.force) < 1 then
             ---@diagnostic disable-next-line: missing-fields
-            player.surface.create_entity({
-                name = "flying-text",
+            player.create_local_flying_text({
+                text = { "flying-text-smart-inserters.required-technology-missing", "technology-name.si-unlock-diagonal" },
                 position = inserter.position,
-                text = { "flying-text-smart-inserters.required-technology-missing", "technology-name.si-unlock-cross" },
                 color = { 0.8, 0.8, 0.8 }
             })
             return
@@ -446,8 +445,7 @@ local function on_distance_adjust(event)
         assert(inserter, "[control.lua:on_offset_adjust] Inserter is nil")
         ---@diagnostic disable-next-line: param-type-mismatch
         if (technology_functions.get_actual_increment(inserter.force) < 1) or (technology_functions.get_diagonal_increment(inserter.force) < 1) then
-            player.surface.create_entity({
-                name = "flying-text",
+            player.create_local_flying_text({
                 position = inserter.position,
                 text = { "flying-text-smart-inserters.required-technology-missing", "technology-name.si-unlock-range-1 / technology-name.si-unlock-cross" },
                 color = { 0.8, 0.8, 0.8 }
@@ -580,16 +578,14 @@ local function on_offset_adjust(event)
         assert(inserter, "[control.lua:on_offset_adjust] Inserter is nil")
         ---@diagnostic disable-next-line: param-type-mismatch
         if not offset_selector then
-            player.surface.create_entity({
-                name = "flying-text",
+            player.create_local_flying_text({
                 position = inserter.position,
                 text = { "flying-text-smart-inserters.offset-selector-is-disabled" },
                 color = { 0.8, 0.8, 0.8 }
             })
             return
         elseif not technology_functions.check_offset_tech(inserter.force) then
-            player.surface.create_entity({
-                name = "flying-text",
+            player.create_local_flying_text({
                 position = inserter.position,
                 text = { "flying-text-smart-inserters.required-technology-missing", "technology-name.si-unlock-offsets" },
                 color = { 0.8, 0.8, 0.8 }
@@ -647,7 +643,9 @@ local function on_built_entity(event)
     end
 
     storage_functions.ensure_data(event.player_index)
-    local inserter = global.SI_Storage[event.player_index].selected_inserter.inserter
+    local player = game.get_player(event.player_index)
+    if player == nil then return end
+    local inserter = SI_Storage[event.player_index].selected_inserter.inserter
     local update = string.find(entity.ghost_name, "d", 13) == 13 and "drop" or "pickup"
     local arm_positions = inserter_functions.get_arm_positions(inserter)
     arm_positions[update] = math2d.position.subtract(entity.position, inserter.position)
@@ -684,8 +682,7 @@ local function on_built_entity(event)
     if inserter_functions.should_cell_be_enabled(inserter, arm_positions[update]) and check_directional_slim then
         inserter_functions.set_arm_positions(arm_positions, inserter)
     else
-        inserter.surface.create_entity({
-            name = "flying-text",
+        player.create_local_flying_text({
             position = inserter.position,
             text = { "flying-text-smart-inserters.invalid-position" },
             color = { 0.8, 0.8, 0.8 }
@@ -701,7 +698,7 @@ local function on_entity_destroyed(event)
     end
     for player_index, player in pairs(game.players) do
         storage_functions.ensure_data(player_index)
-        if global.SI_Storage[player_index].is_selected == true and math2d.position.equal(global.SI_Storage[player_index].selected_inserter.position, event.entity.position) then
+        if SI_Storage[player_index].is_selected == true and math2d.position.equal(SI_Storage[player_index].selected_inserter.position, event.entity.position) then
             --world_editor.clear_positions(player_index)
             player_functions.safely_change_cursor(player)
         end

@@ -50,7 +50,7 @@ end
 
 function si_util.check_blacklist(entity)
     --What an ugly ass piece of code... I rellay hate checking strings in this way to filter something, it's reliability is below 0...
-    local prototype = script.get_prototype_history(entity.type, entity.name)
+    local prototype = prototypes.get_history(entity.type, entity.name)
 
     for _, v in pairs(si_util.blacklist.mods) do
         if string.find(prototype.created, v) then

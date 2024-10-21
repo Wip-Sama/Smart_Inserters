@@ -18,7 +18,7 @@ local colors       = {
 ---@param player LuaPlayer
 ---@param position Position
 ---@param directional_color "drop" | "pickup" | nil
----@return integer
+---@return LuaRenderObject
 local function draw_border(player, position, directional_color)
     return rendering.draw_rectangle {
         color = directional_color == nil and {255, 255, 255} or
@@ -40,7 +40,7 @@ end
 ---@param player LuaPlayer
 ---@param position Position
 ---@param directional_color "drop" | "pickup" | nil
----@return integer
+---@return LuaRenderObject
 local function draw_background(player, position, directional_color)
     return rendering.draw_rectangle {
         color = colors.can_select,
@@ -58,7 +58,7 @@ end
 
 ---@param player LuaPlayer
 ---@param position Position
----@return integer
+---@return LuaRenderObject
 local function draw_pickup(player, position)
     return rendering.draw_rectangle {
         color = colors.pickup,
@@ -77,7 +77,7 @@ end
 
 ---@param player LuaPlayer
 ---@param position Position
----@return integer
+---@return LuaRenderObject
 local function draw_drop(player, position)
     return rendering.draw_rectangle {
         color = colors.drop,
@@ -117,11 +117,11 @@ function world_editor.draw_positions(player_index, inserter)
 
     local slim = inserter_functions.is_slim(inserter)
 
-    global.SI_Storage[player_index].selected_inserter.inserter = inserter
+    SI_Storage[player_index].selected_inserter.inserter = inserter
 
     for y = -max_inserter_range-lower_height, max_inserter_range+higher_height-1, 1 do
         for x = -max_inserter_range-lower_width, max_inserter_range+higher_width-1, 1 do
-            global.SI_Storage[player_index].selected_inserter.displayed_elements[x] = global.SI_Storage[player_index].selected_inserter.displayed_elements[x] or {}
+            SI_Storage[player_index].selected_inserter.displayed_elements[x] = SI_Storage[player_index].selected_inserter.displayed_elements[x] or {}
             if (not ((-lower_width <= x and x < higher_width) and (-lower_height <= y and y < higher_height))) and inserter_functions.should_cell_be_enabled(inserter, {x = x, y = y}) then
                 local directional_color
                 if slim and directional_slim_inserter then
@@ -152,16 +152,16 @@ function world_editor.draw_positions(player_index, inserter)
                     end
                 end
 
-                border_id = draw_border(player, { x = inserter.position.x + x + x_offset, y = inserter.position.y + y + y_offset }, directional_color)
-                background_id = draw_background(player, { x = inserter.position.x + x + x_offset, y = inserter.position.y + y + y_offset }, directional_color)
-                global.SI_Storage[player_index].selected_inserter.displayed_elements[x][y] = {
-                    background_render = background_id,
-                    border_render = border_id,
+                border = draw_border(player, { x = inserter.position.x + x + x_offset, y = inserter.position.y + y + y_offset }, directional_color)
+                background = draw_background(player, { x = inserter.position.x + x + x_offset, y = inserter.position.y + y + y_offset }, directional_color)
+                SI_Storage[player_index].selected_inserter.displayed_elements[x][y] = {
+                    background_render = background,
+                    border_render = border,
                     drop_render = nil,
                     pickup_render = nil,
                 }
             else
-                global.SI_Storage[player_index].selected_inserter.displayed_elements[x][y] = {render_id = nil}
+                SI_Storage[player_index].selected_inserter.displayed_elements[x][y] = {render = nil}
             end
         end
     end
@@ -176,28 +176,28 @@ function world_editor.update_positions(player_index, inserter, event)
     local player = game.get_player(player_index)
     if player == nil then return end
     storage_functions.ensure_data(player_index)
-    if global.SI_Storage[player_index].selected_inserter.inserter == nil then return end
+    if SI_Storage[player_index].selected_inserter.inserter == nil then return end
     local arm_positions = inserter_functions.get_arm_positions(inserter)
 
     if event == nil or (event.old_drop and not math2d.position.equal(arm_positions.drop, event.old_drop)) then
-        if event and global.SI_Storage[player_index].selected_inserter.displayed_elements[event.old_drop.x][event.old_drop.y] and global.SI_Storage[player_index].selected_inserter.displayed_elements[event.old_drop.x][event.old_drop.y].drop_render then
-            rendering.destroy(global.SI_Storage[player_index].selected_inserter.displayed_elements[event.old_drop.x][event.old_drop.y].drop_render)
-            global.SI_Storage[player_index].selected_inserter.displayed_elements[event.old_drop.x][event.old_drop.y].drop_render = nil
+        if event and SI_Storage[player_index].selected_inserter.displayed_elements[event.old_drop.x][event.old_drop.y] and SI_Storage[player_index].selected_inserter.displayed_elements[event.old_drop.x][event.old_drop.y].drop_render then
+            SI_Storage[player_index].selected_inserter.displayed_elements[event.old_drop.x][event.old_drop.y].drop_render.destroy()
+            SI_Storage[player_index].selected_inserter.displayed_elements[event.old_drop.x][event.old_drop.y].drop_render = nil
         end
-        if global.SI_Storage[player_index].selected_inserter.displayed_elements[arm_positions.drop.x][arm_positions.drop.y] then
+        if SI_Storage[player_index].selected_inserter.displayed_elements[arm_positions.drop.x][arm_positions.drop.y] then
             local drop_render = draw_drop(player, { x = arm_positions.base.x + arm_positions.drop.x + 0.5, y = arm_positions.base.y + arm_positions.drop.y + 0.5 })
-            global.SI_Storage[player_index].selected_inserter.displayed_elements[arm_positions.drop.x][arm_positions.drop.y].drop_render = drop_render
+            SI_Storage[player_index].selected_inserter.displayed_elements[arm_positions.drop.x][arm_positions.drop.y].drop_render = drop_render
         end
     end
 
     if event == nil or (event.old_pickup and not math2d.position.equal(arm_positions.pickup, event.old_pickup)) then
-        if event and global.SI_Storage[player_index].selected_inserter.displayed_elements[event.old_pickup.x][event.old_pickup.y] and global.SI_Storage[player_index].selected_inserter.displayed_elements[event.old_pickup.x][event.old_pickup.y].pickup_render then
-            rendering.destroy(global.SI_Storage[player_index].selected_inserter.displayed_elements[event.old_pickup.x][event.old_pickup.y].pickup_render)
-            global.SI_Storage[player_index].selected_inserter.displayed_elements[event.old_pickup.x][event.old_pickup.y].pickup_render = nil
+        if event and SI_Storage[player_index].selected_inserter.displayed_elements[event.old_pickup.x][event.old_pickup.y] and SI_Storage[player_index].selected_inserter.displayed_elements[event.old_pickup.x][event.old_pickup.y].pickup_render then
+            SI_Storage[player_index].selected_inserter.displayed_elements[event.old_pickup.x][event.old_pickup.y].pickup_render.destroy()
+            SI_Storage[player_index].selected_inserter.displayed_elements[event.old_pickup.x][event.old_pickup.y].pickup_render = nil
         end
-        if global.SI_Storage[player_index].selected_inserter.displayed_elements[arm_positions.pickup.x][arm_positions.pickup.y] then
+        if SI_Storage[player_index].selected_inserter.displayed_elements[arm_positions.pickup.x][arm_positions.pickup.y] then
             local pickup_render = draw_pickup(player, { x = arm_positions.base.x + arm_positions.pickup.x + 0.5, y = arm_positions.base.y + arm_positions.pickup.y + 0.5 })
-            global.SI_Storage[player_index].selected_inserter.displayed_elements[arm_positions.pickup.x][arm_positions.pickup.y].pickup_render = pickup_render
+            SI_Storage[player_index].selected_inserter.displayed_elements[arm_positions.pickup.x][arm_positions.pickup.y].pickup_render = pickup_render
         end
     end
 end
@@ -218,7 +218,7 @@ end
 function world_editor.update_all_positions(inserter)
     local player_storage
     for _, player in pairs(game.players) do
-        player_storage = global.SI_Storage[player.index]
+        player_storage = SI_Storage[player.index]
         storage_functions.ensure_data(player.index)
         if player_storage.is_selected == true and math2d.position.equal(player_storage.selected_inserter.position, inserter.position) then
             world_editor.clear_positions(player.index)
@@ -230,24 +230,24 @@ end
 ---@param player_index any
 function world_editor.clear_positions(player_index)
     storage_functions.ensure_data(player_index)
-    global.SI_Storage[player_index].selected_inserter.inserter = nil
-    for _, x in pairs(global.SI_Storage[player_index].selected_inserter.displayed_elements) do
+    SI_Storage[player_index].selected_inserter.inserter = nil
+    for _, x in pairs(SI_Storage[player_index].selected_inserter.displayed_elements) do
         for _, y in pairs(x) do
             if y.background_render then
-                rendering.destroy(y.background_render)
+                y.background_render.destroy()
             end
             if y.border_render then
-                rendering.destroy(y.border_render)
+                y.border_render.destroy()
             end
             if y.drop_render then
-                rendering.destroy(y.drop_render)
+                y.drop_render.destroy()
             end
             if y.pickup_render then
-                rendering.destroy(y.pickup_render)
+                y.pickup_render.destroy()
             end
         end
     end
-    global.SI_Storage[player_index].selected_inserter.displayed_elements = {}
+    SI_Storage[player_index].selected_inserter.displayed_elements = {}
 end
 
 return world_editor
