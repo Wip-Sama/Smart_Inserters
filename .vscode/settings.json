@@ -25,9 +25,21 @@
     "Lua.workspace.library": [
         "d:\\SteamLibrary\\steamapps\\common\\Factorio\\data",
         "c:/Users/smast/AppData/Roaming/Code/User/workspaceStorage/0ffa34d8e276b965f0d3d5c9b6b5ffd2/justarandomgeek.factoriomod-debug/sumneko-3rd/factorio/library",
-        "c:/Users/smast/AppData/Roaming/Code/User/workspaceStorage/155cbc3388966250288c21f52189c031/justarandomgeek.factoriomod-debug/sumneko-3rd/factorio/library"
+        "c:/Users/smast/AppData/Roaming/Code/User/workspaceStorage/155cbc3388966250288c21f52189c031/justarandomgeek.factoriomod-debug/sumneko-3rd/factorio/library",
+        "d:\\Programmi\\Factorio\\data"
     ],
     "Lua.diagnostics.disable": [
         "lowercase-global"
-    ]
+    ],
+    "factorio.versions": [
+        {
+            "name": "Factorio",
+            "factorioPath": "d:\\Programmi\\Factorio\\bin\\x64\\factorio.exe",
+            "active": true
+        }
+    ],
+    "Lua.workspace.userThirdParty": [
+        "c:\\Users\\sgroo\\AppData\\Roaming\\Code\\User\\workspaceStorage\\82909e20e9976ca3674a38853c0cf607\\justarandomgeek.factoriomod-debug\\sumneko-3rd"
+    ],
+    "Lua.workspace.checkThirdParty": "ApplyInMemory"
 }
