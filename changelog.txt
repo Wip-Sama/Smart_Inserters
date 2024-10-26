@@ -1,4 +1,17 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.7
+Date: 2024-10-26
+  Bugfixes:
+    - in world selector not working with building under the selection (fix by: )
+---------------------------------------------------------------------------------------------------
+Version: 2.0.6
+Date: 2024-10-23
+  Changes:
+    - Disable long inserter setting now defaults to false
+  Bugfixes:
+    - Crush with helmod, (this is a rudimentary patch) https://mods.factorio.com/mod/Smart_Inserters/discussion/67195c415d424c40a6870b08
+    - Crush when switching armors https://discord.com/channels/639182424412127242/655181761025802295/1298767587513204747
+---------------------------------------------------------------------------------------------------
 Version: 2.0.5
 Date: 2024-10-22
   Bugfixes:

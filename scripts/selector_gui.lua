@@ -391,7 +391,7 @@ end
 ---@param event InserterArmChanged?
 function gui.update_all(inserter, event)
     for _, player in pairs(game.players) do
-        if (inserter and player.opened == inserter) or (not inserter and player.opened and player.opened.type == "inserter") then
+        if (inserter and player.opened == inserter) or (not inserter and player.opened and player.opened.type and player.opened.type == "inserter") then
             ---@diagnostic disable-next-line: param-type-mismatch
             gui.update(player, player.opened, event)
         end
@@ -405,7 +405,10 @@ local function change_pickup_drop(event)
     assert(player~=nil, "Player "..event.player_index.." is nil")
 
     ---@diagnostic disable-next-line: param-type-mismatch
-    assert(player.opened~=nil and inserter_functions.is_inserter(player.opened), "Opened is nil")
+    if player.opened==nil and not inserter_functions.is_inserter(player.opened) then
+        return
+    end
+    --assert(player.opened~=nil and inserter_functions.is_inserter(player.opened), "Opened is nil")
 
     ---@type LuaGuiElement
     local sprite_button = event.element
@@ -478,7 +481,10 @@ local function change_drop(event)
     assert(player~=nil, "Player "..event.player_index.." is nil")
 
     ---@diagnostic disable-next-line: param-type-mismatch
-    assert(player.opened~=nil and inserter_functions.is_inserter(player.opened), "Opened is nil")
+    if player.opened==nil and not inserter_functions.is_inserter(player.opened) then
+        return
+    end
+    --assert(player.opened~=nil and inserter_functions.is_inserter(player.opened), "Opened is nil")
 
     ---@type LuaGuiElement
     local sprite_button = event.element
@@ -511,7 +517,10 @@ local function change_pickup(event)
     assert(player~=nil, "Player "..event.player_index.." is nil")
 
     ---@diagnostic disable-next-line: param-type-mismatch
-    assert(player.opened~=nil and inserter_functions.is_inserter(player.opened), "Opened is nil")
+    if player.opened==nil and not inserter_functions.is_inserter(player.opened) then
+        return
+    end
+    --assert(player.opened~=nil and inserter_functions.is_inserter(player.opened), "Opened is nil")
 
     ---@type LuaGuiElement
     local sprite_button = event.element
@@ -544,7 +553,10 @@ local function change_pickup_offset(event)
     assert(player~=nil, "Player "..event.player_index.." is nil")
 
     ---@diagnostic disable-next-line: param-type-mismatch
-    assert(player.opened~=nil and inserter_functions.is_inserter(player.opened), "Opened is nil")
+    if player.opened==nil and not inserter_functions.is_inserter(player.opened) then
+        return
+    end
+    --assert(player.opened~=nil and inserter_functions.is_inserter(player.opened), "Opened is nil")
 
     ---@type LuaGuiElement
     local sprite_button = event.element
@@ -573,7 +585,10 @@ local function change_drop_offset(event)
     assert(player~=nil, "Player "..event.player_index.." is nil")
 
     ---@diagnostic disable-next-line: param-type-mismatch
-    assert(player.opened~=nil and inserter_functions.is_inserter(player.opened), "Opened is nil")
+    if player.opened==nil and not inserter_functions.is_inserter(player.opened) then
+        return
+    end
+    --assert(player.opened~=nil and inserter_functions.is_inserter(player.opened), "Opened is nil")
 
     ---@type LuaGuiElement
     local sprite_button = event.element

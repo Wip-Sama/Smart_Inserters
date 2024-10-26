@@ -63,7 +63,7 @@ data:extend({
         type          = "bool-setting",
         setting_type  = "startup",
         name          = "si-disable-long-inserters",
-        default_value = true,
+        default_value = false,
         order         = "da"
     },
     {
