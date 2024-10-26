@@ -1,8 +1,7 @@
 local directional_slim_inserter = settings.startup["si-directional-slim-inserter"].value
 
-local storage_functions = require("scripts/storage_functions")
 local inserter_functions = require("scripts/inserter_functions")
-local util = require("scripts.si_util")
+local storage_functions = require("scripts/storage_functions")
 local math2d = require("__yafla__/scripts/extended_math2d")
 
 --Removed a bunch of Tostring
@@ -10,287 +9,245 @@ local math2d = require("__yafla__/scripts/extended_math2d")
 local world_editor = {}
 local colors       = {
     can_select  = { 30, 30, 30, 5 },
-    cant_select = { 207, 31, 60, 5 },
-    drop        = { 77, 15, 15, 3 },
+    drop        = { 154, 30, 30 },
+    pickup      = { 30, 148, 26 },
     light_drop  = { 77, 15, 15, 1 },
-    pickup      = { 15, 74, 13, 3 },
     light_pickup= { 15, 74, 13, 1 },
-    -- inserter    = { 15, 74, 13, 2 } -- I want something blueish to implement this
 }
 
-function world_editor.draw_positions(player_index, inserter, hand)
-    local player = game.players[player_index]
-    local range = inserter_functions.get_max_range(inserter, player.force)
-    local arm_positions = inserter_functions.get_arm_positions(inserter)
+---@param player LuaPlayer
+---@param position Position
+---@param directional_color "drop" | "pickup" | nil
+---@return LuaRenderObject
+local function draw_border(player, position, directional_color)
+    return rendering.draw_rectangle {
+        color = directional_color == nil and {255, 255, 255} or
+                directional_color == "drop" and {255, 0, 0} or {0, 255, 0},
+        -- color = {255, 255, 255},
+        filled = false,
+        width = 2,
+        left_top = { position.x - 0.5 + 0.03125, position.y - 0.5 + 0.03125 },
+        right_bottom = { position.x + 0.5 - 0.03125, position.y + 0.5 - 0.03125 },
+        surface = player.surface,
+        forces = { player.force },
+        players = { player },
+        visible = true,
+        draw_on_ground = false,
+        only_in_alt_mode = false
+    }
+end
+
+---@param player LuaPlayer
+---@param position Position
+---@param directional_color "drop" | "pickup" | nil
+---@return LuaRenderObject
+local function draw_background(player, position, directional_color)
+    return rendering.draw_rectangle {
+        color = colors.can_select,
+        filled = true,
+        left_top = { position.x - 0.5, position.y - 0.5 },
+        right_bottom = { position.x + 0.5, position.y + 0.5 },
+        surface = player.surface,
+        forces = { player.force },
+        players = { player },
+        visible = true,
+        draw_on_ground = false,
+        only_in_alt_mode = false
+    }
+end
+
+---@param player LuaPlayer
+---@param position Position
+---@return LuaRenderObject
+local function draw_pickup(player, position)
+    return rendering.draw_rectangle {
+        color = colors.pickup,
+        filled = false,
+        width = 8,
+        left_top = { position.x - 0.5 + 0.1875, position.y - 0.5 + 0.1875 },
+        right_bottom = { position.x + 0.5 - 0.1875, position.y + 0.5 - 0.1875 },
+        surface = player.surface,
+        forces = { player.force },
+        players = { player },
+        visible = true,
+        draw_on_ground = false,
+        only_in_alt_mode = false
+    }
+end
+
+---@param player LuaPlayer
+---@param position Position
+---@return LuaRenderObject
+local function draw_drop(player, position)
+    return rendering.draw_rectangle {
+        color = colors.drop,
+        filled = false,
+        width = 8,
+        left_top = { position.x - 0.5 + 0.5625, position.y - 0.5 + 0.5625 },
+        right_bottom = { position.x + 0.5 - 0.5625, position.y + 0.5 - 0.5625 },
+        surface = player.surface,
+        forces = { player.force },
+        players = { player },
+        visible = true,
+        draw_on_ground = false,
+        only_in_alt_mode = false
+    }
+end
+
+---@param player_index number
+---@param inserter LuaEntity
+---@return nil
+function world_editor.draw_positions(player_index, inserter)
+
+    local player = game.get_player(player_index)
+    if player == nil then return end
+
     storage_functions.ensure_data(player_index)
-    local player_storage = global.SI_Storage[player_index]
+
+    local max_inserter_range, min_inserter_range = inserter_functions.get_max_and_min_inserter_range(inserter)
+    local width, height = math.ceil(inserter.tile_width), math.ceil(inserter.tile_height)
+
+    local lower_width = width%2==0 and width/2 or width/2-0.5
+    local higher_width = width%2==0 and width/2 or width/2+0.5
+
+    local lower_height = height%2==0 and height/2 or height/2-0.5
+    local higher_height = height%2==0 and height/2 or height/2+0.5
+
+    local x_offset, y_offset = width ~= 1 and 0.5 or 0, height ~= 1 and 0.5 or 0
 
     local slim = inserter_functions.is_slim(inserter)
-    local inserter_size = inserter_functions.get_inserter_size(inserter)
-    local vertical = inserter.direction == defines.direction.north or inserter.direction == defines.direction.south
-    local orizontal = inserter.direction == defines.direction.east or inserter.direction == defines.direction.west
-    local enabled_matrix = util.enabled_cell_matrix(player.force, vertical, orizontal, slim)
 
-    local is_drop, is_pickup, render_id, x_offset, y_offset
+    storage.SI_Storage[player_index].selected_inserter.inserter = inserter
 
-    if slim then
-        if vertical and arm_positions.drop.y >= 0 then     -- parte bassa / lower half
-            arm_positions.drop.y = arm_positions.drop.y + 1
-        elseif orizontal and arm_positions.drop.x >= 0 then -- parte destra / right
-            arm_positions.drop.x = arm_positions.drop.x + 1
-        end
-        if vertical and arm_positions.pickup.y >= 0 then     -- parte bassa / lower half
-            arm_positions.pickup.y = arm_positions.pickup.y + 1
-        elseif orizontal and arm_positions.pickup.x >= 0 then -- parte destra / right
-            arm_positions.pickup.x = arm_positions.pickup.x + 1
-        end
-    end
-
-    player_storage.is_selected = true
-    for px = -range, range do
-        for py = -range, range do
-            -- Should change to allow for slim/big inserter
-            if px == 0 and py == 0 then goto continue end
-
-            is_drop = arm_positions.drop.x == px and arm_positions.drop.y == py
-            is_pickup = arm_positions.pickup.x == px and arm_positions.pickup.y == py
-            if not enabled_matrix[px][py] and not (is_pickup or is_drop) then
-                goto continue
-            end
-
-            x_offset = 0
-            y_offset = 0
-            if slim then
-                if directional_slim_inserter then
-                    if hand == nil then goto continue end
-                    if hand == "drop" then
-                        if inserter.direction == 0 and py < 0 then goto continue
-                        elseif inserter.direction == 2 and px > 0 then goto continue
-                        elseif inserter.direction == 4 and py > 0 then goto continue
-                        elseif inserter.direction == 6 and px < 0 then goto continue
+    for y = -max_inserter_range-lower_height, max_inserter_range+higher_height-1, 1 do
+        for x = -max_inserter_range-lower_width, max_inserter_range+higher_width-1, 1 do
+            storage.SI_Storage[player_index].selected_inserter.displayed_elements[x] = storage.SI_Storage[player_index].selected_inserter.displayed_elements[x] or {}
+            if (not ((-lower_width <= x and x < higher_width) and (-lower_height <= y and y < higher_height))) and inserter_functions.should_cell_be_enabled(inserter, {x = x, y = y}) then
+                local directional_color
+                if slim and directional_slim_inserter then
+                    if inserter.direction == defines.direction.north then
+                        if y < 0 then
+                            directional_color = "pickup"
+                        else
+                            directional_color = "drop"
                         end
-                    elseif hand == "pickup" then
-                        if inserter.direction == 0 and py > 0 then goto continue
-                        elseif inserter.direction == 2 and px < 0 then goto continue
-                        elseif inserter.direction == 4 and py < 0 then goto continue
-                        elseif inserter.direction == 6 and px > 0 then goto continue
+                    elseif inserter.direction == defines.direction.south then
+                        if y < 0 then
+                            directional_color = "drop"
+                        else
+                            directional_color = "pickup"
+                        end
+                    elseif inserter.direction == defines.direction.east then
+                        if x < 0 then
+                            directional_color = "drop"
+                        else
+                            directional_color = "pickup"
+                        end
+                    elseif inserter.direction == defines.direction.west then
+                        if x < 0 then
+                            directional_color = "pickup"
+                        else
+                            directional_color = "drop"
                         end
                     end
                 end
-                if orizontal then
-                    if px < 0 then
-                        x_offset = 0.5
-                    elseif px > 0 then
-                        x_offset = -0.5
-                    end
-                end
-                    if vertical then
-                    if py < 0 then
-                        y_offset = 0.5
-                    elseif py > 0 then
-                        y_offset = -0.5
-                    end
-                end
+
+                border = draw_border(player, { x = inserter.position.x + x + x_offset, y = inserter.position.y + y + y_offset }, directional_color)
+                background = draw_background(player, { x = inserter.position.x + x + x_offset, y = inserter.position.y + y + y_offset }, directional_color)
+                storage.SI_Storage[player_index].selected_inserter.displayed_elements[x][y] = {
+                    background_render = background,
+                    border_render = border,
+                    drop_render = nil,
+                    pickup_render = nil,
+                }
+            else
+                storage.SI_Storage[player_index].selected_inserter.displayed_elements[x][y] = {render = nil}
             end
-
-            render_id = rendering.draw_rectangle {
-                color =
-                    is_drop and colors.drop or
-                    is_pickup and colors.pickup or
-                    enabled_matrix[px][py] and colors.can_select or
-                    colors.cant_select,
-                filled = true,
-                left_top = { inserter.position.x + px - 0.5 + x_offset, inserter.position.y + py - 0.5 + y_offset},
-                right_bottom = { inserter.position.x + px + 0.5 + x_offset, inserter.position.y + py + 0.5 + y_offset},
-                surface = player.surface,
-                forces = { player.force },
-                players = { player },
-                visible = true,
-                draw_on_ground = false,
-                only_in_alt_mode = false
-            }
-
-            player_storage.selected_inserter.position_grid[px][py] = {
-                loaded = true,
-                render_id = render_id
-            }
-
-            ::continue::
         end
     end
+
+    world_editor.update_positions(player_index, inserter)
 end
 
-function world_editor.update_positions(player_index, inserter, changes)
-    local player = game.players[player_index]
-    local arm_positions = inserter_functions.get_arm_positions(inserter)
-    local range = inserter_functions.get_max_range(inserter, player.force)
-    local render_id, enabled_cell
+---@param player_index number
+---@param inserter LuaEntity
+---@param event InserterArmChanged?
+function world_editor.update_positions(player_index, inserter, event)
+    local player = game.get_player(player_index)
+    if player == nil then return end
     storage_functions.ensure_data(player_index)
-    local size = inserter_functions.get_inserter_size(inserter)
+    if storage.SI_Storage[player_index].selected_inserter.inserter == nil then return end
+    local arm_positions = inserter_functions.get_arm_positions(inserter)
 
-    if changes.pickup then
-        if changes.pickup.old then
-            render_id = global.SI_Storage[player_index].selected_inserter.position_grid[changes.pickup.old.x]
-                [changes.pickup.old.y].render_id
-            if type(render_id) ~= "number" then return end
-            rendering.destroy(render_id)
-            enabled_cell = util.should_cell_be_enabled(changes.pickup.old, range, player.force, inserter)
-            render_id = rendering.draw_rectangle {
-                color = colors[enabled_cell and "can_select" or "cant_select"],
-                filled = true,
-                left_top = { arm_positions.base.x + changes.pickup.old.x, arm_positions.base.y + changes.pickup.old.y },
-                right_bottom = { arm_positions.base.x + changes.pickup.old.x + 1,
-                    arm_positions.base.y + changes.pickup.old.y + 1 },
-                surface = player.surface,
-                forces = { player.force },
-                players = { player },
-                visible = true,
-                draw_on_ground = false,
-                only_in_alt_mode = false
-            }
-            global.SI_Storage[player_index].selected_inserter.position_grid[changes.pickup.old.x][changes.pickup.old.y] = {
-                loaded = true,
-                render_id = render_id
-            }
+    if event == nil or (event.old_drop and not math2d.position.equal(arm_positions.drop, event.old_drop)) then
+        if event and storage.SI_Storage[player_index].selected_inserter.displayed_elements[event.old_drop.x][event.old_drop.y] and storage.SI_Storage[player_index].selected_inserter.displayed_elements[event.old_drop.x][event.old_drop.y].drop_render then
+            storage.SI_Storage[player_index].selected_inserter.displayed_elements[event.old_drop.x][event.old_drop.y].drop_render.destroy()
+            storage.SI_Storage[player_index].selected_inserter.displayed_elements[event.old_drop.x][event.old_drop.y].drop_render = nil
         end
-        if changes.pickup.new then
-            render_id = global.SI_Storage[player_index].selected_inserter.position_grid[changes.pickup.new.x]
-                [changes.pickup.new.y].render_id
-            if type(render_id) ~= "number" then return end
-            rendering.destroy(render_id)
-            render_id = rendering.draw_rectangle {
-                color = colors["pickup"],
-                filled = true,
-                left_top = { arm_positions.base.x + changes.pickup.new.x, arm_positions.base.y + changes.pickup.new.y },
-                right_bottom = { arm_positions.base.x + changes.pickup.new.x + 1,
-                    arm_positions.base.y + changes.pickup.new.y + 1 },
-                surface = player.surface,
-                forces = { player.force },
-                players = { player },
-                visible = true,
-                draw_on_ground = false,
-                only_in_alt_mode = false
-            }
-            global.SI_Storage[player_index].selected_inserter.position_grid[changes.pickup.new.x][changes.pickup.new.y] = {
-                loaded = true,
-                render_id = render_id
-            }
+        if storage.SI_Storage[player_index].selected_inserter.displayed_elements[arm_positions.drop.x][arm_positions.drop.y] then
+            local drop_render = draw_drop(player, { x = arm_positions.base.x + arm_positions.drop.x + 0.5, y = arm_positions.base.y + arm_positions.drop.y + 0.5 })
+            storage.SI_Storage[player_index].selected_inserter.displayed_elements[arm_positions.drop.x][arm_positions.drop.y].drop_render = drop_render
         end
     end
 
-    if changes.drop then
-        -- Perché ho messo and not changes.pickup??? da controllare
-        if changes.drop.old and not changes.pickup then
-            --[[
-
-                if size == 0 then
-                    local vertical = (inserter.direction==0 or inserter.direction==4)
-                    local orizontal = (inserter.direction==2 or inserter.direction==6)
-                    if vertical and changes.drop.old.y >= 0 then     -- parte bassa / lower half
-                        render_id = global.SI_Storage[player_index].selected_inserter.position_grid[changes.drop.old.x]
-                        [changes.drop.old.y-1].render_id
-                    elseif orizontal and changes.drop.old.x >= 0 then -- parte destra / right
-                        render_id = global.SI_Storage[player_index].selected_inserter.position_grid[changes.drop.old.x-1]
-                        [changes.drop.old.y].render_id
-                    end
-                else
-                    render_id = global.SI_Storage[player_index].selected_inserter.position_grid[changes.drop.old.x]
-                        [changes.drop.old.y].render_id
-                end
-            ]]
-            render_id = global.SI_Storage[player_index].selected_inserter.position_grid[changes.drop.old.x]
-            [changes.drop.old.y].render_id
-            if type(render_id) ~= "number" then return end
-            rendering.destroy(render_id)
-            enabled_cell = util.should_cell_be_enabled(changes.drop.old, range, player.force, inserter)
-            render_id = rendering.draw_rectangle {
-                color = colors[enabled_cell and "can_select" or "cant_select"],
-                filled = true,
-                left_top = { arm_positions.base.x + changes.drop.old.x, arm_positions.base.y + changes.drop.old.y },
-                right_bottom = { arm_positions.base.x + changes.drop.old.x + 1,
-                    arm_positions.base.y + changes.drop.old.y + 1 },
-                surface = player.surface,
-                forces = { player.force },
-                players = { player },
-                visible = true,
-                draw_on_ground = false,
-                only_in_alt_mode = false
-            }
-            global.SI_Storage[player_index].selected_inserter.position_grid[changes.drop.old.x][changes.drop.old.y] = {
-                loaded = true,
-                render_id = render_id
-            }
+    if event == nil or (event.old_pickup and not math2d.position.equal(arm_positions.pickup, event.old_pickup)) then
+        if event and storage.SI_Storage[player_index].selected_inserter.displayed_elements[event.old_pickup.x][event.old_pickup.y] and storage.SI_Storage[player_index].selected_inserter.displayed_elements[event.old_pickup.x][event.old_pickup.y].pickup_render then
+            storage.SI_Storage[player_index].selected_inserter.displayed_elements[event.old_pickup.x][event.old_pickup.y].pickup_render.destroy()
+            storage.SI_Storage[player_index].selected_inserter.displayed_elements[event.old_pickup.x][event.old_pickup.y].pickup_render = nil
         end
-        if changes.drop.new then
-            --[[
-                
-                if size == 0 then
-                    local vertical = (inserter.direction==0 or inserter.direction==4)
-                    local orizontal = (inserter.direction==2 or inserter.direction==6)
-                    if vertical and changes.drop.new.y >= 0 then     -- parte bassa / lower half
-                        render_id = global.SI_Storage[player_index].selected_inserter.position_grid[changes.drop.new.x]
-                        [changes.drop.new.y-1].render_id
-                    elseif orizontal and changes.drop.new.y >= 0 then -- parte destra / right
-                        render_id = global.SI_Storage[player_index].selected_inserter.position_grid[changes.drop.new.x-1]
-                        [changes.drop.new.y].render_id
-                    end
-                else
-                    render_id = global.SI_Storage[player_index].selected_inserter.position_grid[changes.drop.new.x]
-                        [changes.drop.new.y].render_id
-                end
-            ]]
-            render_id = global.SI_Storage[player_index].selected_inserter.position_grid[changes.drop.new.x]
-            [changes.drop.new.y].render_id
-            if type(render_id) ~= "number" then return end
-            rendering.destroy(render_id)
-            render_id = rendering.draw_rectangle {
-                color = colors["drop"],
-                filled = true,
-                left_top = { arm_positions.base.x + changes.drop.new.x, arm_positions.base.y + changes.drop.new.y },
-                right_bottom = { arm_positions.base.x + changes.drop.new.x + 1,
-                    arm_positions.base.y + changes.drop.new.y + 1 },
-                surface = player.surface,
-                forces = { player.force },
-                players = { player },
-                visible = true,
-                draw_on_ground = false,
-                only_in_alt_mode = false
-            }
-            global.SI_Storage[player_index].selected_inserter.position_grid[changes.drop.new.x][changes.drop.new.y] = {
-                loaded = true,
-                render_id = render_id
-            }
+        if storage.SI_Storage[player_index].selected_inserter.displayed_elements[arm_positions.pickup.x][arm_positions.pickup.y] then
+            local pickup_render = draw_pickup(player, { x = arm_positions.base.x + arm_positions.pickup.x + 0.5, y = arm_positions.base.y + arm_positions.pickup.y + 0.5 })
+            storage.SI_Storage[player_index].selected_inserter.displayed_elements[arm_positions.pickup.x][arm_positions.pickup.y].pickup_render = pickup_render
         end
-    end
-
-    if changes.tech == true then
-        world_editor.draw_positions(player_index, inserter)
     end
 end
 
-function world_editor.update_all_positions(inserter, hand)
+---@param inserter LuaEntity
+---@param event InserterArmChanged
+function world_editor.update_all(inserter, event)
+    for _, player in pairs(game.players) do
+        local storage = storage_functions.ensure_data(player.index)
+        if storage.selected_inserter.inserter ~= nil and storage.selected_inserter.inserter == inserter then
+            ---@diagnostic disable-next-line: param-type-mismatch
+            world_editor.update_positions(player.index, inserter, event)
+        end
+    end
+end
+
+---@param inserter any
+function world_editor.update_all_positions(inserter)
     local player_storage
     for _, player in pairs(game.players) do
-        player_storage = global.SI_Storage[player.index]
+        player_storage = storage.SI_Storage[player.index]
         storage_functions.ensure_data(player.index)
         if player_storage.is_selected == true and math2d.position.equal(player_storage.selected_inserter.position, inserter.position) then
             world_editor.clear_positions(player.index)
-            world_editor.draw_positions(player.index, inserter, hand)
+            world_editor.draw_positions(player.index, inserter)
         end
     end
 end
 
+---@param player_index any
 function world_editor.clear_positions(player_index)
     storage_functions.ensure_data(player_index)
-    global.SI_Storage[player_index].is_selected = false
-    for _, x in pairs(global.SI_Storage[player_index].selected_inserter.position_grid) do
+    storage.SI_Storage[player_index].selected_inserter.inserter = nil
+    for _, x in pairs(storage.SI_Storage[player_index].selected_inserter.displayed_elements) do
         for _, y in pairs(x) do
-            if y.loaded then
-                rendering.destroy(y.render_id)
-                y.loaded = false
+            if y.background_render then
+                y.background_render.destroy()
+            end
+            if y.border_render then
+                y.border_render.destroy()
+            end
+            if y.drop_render then
+                y.drop_render.destroy()
+            end
+            if y.pickup_render then
+                y.pickup_render.destroy()
             end
         end
     end
+    storage.SI_Storage[player_index].selected_inserter.displayed_elements = {}
 end
 
 return world_editor

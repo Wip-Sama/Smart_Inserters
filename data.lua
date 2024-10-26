@@ -9,7 +9,6 @@ data:extend({
 	{
 		type = "sprite",
 		name = "circle",
-
 		filename = "__Smart_Inserters__/graphics/icons/circle.png",
 		flags = { "gui-icon" },
 		width = 64,
@@ -21,74 +20,67 @@ data:extend({
 	{
 		type = "sprite",
 		name = "pickup",
-
 		filename = "__Smart_Inserters__/graphics/icons/pickup.png",
 		flags = { "gui-icon" },
-		width = 40,
-		height = 40,
-		scale = 0.5,
-		tint = pickup_tint,
+		size = 128,
+		priority = "extra-high-no-scale",
+	},
+	{
+		type = "sprite",
+		name = "pickup-background",
+		filename = "__Smart_Inserters__/graphics/icons/pickup_background.png",
+		flags = { "gui-icon" },
+		size = 128,
 		priority = "extra-high-no-scale"
 	},
 	{
 		type = "sprite",
-		name = "background-pickup",
-
-		filename = "__Smart_Inserters__/graphics/icons/background.png",
+		name = "half-pickup-background",
+		filename = "__Smart_Inserters__/graphics/icons/half_pickup_background.png",
 		flags = { "gui-icon" },
-		width = 40,
-		height = 40,
-		scale = 0.5,
-		tint = pickup_tint,
-		priority = "extra-high-no-scale"
-	},
-	{
-		type = "sprite",
-		name = "selected-pickup",
-
-		filename = "__Smart_Inserters__/graphics/icons/background-pickup.png",
-		flags = { "gui-icon" },
-		width = 40,
-		height = 40,
-		scale = 0.5,
-		tint = pickup_tint,
+		size = 128,
 		priority = "extra-high-no-scale"
 	},
 	--drop
 	{
 		type = "sprite",
 		name = "drop",
-
 		filename = "__Smart_Inserters__/graphics/icons/drop.png",
 		flags = { "gui-icon" },
-		width = 40,
-		height = 40,
-		scale = 0.5,
-		tint = drop_tint,
+		size = 128,
+		priority = "extra-high-no-scale",
+	},
+	{
+		type = "sprite",
+		name = "drop-background",
+		filename = "__Smart_Inserters__/graphics/icons/drop_background.png",
+		flags = { "gui-icon" },
+		size = 128,
 		priority = "extra-high-no-scale"
 	},
 	{
 		type = "sprite",
-		name = "background-drop",
-
-		filename = "__Smart_Inserters__/graphics/icons/background.png",
+		name = "half-drop-background",
+		filename = "__Smart_Inserters__/graphics/icons/half_drop_background.png",
 		flags = { "gui-icon" },
-		width = 40,
-		height = 40,
-		scale = 0.5,
-		tint = drop_tint,
+		size = 128,
+		priority = "extra-high-no-scale"
+	},
+	--combo
+	{
+		type = "sprite",
+		name = "combo",
+		filename = "__Smart_Inserters__/graphics/icons/combo.png",
+		flags = { "gui-icon" },
+		size = 128,
 		priority = "extra-high-no-scale"
 	},
 	{
 		type = "sprite",
-		name = "selected-drop",
-
-		filename = "__Smart_Inserters__/graphics/icons/background-drop.png",
+		name = "combo-background",
+		filename = "__Smart_Inserters__/graphics/icons/combo_background.png",
 		flags = { "gui-icon" },
-		width = 40,
-		height = 40,
-		scale = 0.5,
-		tint = drop_tint,
+		size = 128,
 		priority = "extra-high-no-scale"
 	},
 })
@@ -100,25 +92,33 @@ data:extend({
 		type = "blueprint",
 		name = "si-in-world-pickup-changer",
 		icon = "__Smart_Inserters__/graphics/icons/pickup.png",
-		tint = pickup_tint,
-		icon_size = 40,
-		flags = { "hidden", "not-stackable", "only-in-cursor" },
+		icon_size = 128,
+		flags = { "not-stackable", "only-in-cursor" },
+		collision_mask = {layers = {}},
+		hidden = true;
+		scale = 0.2,
 		stack_size = 1,
-		selection_color = { 0, 1, 0 },
-		alt_selection_color = { 0, 1, 0 },
-		selection_mode = { "blueprint" },
-		alt_selection_mode = { "blueprint" },
-		selection_cursor_box_type = "logistics",
-		alt_selection_cursor_box_type = "logistics"
+		select = {
+		  border_color = {0 , 0, 0 },
+		  count_button_color = { 0, 0, 0 },
+		  mode = {"blueprint"},
+		  cursor_box_type = "logistics",
+		},
+		alt_select = {
+		  border_color = { 0, 0, 0 },
+		  count_button_color = { 0, 0, 0 },
+		  mode = {"blueprint"},
+		  cursor_box_type = "logistics",
+		},
 	},
 	{
 		type = "item",
 		name = "si-in-world-pickup-selector",
 		icon = "__Smart_Inserters__/graphics/icons/pickup.png",
-		tint = pickup_tint,
-		icon_size = 40,
+		scale = 0.2,
+		icon_size = 128,
 		order = "a-b",
-		flags = { "hidden" },
+		hidden = true;
 		place_result = "si-in-world-pickup-entity",
 		stack_size = 1
 	},
@@ -126,10 +126,11 @@ data:extend({
 		type = "simple-entity-with-owner",
 		name = "si-in-world-pickup-entity",
 		icon = "__Smart_Inserters__/graphics/icons/pickup.png",
-		tint = pickup_tint,
-		icon_size = 40,
-		flags = { "hidden", "not-on-map", "player-creation" },
-		collision_mask = {},
+		icon_size = 128,
+		scale = 0.2,
+		flags = { "not-on-map", "player-creation" },
+		collision_mask = {layers = {}},
+		hidden = true;
 		collision_box = { { -0.5, -0.5 }, { 0.5, 0.5 } },
 		selection_box = { { -0.5, -0.5 }, { 0.5, 0.5 } },
 		placeable_by = {
@@ -138,9 +139,8 @@ data:extend({
 		},
 		picture = {
 			filename = "__Smart_Inserters__/graphics/icons/pickup.png",
-			tint = pickup_tint,
-			size = 40,
-			scale = 0.6
+			size = 128,
+			scale = 0.2,
 		}
 	},
 	--drop
@@ -148,25 +148,32 @@ data:extend({
 		type = "blueprint",
 		name = "si-in-world-drop-changer",
 		icon = "__Smart_Inserters__/graphics/icons/drop.png",
-		tint = drop_tint,
-		icon_size = 40,
-		flags = { "hidden", "not-stackable", "only-in-cursor" },
+		icon_size = 128,
+		scale = 0.2,
+		flags = { "not-stackable", "only-in-cursor" },
+		hidden = true;
 		stack_size = 1,
-		selection_color = { 0, 1, 0 },
-		alt_selection_color = { 0, 1, 0 },
-		selection_mode = { "blueprint" },
-		alt_selection_mode = { "blueprint" },
-		selection_cursor_box_type = "logistics",
-		alt_selection_cursor_box_type = "logistics"
+		select = {
+			border_color = {0 , 0, 0 },
+			count_button_color = { 0, 0, 0 },
+			mode = {"blueprint"},
+			cursor_box_type = "logistics",
+		},
+			alt_select = {
+			border_color = { 0, 0, 0 },
+			count_button_color = { 0, 0, 0 },
+			mode = {"blueprint"},
+			cursor_box_type = "logistics",
+		},
 	},
 	{
 		type = "item",
 		name = "si-in-world-drop-selector",
 		icon = "__Smart_Inserters__/graphics/icons/drop.png",
-		tint = drop_tint,
-		icon_size = 40,
+		icon_size = 128,
+		scale = 0.2,
 		order = "a-b",
-		flags = { "hidden" },
+		hidden = true;
 		place_result = "si-in-world-drop-entity",
 		stack_size = 1
 	},
@@ -174,10 +181,10 @@ data:extend({
 		type = "simple-entity-with-owner",
 		name = "si-in-world-drop-entity",
 		icon = "__Smart_Inserters__/graphics/icons/drop.png",
-		tint = drop_tint,
-		icon_size = 40,
-		flags = { "hidden", "not-on-map", "player-creation" },
-		collision_mask = {},
+		icon_size = 128,
+		scale = 0.2,
+		flags = { "not-on-map", "player-creation" },
+		hidden = true;
 		collision_box = { { -0.5, -0.5 }, { 0.5, 0.5 } },
 		selection_box = { { -0.5, -0.5 }, { 0.5, 0.5 } },
 		placeable_by = {
@@ -186,111 +193,93 @@ data:extend({
 		},
 		picture = {
 			filename = "__Smart_Inserters__/graphics/icons/drop.png",
-			tint = drop_tint,
-			size = 40,
-			scale = 0.6
+			size = 128,
+			scale = 0.2,
 		}
 	}
 })
 
 --Inputs
 data:extend({
+	--- DROP
 	{
 		type = "custom-input",
 		name = "smart-inserters-drop-rotate",
 		key_sequence = "",
 		consuming = "none",
 		order = "Aa"
-	},
-	{
+	}, {
 		type = "custom-input",
 		name = "smart-inserters-drop-rotate-reverse",
 		key_sequence = "",
 		consuming = "none",
 		order = "Ab"
+	},{
+		type = "custom-input",
+		name = "smart-inserters-drop-distance-adjust",
+		key_sequence = "",
+		consuming = "none",
+		order = "Ac"
+	}, {
+		type = "custom-input",
+		name = "smart-inserters-drop-distance-adjust-reverse",
+		key_sequence = "",
+		consuming = "none",
+		order = "Ad"
+	}, {
+		type = "custom-input",
+		name = "smart-inserters-drop-offset-adjust",
+		key_sequence = "",
+		consuming = "none",
+		order = "Ae"
 	},
+
+
+	--- PICKUP
 	{
 		type = "custom-input",
 		name = "smart-inserters-pickup-rotate",
 		key_sequence = "",
 		consuming = "none",
 		order = "Ba"
-	},
-	{
+	}, {
 		type = "custom-input",
 		name = "smart-inserters-pickup-rotate-reverse",
 		key_sequence = "",
 		consuming = "none",
 		order = "Bb"
-	},
-	{
-		type = "custom-input",
-		name = "smart-inserters-drop-distance-adjust",
-		key_sequence = "",
-		consuming = "none",
-		order = "C"
-	},
-	{
+	},{
 		type = "custom-input",
 		name = "smart-inserters-pickup-distance-adjust",
 		key_sequence = "",
 		consuming = "none",
-		order = "D"
-	},
-	{
+		order = "Bc"
+	}, {
 		type = "custom-input",
-		name = "smart-inserters-drop-offset-adjust-horizontal",
+		name = "smart-inserters-pickup-distance-adjust-reverse",
 		key_sequence = "",
 		consuming = "none",
-		order = "Ea"
-	},
-	{
+		order = "Bd"
+	}, {
 		type = "custom-input",
-		name = "smart-inserters-drop-offset-adjust-vertical",
+		name = "smart-inserters-pickup-offset-adjust",
 		key_sequence = "",
 		consuming = "none",
-		order = "Eb"
+		order = "Be"
 	},
-	{
-		type = "custom-input",
-		name = "smart-inserters-drop-offset-adjust-distance",
-		key_sequence = "",
-		consuming = "none",
-		order = "Ec"
-	},
-	{
-		type = "custom-input",
-		name = "smart-inserters-pickup-offset-adjust-horizontal",
-		key_sequence = "",
-		consuming = "none",
-		order = "Fa"
-	},
-	{
-		type = "custom-input",
-		name = "smart-inserters-pickup-offset-adjust-vertical",
-		key_sequence = "",
-		consuming = "none",
-		order = "Fb"
-	},
-	{
-		type = "custom-input",
-		name = "smart-inserters-pickup-offset-adjust-distance",
-		key_sequence = "",
-		consuming = "none",
-		order = "Ec"
-	},
-	{
-		type = "custom-input",
-		name = "smart-inserters-in-world-inserter-configurator-pickup",
-		key_sequence = "",
-		consuming = "none",
-		order = "Ga"
-	},
+
+	--- IN WORLD SELECTOR
 	{
 		type = "custom-input",
 		name = "smart-inserters-in-world-inserter-configurator-drop",
 		key_sequence = "",
 		consuming = "none",
-		order = "Gb"
+		order = "Ca"
+	}, {
+		type = "custom-input",
+		name = "smart-inserters-in-world-inserter-configurator-pickup",
+		key_sequence = "",
+		consuming = "none",
+		order = "Cb"
 	}
 })

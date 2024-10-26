@@ -13,7 +13,7 @@ data:extend({
         setting_type   = "startup",
         name           = "si-range-adder",
         default_value  = "equal",
-        allowed_values = { "inserter", "incremental", "equal" },
+        allowed_values = { "inserter", "incremental", "equal", "rebase", "incremental-with-rebase", "inserter-with-rebase" },
         order          = "ba"
     },
     {
@@ -63,8 +63,15 @@ data:extend({
         type          = "bool-setting",
         setting_type  = "startup",
         name          = "si-disable-long-inserters",
-        default_value = true,
-        order         = "d"
+        default_value = false,
+        order         = "da"
+    },
+    {
+        type          = "bool-setting",
+        setting_type  = "startup",
+        name          = "si-disable-inserters-consumption",
+        default_value = false,
+        order         = "db"
     },
     {
         type          = "bool-setting",

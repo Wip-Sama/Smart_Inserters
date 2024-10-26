@@ -1,56 +1,138 @@
 local math2d = require("__yafla__/scripts/extended_math2d")
-local storage_functions = require("scripts.storage_functions")
-local util = require("scripts.si_util")
+local technology_functions = require("scripts.technology_functions")
+local events = require("scripts.events")
+
+local single_line_slim_inserter = settings.startup["si-single-line-slim-inserter"].value
 
 local inserter_functions = {}
 
---Cleaned
+function inserter_functions.inserter_in_result(result, long_inserters)
+	for _, linserter in pairs(long_inserters) do
+		if linserter == result then
+			return true
+		end
+	end
+	return false
+end
+
+function inserter_functions.inserter_in_results(results, long_inserters)
+	for _, linserter in pairs(long_inserters) do
+		for _, reciperecult in pairs(results) do
+			if reciperecult == nil then break end
+			if type(reciperecult) == "table" then
+				for _, singleresult in pairs(reciperecult) do
+					if type(singleresult) == "string" and singleresult == linserter then
+						return true
+					end
+				end
+			elseif reciperecult == linserter then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+---@param inserter LuaEntityPrototype
+---@return number
+function inserter_functions.inseter_default_range(inserter)
+	local width, height = inserter.tile_width, inserter.tile_height
+	--width, height = inserter.tile_width, inserter.tile_height
+
+	if not width then
+		width = 0
+	end
+
+	if not height then
+		height = 0
+	end
+
+	local lower_width = width%2==0 and width/2 or width/2-0.5
+	local higher_width = width%2==0 and width/2 or width/2+0.5
+
+	local lower_height = height%2==0 and height/2 or height/2-0.5
+	local higher_height = height%2==0 and height/2 or height/2+0.5
+
+	local drop_int
+	local pickup_int
+	if not inserter.inserter_drop_position then
+		drop_int, _ = math2d.position.split(inserter.insert_position)
+		pickup_int, _ = math2d.position.split(inserter.pickup_position)
+	else
+		drop_int, _ = math2d.position.split(inserter.inserter_drop_position)
+		pickup_int, _ = math2d.position.split(inserter.inserter_pickup_position)
+	end
+
+    if drop_int.x < -lower_width then
+        drop_int.x = drop_int.x + lower_width
+    elseif drop_int.x >= higher_width then
+        drop_int.x = drop_int.x - higher_width + 1
+    end
+    if pickup_int.x < -lower_width then
+        pickup_int.x = pickup_int.x + lower_width
+    elseif pickup_int.x >= higher_width then
+        pickup_int.x = pickup_int.x - higher_width +1
+    end
+
+    if drop_int.y < -lower_height then
+        drop_int.y = drop_int.y + lower_height
+    elseif drop_int.y >= higher_height then
+        drop_int.y = drop_int.y - higher_height + 1
+    end
+    if pickup_int.y < -lower_height then
+        pickup_int.y = pickup_int.y + lower_height
+    elseif pickup_int.y >= higher_height then
+        pickup_int.y = pickup_int.y - higher_height +1
+    end
+
+	local x_distance = math.max(math.abs(pickup_int.x), math.abs(drop_int.x))
+	local y_distance = math.max(math.abs(pickup_int.y), math.abs(drop_int.y))
+
+	local size = math.max(x_distance, y_distance)
+	return size
+end
+
+function inserter_functions.is_inserter_long(inserter)
+    if inserter_functions.is_slim(inserter) then
+        if inserter_functions.inseter_default_range(inserter) > 1 then
+            return true
+        end
+    else
+        if inserter_functions.inseter_default_range(inserter) > 2 then
+            return true
+        end
+    end
+	return false
+end
+
+function inserter_functions.is_inserter_mini(inserter)
+    if inserter.tile_height == 0 or inserter.tile_width == 0 then
+        return true
+    end
+    return false
+end
+
+--- @param inserter LuaEntity
+--- @return LuaEntityPrototype | LuaTilePrototype
 function inserter_functions.get_prototype(inserter)
     return inserter.type == "entity-ghost" and inserter.ghost_prototype or inserter.prototype
 end
 
---Cleaned (? didn't really do much)
-function inserter_functions.calculate_max_inserters_range()
-    storage_functions.ensure_data()
-    if settings.startup["si-range-adder"].value ~= "incremental" then
-        global.SI_Storage["inserters_range"] = settings.startup["si-max-inserters-range"].value
-        return
-    end
-
-    local max_range = 0
-    for _, prototype in pairs(game.entity_prototypes) do
-        if prototype.type == "inserter" and util.check_blacklist({ type = prototype.type, name = prototype.name }) then
-            local prototype = prototype.object_name == "LuaEntity" and inserter_functions.get_prototype(prototype) or prototype
-            local pickup_pos = math2d.position.tilepos(math2d.position.add(prototype.inserter_pickup_position, { 0.5, 0.5 }))
-            local drop_pos = math2d.position.tilepos(math2d.position.add(prototype.inserter_drop_position, { 0.5, 0.5 }))
-            local inserter_range = math.max(
-                    math.abs(pickup_pos.x),
-                    math.abs(pickup_pos.y),
-                    math.abs(drop_pos.x),
-                    math.abs(drop_pos.y)
-                )
-            if inserter_range > max_range then
-                print(prototype.name, inserter_range, max_range) --Debug (the inserters that affect this calculation)
-                max_range = inserter_range
-            end
-        end
-    end
-
-    global.SI_Storage["inserters_range"] = settings.startup["si-max-inserters-range"].value + max_range-1
+--- @param entity LuaEntity?
+--- @return boolean
+function inserter_functions.is_inserter(entity)
+    return entity ~= nil and
+    (entity.type == "inserter" or (entity.type == "entity-ghost" and entity.ghost_type == "inserter"))
 end
 
---Cleaned (maybe just remove it)
-function inserter_functions.get_max_inserters_range()
-    return global.SI_Storage["inserters_range"]
-end
-
---Cleaned
+--- @param inserter LuaEntity
+--- @return boolean
 function inserter_functions.is_slim(inserter)
     return (inserter.tile_height == 0 or inserter.tile_width == 0)
 end
 
-
---Cleaned
+---@param inserter LuaEntity
+---@return integer
 function inserter_functions.get_inserter_size(inserter)
     if inserter_functions.is_slim(inserter) then
         return 0
@@ -58,12 +140,50 @@ function inserter_functions.get_inserter_size(inserter)
     return math.ceil(math.max(inserter.tile_width, inserter.tile_height))
 end
 
---Cleaned
-function inserter_functions.is_inserter(entity)
-    return entity and (entity.type == "inserter" or (entity.type == "entity-ghost" and entity.ghost_type == "inserter"))
+---@param inserter any
+---@param tile Position
+---@return defines.direction.east|defines.direction.north|defines.direction.northeast|defines.direction.northwest|defines.direction.west|defines.direction.south|defines.direction.southeast|defines.direction.southwest
+function inserter_functions.calculate_arm_direction(inserter, tile)
+    local width = inserter.tile_width
+    local height = inserter.tile_height
+
+    local lower_width = width % 2 == 0 and width / 2 or width / 2 - 0.5
+    local higher_width = width % 2 == 0 and width / 2 or width / 2 + 0.5
+
+    local lower_height = height % 2 == 0 and height / 2 or height / 2 - 0.5
+    local higher_height = height % 2 == 0 and height / 2 or height / 2 + 0.5
+
+    local arm_direction
+
+    if tile.x >= higher_width then
+        if tile.y < -lower_height then
+            arm_direction = defines.direction.northeast
+        elseif tile.y >= higher_height then
+            arm_direction = defines.direction.southeast
+        else
+            arm_direction = defines.direction.east
+        end
+    elseif tile.x < -lower_width then
+        if tile.y < -lower_height then
+            arm_direction = defines.direction.northwest
+        elseif tile.y >= higher_height then
+            arm_direction = defines.direction.southwest
+        else
+            arm_direction = defines.direction.west
+        end
+    else
+        if tile.y < -lower_height then
+            arm_direction = defines.direction.north
+        elseif tile.y >= higher_height then
+            arm_direction = defines.direction.south
+        end
+    end
+
+    return arm_direction
 end
 
-
+---@param inserter LuaEntity
+---@return ArmPosition
 function inserter_functions.get_arm_positions(inserter)
     local base_tile, base_offset = math2d.position.split(inserter.position)
     local drop_tile, drop_offset = math2d.position.split(inserter.drop_position)
@@ -87,270 +207,235 @@ function inserter_functions.get_arm_positions(inserter)
         return offset_vec
     end
 
-    local result = {
+    local function convert_offset(offset)
+        local offset_vec = { x = 0.5, y = 0.5 }
+
+        if offset.x > 0.55 then
+            offset_vec.x = 0.75
+        elseif offset.x < 0.45 then
+            offset_vec.x = 0.25
+        end
+
+        if offset.y > 0.55 then
+            offset_vec.y = 0.75
+        elseif offset.y < 0.45 then
+            offset_vec.y = 0.25
+        end
+
+        return offset_vec
+    end
+
+    drop_tile = math2d.position.subtract(drop_tile, base_tile)
+    pickup_tile = math2d.position.subtract(pickup_tile, base_tile)
+
+    return {
         base = base_tile,
+        drop = drop_tile,
+        pickup = pickup_tile,
         base_offset = base_offset,
-        drop = math2d.position.subtract(drop_tile, base_tile),
-        drop_offset = get_offset_vector(drop_offset),
-        pickup = math2d.position.subtract(pickup_tile, base_tile),
-        pickup_offset = get_offset_vector(pickup_offset),
-        --The next 4 may not be needed
-        pure_drop = drop_tile,
-        pure_drop_offset = drop_offset,
-        pure_pickup = pickup_tile,
-        pure_pickup_offset = pickup_offset,
+        drop_offset = convert_offset(drop_offset),
+        pickup_offset = convert_offset(pickup_offset),
+        drop_direction = inserter_functions.calculate_arm_direction(inserter, drop_tile),
+        pickup_direction = inserter_functions.calculate_arm_direction(inserter, pickup_tile),
     }
-
-    return result
 end
 
-function inserter_functions.get_max_range(inserter, force)
-    local range_adder_setting = settings.startup["si-range-adder"].value
+---@param positions ChangeArmPosition | ArmPosition
+---@param inserter LuaEntity
+function inserter_functions.set_arm_positions(positions, inserter)
+    local res = inserter_functions.get_arm_positions(inserter)
 
-    if range_adder_setting == "equal" then
-        return global.SI_Storage["inserters_range"]
+    if positions.pickup then
+        local _, offset = math2d.position.split(inserter.pickup_position)
+        inserter.pickup_position = math2d.position.adds { res.base, positions.pickup, offset }
     end
 
-    local prototype = inserter.object_name == "LuaEntity" and inserter_functions.get_prototype(inserter) or inserter
-    local pickup_pos = math2d.position.tilepos(math2d.position.add(prototype.inserter_pickup_position, { 0.5, 0.5 }))
-    local drop_pos = math2d.position.tilepos(math2d.position.add(prototype.inserter_drop_position, { 0.5, 0.5 }))
-    local inserter_range = math.max(math.abs(pickup_pos.x), math.abs(pickup_pos.y), math.abs(drop_pos.x), math.abs(drop_pos.y))
-
-    if range_adder_setting == "inserter" then
-        return inserter_range
-    elseif range_adder_setting == "incremental" then
-        if not settings.startup['si-range-technologies'].value then
-            ---@diagnostic disable-next-line: param-type-mismatch
-            return math.min(inserter_range + 5, global.SI_Storage["inserters_range"])
-        end
-        local added_range = 0
-        if force.technologies["si-unlock-range-5"].researched and force.technologies["si-unlock-range-5"].prototype.hidden == false then
-            added_range = 5
-        elseif force.technologies["si-unlock-range-4"].researched and force.technologies["si-unlock-range-4"].prototype.hidden == false then
-            added_range = 4
-        elseif force.technologies["si-unlock-range-3"].researched and force.technologies["si-unlock-range-3"].prototype.hidden == false then
-            added_range = 3
-        elseif force.technologies["si-unlock-range-2"].researched and force.technologies["si-unlock-range-2"].prototype.hidden == false then
-            added_range = 2
-        elseif force.technologies["si-unlock-range-1"].researched and force.technologies["si-unlock-range-1"].prototype.hidden == false then
-            added_range = 1
-        end
-        ---@diagnostic disable-next-line: param-type-mismatch
-        return math.min(inserter_range + added_range, global.SI_Storage["inserters_range"])
-    end
-end
-
---ToClean
-function inserter_functions.enforce_max_range(inserter, force)
-    local arm_positions = inserter_functions.get_arm_positions(inserter)
-    local max_range = inserter_functions.get_max_range(inserter, force)
-
-    local function enforce_position_limit(position)
-        local abs_position = math2d.position.abs(position)
-        if math.max(abs_position.x, abs_position.y) > max_range then
-            local new_position = math2d.position.multiply_scalar(
-                math2d.direction.to_vector(math2d.direction.from_vector(position)), max_range)
-            return new_position
-        end
-        return position
+    if positions.drop then
+        local _, offset = math2d.position.split(inserter.drop_position)
+        inserter.drop_position = math2d.position.adds { res.base, positions.drop, offset }
     end
 
-    arm_positions.drop = enforce_position_limit(arm_positions.drop)
-    arm_positions.pickup = enforce_position_limit(arm_positions.pickup)
-
-    if math2d.position.equal(arm_positions.pickup, arm_positions.drop) then
-        arm_positions.pickup = { x = -arm_positions.drop.x, y = -arm_positions.drop.y }
+    if positions.pickup_offset then
+        local position, _ = math2d.position.split(inserter.pickup_position)
+        inserter.pickup_position = math2d.position.add(position, positions.pickup_offset)
     end
 
-    inserter_functions.set_arm_positions(inserter, arm_positions)
-end
-
---ToClean
-function inserter_functions.calc_rotated_position(inserter, new_position, new_direction)
-    new_direction = new_direction == 0 and 8 or new_direction
-    local spostamento = (8 - inserter.direction) - (8 - new_direction)
-    if spostamento < 0 then
-        spostamento = 8 + spostamento
-    end
-    local tmp_pos = 0
-
-    while spostamento ~= 0 do
-        tmp_pos = new_position.y * -1
-        new_position.y = new_position.x
-        new_position.x = tmp_pos
-        spostamento = spostamento - 2
-    end
-
-    return new_position
-end
-
---ToClean
-function inserter_functions.calc_rotated_offset(inserter, new_position, target)
-    local old_positions = inserter_functions.get_arm_positions(inserter)
-
-    if old_positions[target .. "_offset"].x == 0 and old_positions[target .. "_offset"].y == 0 then
-        return old_positions[target .. "_offset"]
-    end
-
-    local range = math.max(math.abs(old_positions[target].x), math.abs(old_positions[target].y))
-
-    local position = math2d.direction.from_vector(old_positions[target .. "_offset"])
-
-    local old_sector = math2d.direction.downscale_to_vec1(old_positions[target .. "_offset"], range)
-    if type(new_position) == "number" then
-        new_position = inserter_functions.calc_rotated_position(inserter, old_positions[target .. "_offset"],
-            new_position)
-    end
-    local new_sector = math2d.direction.downscale_to_vec1(new_position, range)
-
-    if old_sector ~= new_sector then
-        local spostamento = (8 - old_sector) - (8 - new_sector)
-        position = position + spostamento
-        position = (position % 8) + 1
-        return math2d.direction["vectors1"][position]
-    end
-
-    return old_positions[target .. "_offset"]
-end
-
-function util.inserter_default_range(inserter)
-    local collision_box_total = 0.2
-
-    if inserter.collision_box then
-        local collision_box_1 = math2d.position.ensure_xy(inserter.collision_box.left_top)
-        local collision_box_2 = math2d.position.ensure_xy(inserter.collision_box.right_bottom)
-        local collision_box_1_max = math.max(math.abs(collision_box_1.x), math.abs(collision_box_1.y))
-        local collision_box_2_max = math.max(math.abs(collision_box_2.x), math.abs(collision_box_2.y))
-        collision_box_total = collision_box_1_max + collision_box_2_max
-    end
-
-    local x, y, size
-    local pickup_position = math2d.position.ensure_xy(inserter.inserter_pickup_position)
-    local insert_position = math2d.position.ensure_xy(inserter.inserter_drop_position)
-    x = math.max(math.abs(pickup_position.x), math.abs(insert_position.x))
-    y = math.max(math.abs(pickup_position.y), math.abs(insert_position.y))
-    size = math.max(x, y) - collision_box_total
-
-    return size
-end
-
---Experimental
---Problem there may be cases where you need to edit both pickup/drop thie mean tht I should pack position before entering this function
---but processing the data before entering here defeat the purpose
-local function adjust_position(position, inserter, vertical, orizontal, slim, inserter_size, base)
-    local tile, offset = math2d.position.split(inserter.pickup_position)
-
-    if position.pickup or position.drop then
-        local change = position.pickup or position.drop
-        local edit = { x = 0, y = 0 }
-        if slim then
-            if vertical and change.y >= 0 then
-                edit.y = edit.y - 1
-            elseif orizontal and change.x >= 0 then
-                edit.x = edit.x - 1
-            end
-        elseif inserter_size >= 2 then
-            if change.x < 0 then
-                edit.x = edit.x - (inserter_size - 1)
-            end
-            if change.y < 0 then
-                edit.y = edit.y - (inserter_size - 1)
-            end
-        end
-        tile = math2d.position.add(base, math2d.position.add(change, edit))
-    end
-
-    if position.drop_adjust or position.pickup_adjust then
-        math2d.position.add(tile, position.drop_adjust or position.pickup_adjust)
-    end
-
-    if position.drop_offset or position.pickup_offset then
-        offset = math2d.position.add(
-        math2d.position.multiply_scalar(position.drop_offset or position.pickup_offset, 0.2), { 0.5, 0.5 })
-    end
-
-    return math2d.position.add(tile, offset)
-end
-
---Cleaned
-function inserter_functions.set_arm_positions(inserter, positions)
-    local inserter_size = inserter_functions.get_inserter_size(inserter)
-    local base, _ = math2d.position.split(inserter.position)
-    local slim = inserter_functions.is_slim(inserter)
-    local vertical = (inserter.direction==0 or inserter.direction==4)
-    local orizontal = (inserter.direction==2 or inserter.direction==6)
-
-    if positions.pickup or positions.pickup_offset or positions.pickup_adjust then
-        local pickup_tile, pickup_offset = math2d.position.split(inserter.pickup_position)
-        if positions.pickup then
-            local edit = { x = 0, y = 0 }
-            if slim then
-                if vertical and positions.pickup.y >= 0 then
-                    edit.y = edit.y - 1
-                elseif orizontal and positions.pickup.x >= 0 then
-                    edit.x = edit.x - 1
-                end
-            elseif inserter_size >= 2 then
-                if positions.pickup.x < 0 then
-                    edit.x = edit.x - (inserter_size - 1)
-                end
-                if positions.pickup.y < 0 then
-                    edit.y = edit.y - (inserter_size - 1)
-                end
-            end
-            pickup_tile = math2d.position.add(base, math2d.position.add(positions.pickup, edit))
-        end
-
-        if positions.pickup_adjust then
-            pickup_tile = math2d.position.add(pickup_tile, positions.pickup_adjust)
-        end
-
-        if positions.pickup_offset then
-            pickup_offset = math2d.position.add(
-                math2d.position.multiply_scalar(positions.pickup_offset, 0.2), { 0.5, 0.5 }
-            )
-        end
-
-        inserter.pickup_position = math2d.position.add(pickup_tile, pickup_offset)
-    end
-
-    if positions.drop or positions.drop_offset or positions.drop_adjust then
-        local drop_tile, drop_offset = math2d.position.split(inserter.drop_position)
-
-        if positions.drop then
-            local edit = { x = 0, y = 0 }
-            if slim then
-                if vertical and positions.drop.y >= 0 then
-                    edit.y = edit.y - 1
-                elseif orizontal and positions.drop.x >= 0 then
-                    edit.x = edit.x - 1
-                end
-            elseif inserter_size >= 2 then
-                if positions.drop.x < 0 then
-                    edit.x = edit.x - (inserter_size - 1)
-                end
-                if positions.drop.y < 0 then
-                    edit.y = edit.y - (inserter_size - 1)
-                end
-            end
-            drop_tile = math2d.position.add(base, math2d.position.add(positions.drop, edit))
-        end
-
-        if positions.drop_adjust then
-            drop_tile = math2d.position.add(drop_tile, positions.drop_adjust)
-        end
-
-        if positions.drop_offset then
-            drop_offset = math2d.position.add(math2d.position.multiply_scalar(positions.drop_offset, 0.2), { 0.5, 0.5 })
-        end
-
-        inserter.drop_position = math2d.position.add(drop_tile, drop_offset)
+    if positions.drop_offset then
+        local position, _ = math2d.position.split(inserter.drop_position)
+        inserter.drop_position = math2d.position.add(position, positions.drop_offset)
     end
 
     -- Fix stuff with rail and pickup --https://mods.factorio.com/mod/Smart_Inserters/discussion/656b192ef49ec2e9ceac7eac
     local direction = inserter.direction
     inserter.direction = (inserter.direction + 2) % 4
     inserter.direction = direction
+
+    script.raise_event(events.on_inserter_arm_changed, {
+        entity = inserter,
+        old_drop = positions.drop and res.drop or nil,
+        old_pickup = positions.pickup and res.pickup or nil,
+        old_drop_offset = positions.drop_offset and res.drop_offset or nil,
+        old_pickup_offset = positions.pickup_offset and res.pickup_offset or nil,
+    })
+end
+
+---@return integer
+function inserter_functions.get_max_inserters_range()
+    ---@diagnostic disable-next-line: return-type-mismatch
+    return settings.startup["si-max-inserters-range"].value
+end
+
+---@param inserter LuaEntity
+---@param position Position
+---@return boolean
+function inserter_functions.should_cell_be_enabled(inserter, position)
+    position = math2d.position.ensure_xy(position)
+
+    local max_range, min_range = inserter_functions.get_max_and_min_inserter_range(inserter)
+
+    --Equal
+    --Tech range for everyone
+    local default_range = 0
+
+    local width, height = inserter.tile_width, inserter.tile_height
+
+    local lower_width = width % 2 == 0 and width / 2 or width / 2 - 0.5
+    local higher_width = width % 2 == 0 and width / 2 or width / 2 + 0.5
+
+    local lower_height = height % 2 == 0 and height / 2 or height / 2 - 0.5
+    local higher_height = height % 2 == 0 and height / 2 or height / 2 + 0.5
+
+    if position.x >= -lower_width and position.x < higher_width and position.y >= -lower_height and position.y < higher_height then
+        return false
+    end
+
+    if (position.y >= -lower_height and position.y < higher_height) then
+        position.y = 0
+    elseif (position.y < -lower_height) then
+        position.y = position.y + lower_height
+    elseif position.y >= higher_height then
+        --This +1 is used to avoid shifting teh position into the base range
+        --Example: ian base 6 inserter, higher = 3, base = -3->2, position 3-3 = 0 (in base), 3-3+1 = 1 not in base
+        --Remember taht base conversion goes from n*m to 1x1 so base is only 0
+        position.y = position.y - higher_height + 1
+    end
+
+    if (position.x >= -lower_width and position.x < higher_width) then
+        position.x = 0
+    elseif (position.x < -lower_width) then
+        position.x = position.x + lower_width
+    elseif position.x >= higher_width then
+        position.x = position.x - higher_width + 1
+    end
+
+    --Inserter
+    --Tech range up to inserter range
+    if settings.startup["si-range-adder"].value == "inserter" and inserter_functions.get_prototype(inserter) then
+        if not (math.max(math.abs(position.x), math.abs(position.y)) <= max_range) then
+            return false
+        end
+    end
+
+    --Incremental
+    --Inserter base range + tech range
+    if settings.startup["si-range-adder"].value == "incremental" and inserter_functions.get_prototype(inserter) then
+        default_range = inserter_functions.inseter_default_range(inserter_functions.get_prototype(inserter))
+    end
+
+    --Rebase
+    --inserter min range up to max range
+    if settings.startup["si-range-adder"].value == "rebase" then
+        if math.max(math.abs(position.x), math.abs(position.y)) > max_range then
+            return false
+        elseif math.abs(position.x) < min_range and math.abs(position.y) < min_range then
+            return false
+        end
+        default_range = inserter_functions.inseter_default_range(inserter_functions.get_prototype(inserter))
+    end
+
+    --inserter min range up to max range + incremet
+    if settings.startup["si-range-adder"].value == "incremental-with-rebase" then
+        if math.max(math.abs(position.x), math.abs(position.y)) > max_range then
+            return false
+        elseif math.abs(position.x) < min_range and math.abs(position.y) < min_range then
+            return false
+        end
+        default_range = inserter_functions.inseter_default_range(inserter_functions.get_prototype(inserter))
+    end
+
+    --inserter min range up to max range + incremet
+    if settings.startup["si-range-adder"].value == "inserter-with-rebase" then
+        if math.max(math.abs(position.x), math.abs(position.y)) > max_range then
+            return false
+        elseif math.abs(position.x) < min_range and math.abs(position.y) < min_range then
+            return false
+        end
+        default_range = inserter_functions.inseter_default_range(inserter_functions.get_prototype(inserter))
+    end
+
+    if height == 0 and single_line_slim_inserter then
+        if position.x ~= 0 then
+            return false
+        end
+    end
+
+    if width == 0 and single_line_slim_inserter then
+        if position.y ~= 0 then
+            return false
+        end
+    end
+
+    cell_position = math2d.position.abs(position)
+    local distance = math.max(cell_position.x, cell_position.y)
+    distance = math.max(math.floor(distance), 1)
+    if distance > max_range or distance < min_range then
+        return false
+    end
+
+    return technology_functions.check_tech(inserter.force, position, default_range)
+end
+
+---Return max and min inserter range considering the unlocked technologies and settings
+---@param inserter LuaEntity
+---@return number, number
+function inserter_functions.get_max_and_min_inserter_range(inserter)
+    local default_range = inserter_functions.inseter_default_range(inserter_functions.get_prototype(inserter))
+    local max_range = inserter_functions.get_max_inserters_range()
+    local max = inserter_functions.get_max_inserters_range() -- equal
+    local min = 1
+
+    if settings.startup["si-range-adder"].value == "inserter" then
+        max = default_range
+    elseif settings.startup["si-range-adder"].value == "incremental" then
+        max = default_range + max_range
+    elseif settings.startup["si-range-adder"].value == "rebase" then
+        min = default_range
+    elseif settings.startup["si-range-adder"].value == "incremental-with-rebase" then
+        max = default_range + max_range
+        min = default_range
+    elseif settings.startup["si-range-adder"].value == "inserter-with-rebase" then
+        max = default_range
+        min = default_range
+    end
+
+    -- clamp value based on tech with "new_max = min + tech_increment <= max"
+    local increment = technology_functions.get_actual_increment(inserter.force)
+    local new_max = min+increment <= max and min+increment or max
+
+    return new_max, min
+end
+
+---Never implemented, could be useful so I leave it there only as an idea
+---@param inserter LuaEntity
+---@deprecated
+function inserter_functions.cast_to_1x1_inserter(inserter)
+    local width, height = math.ceil(inserter.tile_width), math.ceil(inserter.tile_height)
+
+    local lower_width = width%2==0 and width/2 or width/2-0.5
+    local higher_width = width%2==0 and width/2 or width/2+0.5
+
+    local lower_height = height%2==0 and height/2 or height/2-0.5
+    local higher_height = height%2==0 and height/2 or height/2+0.5
 end
 
 return inserter_functions

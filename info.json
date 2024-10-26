@@ -1,14 +1,14 @@
 {
 	"name": "Smart_Inserters",
-	"version": "1.2.15",
+	"version": "2.0.7",
 	"title": "Smart Inserters",
 	"author": "WipMod",
-	"description": "Change pickup/drop position for each inserter, copy paste settings, custom inserter lenght. Enjoy!",
-	"factorio_version": "1.1",
+	"description": "Change pickup/drop/offsets for each inserter, custom inserter lenght and much more!",
+	"factorio_version": "2.0",
 	"contact": "https://t.me/smastermega",
 	"dependencies": [
-		"base >= 1.1.0",
-		"yafla >= 0.1.2",
+		"base >= 2.0.0",
+		"yafla >= 0.1.7",
 		"!Side Inserters",
 		"!bobinserters",
 		"!Inserter_Config"
