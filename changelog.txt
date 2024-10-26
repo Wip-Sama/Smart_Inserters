@@ -2,7 +2,7 @@
 Version: 2.0.7
 Date: 2024-10-26
   Bugfixes:
-    - in world selector not working with building under the selection (fix by: )
+    - in world selector not working with building under the selection (fix by: Progor)
 ---------------------------------------------------------------------------------------------------
 Version: 2.0.6
 Date: 2024-10-23

@@ -44,10 +44,6 @@ if settings.startup["si-disable-long-inserters"].value then
 			if inserter_functions.inserter_in_results(recipe.results, long_inserters) then
 				recipe.hidden = true
 			end
-		elseif recipe.result ~= nil then
-			if inserter_functions.inserter_in_result(recipe.result, long_inserters) then
-				recipe.hidden = true
-			end
 		end
 	end
 end
