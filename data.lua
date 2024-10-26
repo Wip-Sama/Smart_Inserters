@@ -94,6 +94,7 @@ data:extend({
 		icon = "__Smart_Inserters__/graphics/icons/pickup.png",
 		icon_size = 128,
 		flags = { "not-stackable", "only-in-cursor" },
+		collision_mask = {layers = {}},
 		hidden = true;
 		scale = 0.2,
 		stack_size = 1,
@@ -128,6 +129,7 @@ data:extend({
 		icon_size = 128,
 		scale = 0.2,
 		flags = { "not-on-map", "player-creation" },
+		collision_mask = {layers = {}},
 		hidden = true;
 		collision_box = { { -0.5, -0.5 }, { 0.5, 0.5 } },
 		selection_box = { { -0.5, -0.5 }, { 0.5, 0.5 } },
