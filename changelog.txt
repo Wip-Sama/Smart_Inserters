@@ -1,4 +1,22 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.9
+Date: 2024-10-27
+  Added:
+    - High contrast sprites
+    - A setting to enable/disable high contrast sprites
+  Changes:
+    - Sprites are now defaulted to high contrast sprites
+  Bugfixes:
+    - Directional inserter were inverted
+---------------------------------------------------------------------------------------------------
+Version: 2.0.8
+Date: 2024-10-26
+  Changes:
+    - Single line slim inserters now applies to all inserters (renamed to Single line inserters)
+    - Directional slim inserters now applies to all inserters (renamed to Directional inserters)
+  Bugfixes:
+    - Crash when disabling offset flow and useing shortcuts (https://mods.factorio.com/mod/Smart_Inserters/discussion/671cf036dc0b8de9590f7c82)
+---------------------------------------------------------------------------------------------------
 Version: 2.0.7
 Date: 2024-10-26
   Bugfixes:

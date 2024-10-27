@@ -1,4 +1,4 @@
-local directional_slim_inserter = settings.startup["si-directional-slim-inserter"].value
+local directional_inserters = settings.startup["si-directional-inserters"].value
 local offset_selector = settings.startup["si-offset-selector"].value
 
 local gui_builder = require("__yafla__/scripts/experimental/gui_builder")
@@ -40,8 +40,8 @@ function gui.generate_slim_inserter_grid(inserter)
                             table.insert(table_position,
                                 SPRITE_BUTTON {
                                     name = tostring(x-1) .. "_" .. tostring(y),
-                                    style = directional_slim_inserter and (inserter.direction == 2 and "slot_sized_button_pickup" or "slot_sized_button_drop") or "slot_sized_button",
-                                    on_click = directional_slim_inserter and (inserter.direction == 2 and "change_drop" or "change_pickup") or "change_pickup_drop",
+                                    style = directional_inserters and (inserter.direction == 2 and "slot_sized_button_pickup" or "slot_sized_button_drop") or "slot_sized_button",
+                                    on_click = directional_inserters and (inserter.direction == 2 and "change_drop" or "change_pickup") or "change_pickup_drop",
                                     size = { 32, 32 }
                                 }
                             )
@@ -57,8 +57,8 @@ function gui.generate_slim_inserter_grid(inserter)
                             table.insert(table_position,
                                 SPRITE_BUTTON {
                                     name = tostring(x) .. "_" .. tostring(y-1),
-                                    style = directional_slim_inserter and (inserter.direction == 4 and "slot_sized_button_pickup" or "slot_sized_button_drop") or "slot_sized_button",
-                                    on_click = directional_slim_inserter and (inserter.direction == 4 and "change_drop" or "change_pickup") or "change_pickup_drop",
+                                    style = directional_inserters and (inserter.direction == 4 and "slot_sized_button_pickup" or "slot_sized_button_drop") or "slot_sized_button",
+                                    on_click = directional_inserters and (inserter.direction == 4 and "change_drop" or "change_pickup") or "change_pickup_drop",
                                     size = { 32, 32 }
                                 }
                             )
@@ -74,8 +74,8 @@ function gui.generate_slim_inserter_grid(inserter)
                             table.insert(table_position,
                                 SPRITE_BUTTON {
                                     name = tostring(x) .. "_" .. tostring(y),
-                                    style = directional_slim_inserter and ((inserter.direction == 6 or inserter.direction == 0) and "slot_sized_button_pickup" or "slot_sized_button_drop") or "slot_sized_button",
-                                    on_click = directional_slim_inserter and ((inserter.direction == 6 or inserter.direction == 0) and "change_drop" or "change_pickup") or "change_pickup_drop",
+                                    style = directional_inserters and ((inserter.direction == 6 or inserter.direction == 0) and "slot_sized_button_pickup" or "slot_sized_button_drop") or "slot_sized_button",
+                                    on_click = directional_inserters and ((inserter.direction == 6 or inserter.direction == 0) and "change_drop" or "change_pickup") or "change_pickup_drop",
                                     size = { 32, 32 }
                                 }
                             )
@@ -145,11 +145,28 @@ function gui.generate_x_y_inserter_grid(inserter)
                 end
             else
                 if (inserter_functions.should_cell_be_enabled(inserter, {x = x, y = y})) then
+                    local style = "slot_sized_button"
+                    local on_click = "change_pickup_drop"
+                    if directional_inserters then
+                        if inserter.direction == defines.direction.north then
+                            style = y > 0 and "slot_sized_button_drop" or "slot_sized_button_pickup"
+                            on_click = y > 0 and "change_pickup" or "change_drop"
+                        elseif inserter.direction == defines.direction.south then
+                            style = y > 0 and "slot_sized_button_pickup" or "slot_sized_button_drop"
+                            on_click = y > 0 and "change_drop" or "change_pickup"
+                        elseif inserter.direction == defines.direction.east then
+                            style = x > 0 and "slot_sized_button_pickup" or "slot_sized_button_drop"
+                            on_click = x > 0 and "change_drop" or "change_pickup"
+                        elseif inserter.direction == defines.direction.west then
+                            style = x > 0 and "slot_sized_button_drop" or "slot_sized_button_pickup"
+                            on_click = x > 0 and "change_pickup" or "change_drop"
+                        end
+                    end
                     table.insert(table_position,
                         SPRITE_BUTTON {
                             name = tostring(x) .. "_" .. tostring(y),
-                            style = "slot_sized_button",
-                            on_click = "change_pickup_drop",
+                            style = style,
+                            on_click = on_click,
                             size = { 32, 32 }
                         }
                     )
@@ -351,17 +368,18 @@ function gui.update(player, inserter, event)
         end
 
         local offset_flow = gui_helper.find_element_recursive(player.gui.relative.smart_inserters, "offset_flow")
-        assert(offset_flow, "Offset flow not found")
-
-        if event.old_drop_offset ~= nil then
-            local button = event.old_drop_offset.x.."_"..event.old_drop_offset.y
-            offset_flow.flow_drop.table_drop[button].sprite = ""
+        if (offset_flow) then
+            if event.old_drop_offset ~= nil then
+                local button = event.old_drop_offset.x.."_"..event.old_drop_offset.y
+                offset_flow.flow_drop.table_drop[button].sprite = ""
+            end
+    
+            if event.old_pickup_offset ~= nil then
+                local button = event.old_pickup_offset.x.."_"..event.old_pickup_offset.y
+                offset_flow.flow_pickup.table_pickup[button].sprite = ""
+            end
         end
 
-        if event.old_pickup_offset ~= nil then
-            local button = event.old_pickup_offset.x.."_"..event.old_pickup_offset.y
-            offset_flow.flow_pickup.table_pickup[button].sprite = ""
-        end
     end
 
     ----Positions
@@ -393,7 +411,10 @@ function gui.update_all(inserter, event)
     for _, player in pairs(game.players) do
         if (inserter and player.opened == inserter) or (not inserter and player.opened and player.opened.type and player.opened.type == "inserter") then
             ---@diagnostic disable-next-line: param-type-mismatch
-            gui.update(player, player.opened, event)
+            -- gui.update(player, player.opened, event)
+            gui.delete(player)
+            ---@diagnostic disable-next-line: param-type-mismatch
+            gui.create(player, player.opened)
         end
     end
 end

@@ -6,7 +6,21 @@ data:extend({
         minimum_value = 1,
         maximum_value = 6,
         default_value = 3,
-        order         = "a"
+        order         = "aa"
+    },
+    {
+        type          = "bool-setting",
+        setting_type  = "startup",
+        name          = "si-single-line-inserters",
+        default_value = false,
+        order         = "ab"
+    },
+    {
+        type          = "bool-setting",
+        setting_type  = "startup",
+        name          = "si-directional-inserters",
+        default_value = false,
+        order         = "ac"
     },
     {
         type           = "string-setting",
@@ -76,15 +90,8 @@ data:extend({
     {
         type          = "bool-setting",
         setting_type  = "startup",
-        name          = "si-directional-slim-inserter",
-        default_value = true,
-        order         = "ea"
-    },
-    {
-        type          = "bool-setting",
-        setting_type  = "startup",
-        name          = "si-single-line-slim-inserter",
-        default_value = true,
-        order         = "eb"
+        name          = "si-high-contrast-sprites",
+        default_value = false,
+        order         = "e"
     }
 })

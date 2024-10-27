@@ -3,6 +3,10 @@ local drop_tint = { r = 155 / 255, g = 19 / 255, b = 7 / 255 }
 require("prototypes.technology")
 require("prototypes.style")
 
+local drop_file = settings.startup["si-high-contrast-sprites"].value and "drop_hc.png" or "drop.png"
+local pickup_file = settings.startup["si-high-contrast-sprites"].value and "pickup_hc.png" or "pickup.png"
+local combo_file = settings.startup["si-high-contrast-sprites"].value and "combo_hc.png" or "combo.png"
+
 --Sprites
 data:extend({
 	--generic circle sprite
@@ -20,7 +24,7 @@ data:extend({
 	{
 		type = "sprite",
 		name = "pickup",
-		filename = "__Smart_Inserters__/graphics/icons/pickup.png",
+		filename = "__Smart_Inserters__/graphics/icons/"..pickup_file,
 		flags = { "gui-icon" },
 		size = 128,
 		priority = "extra-high-no-scale",
@@ -45,7 +49,7 @@ data:extend({
 	{
 		type = "sprite",
 		name = "drop",
-		filename = "__Smart_Inserters__/graphics/icons/drop.png",
+		filename = "__Smart_Inserters__/graphics/icons/"..drop_file,
 		flags = { "gui-icon" },
 		size = 128,
 		priority = "extra-high-no-scale",
@@ -70,7 +74,7 @@ data:extend({
 	{
 		type = "sprite",
 		name = "combo",
-		filename = "__Smart_Inserters__/graphics/icons/combo.png",
+		filename = "__Smart_Inserters__/graphics/icons/"..combo_file,
 		flags = { "gui-icon" },
 		size = 128,
 		priority = "extra-high-no-scale"
@@ -91,7 +95,7 @@ data:extend({
 	{
 		type = "blueprint",
 		name = "si-in-world-pickup-changer",
-		icon = "__Smart_Inserters__/graphics/icons/pickup.png",
+		icon = "__Smart_Inserters__/graphics/icons/"..pickup_file,
 		icon_size = 128,
 		flags = { "not-stackable", "only-in-cursor" },
 		collision_mask = {layers = {}},
@@ -114,7 +118,7 @@ data:extend({
 	{
 		type = "item",
 		name = "si-in-world-pickup-selector",
-		icon = "__Smart_Inserters__/graphics/icons/pickup.png",
+		icon = "__Smart_Inserters__/graphics/icons/"..pickup_file,
 		scale = 0.2,
 		icon_size = 128,
 		order = "a-b",
@@ -125,7 +129,7 @@ data:extend({
 	{
 		type = "simple-entity-with-owner",
 		name = "si-in-world-pickup-entity",
-		icon = "__Smart_Inserters__/graphics/icons/pickup.png",
+		icon = "__Smart_Inserters__/graphics/icons/"..pickup_file,
 		icon_size = 128,
 		scale = 0.2,
 		flags = { "not-on-map", "player-creation" },
@@ -138,7 +142,7 @@ data:extend({
 			count = 1
 		},
 		picture = {
-			filename = "__Smart_Inserters__/graphics/icons/pickup.png",
+			filename = "__Smart_Inserters__/graphics/icons/"..pickup_file,
 			size = 128,
 			scale = 0.2,
 		}
@@ -147,7 +151,7 @@ data:extend({
 	{
 		type = "blueprint",
 		name = "si-in-world-drop-changer",
-		icon = "__Smart_Inserters__/graphics/icons/drop.png",
+		icon = "__Smart_Inserters__/graphics/icons/"..drop_file,
 		icon_size = 128,
 		scale = 0.2,
 		flags = { "not-stackable", "only-in-cursor" },
@@ -169,7 +173,7 @@ data:extend({
 	{
 		type = "item",
 		name = "si-in-world-drop-selector",
-		icon = "__Smart_Inserters__/graphics/icons/drop.png",
+		icon = "__Smart_Inserters__/graphics/icons/"..drop_file,
 		icon_size = 128,
 		scale = 0.2,
 		order = "a-b",
@@ -180,11 +184,12 @@ data:extend({
 	{
 		type = "simple-entity-with-owner",
 		name = "si-in-world-drop-entity",
-		icon = "__Smart_Inserters__/graphics/icons/drop.png",
+		icon = "__Smart_Inserters__/graphics/icons/"..drop_file,
 		icon_size = 128,
 		scale = 0.2,
 		flags = { "not-on-map", "player-creation" },
 		hidden = true;
+		collision_mask = {layers = {}},
 		collision_box = { { -0.5, -0.5 }, { 0.5, 0.5 } },
 		selection_box = { { -0.5, -0.5 }, { 0.5, 0.5 } },
 		placeable_by = {
@@ -192,7 +197,7 @@ data:extend({
 			count = 1
 		},
 		picture = {
-			filename = "__Smart_Inserters__/graphics/icons/drop.png",
+			filename = "__Smart_Inserters__/graphics/icons/"..drop_file,
 			size = 128,
 			scale = 0.2,
 		}

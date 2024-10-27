@@ -20,7 +20,7 @@ local events = require("scripts.events")
 -- Settings
 -- ------------------------------
 local offset_selector = settings.startup["si-offset-selector"].value
-local directional_slim_inserter = settings.startup["si-directional-slim-inserter"].value
+local directional_inserters = settings.startup["si-directional-inserters"].value
 
 -- ------------------------------
 -- Event Handlers
@@ -86,6 +86,9 @@ local function on_player_rotated_entity(event)
 
         --local res = inserter_functions.get_arm_positions(event.entity)
         --inserter_functions.set_arm_positions(res, event.entity)
+
+        selector_gui.update_all(event.entity)
+        world_editor.update_all_positions(event.entity)
 
         script.raise_event(events.on_inserter_arm_changed, {
             entity = event.entity,
@@ -652,7 +655,8 @@ local function on_built_entity(event)
     arm_positions[update].x = arm_positions[update].x - (inserter.tile_width ~= 1 and 0.5 or 0)
     arm_positions[update].y = arm_positions[update].y - (inserter.tile_height ~= 1 and 0.5 or 0)
     local check_directional_slim = true
-    if inserter_functions.is_slim(inserter) and directional_slim_inserter then
+
+    if directional_inserters then
         if inserter.direction == defines.direction.north then
             if arm_positions[update].y < 0 then
                 check_directional_slim = ("pickup" == update)
@@ -679,6 +683,7 @@ local function on_built_entity(event)
             end
         end
     end
+
     if inserter_functions.should_cell_be_enabled(inserter, arm_positions[update]) and check_directional_slim then
         inserter_functions.set_arm_positions(arm_positions, inserter)
     else

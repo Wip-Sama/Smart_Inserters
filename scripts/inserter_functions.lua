@@ -2,7 +2,7 @@ local math2d = require("__yafla__/scripts/extended_math2d")
 local technology_functions = require("scripts.technology_functions")
 local events = require("scripts.events")
 
-local single_line_slim_inserter = settings.startup["si-single-line-slim-inserter"].value
+local single_line_inserters = settings.startup["si-single-line-inserters"].value
 
 local inserter_functions = {}
 
@@ -373,15 +373,15 @@ function inserter_functions.should_cell_be_enabled(inserter, position)
         default_range = inserter_functions.inseter_default_range(inserter_functions.get_prototype(inserter))
     end
 
-    if height == 0 and single_line_slim_inserter then
-        if position.x ~= 0 then
-            return false
-        end
-    end
-
-    if width == 0 and single_line_slim_inserter then
-        if position.y ~= 0 then
-            return false
+    if single_line_inserters then
+        if inserter.direction == defines.direction.north or inserter.direction == defines.direction.south then
+            if position.x ~= 0 then
+                return false
+            end
+        elseif inserter.direction == defines.direction.east or inserter.direction == defines.direction.west then
+            if position.y ~= 0 then
+                return false
+            end
         end
     end
 

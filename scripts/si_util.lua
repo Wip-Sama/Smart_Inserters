@@ -1,7 +1,7 @@
 local math2d = require("__yafla__/scripts/extended_math2d")
 local tech = require("scripts.technology_functions")
 
-local single_line_slim_inserter = settings.startup["si-single-line-slim-inserter"].value
+local single_line_inserters = settings.startup["si-single-line-inserters"].value
 
 local si_util = {
     blacklist = {
@@ -27,7 +27,7 @@ function si_util.enabled_cell_matrix(force, vertical, orizontal, slim)
     if slim then
         for kx, _ in pairs(enabled_matrix) do
             for ky, _ in pairs(enabled_matrix) do
-                if single_line_slim_inserter then
+                if single_line_inserters then
                     if vertical and kx == 0 then
                         enabled_matrix[kx][ky] = true
                     elseif orizontal and ky == 0 then

@@ -1,4 +1,4 @@
-local directional_slim_inserter = settings.startup["si-directional-slim-inserter"].value
+local directional_inserters = settings.startup["si-directional-inserters"].value
 
 local inserter_functions = require("scripts/inserter_functions")
 local storage_functions = require("scripts/storage_functions")
@@ -124,7 +124,7 @@ function world_editor.draw_positions(player_index, inserter)
             storage.SI_Storage[player_index].selected_inserter.displayed_elements[x] = storage.SI_Storage[player_index].selected_inserter.displayed_elements[x] or {}
             if (not ((-lower_width <= x and x < higher_width) and (-lower_height <= y and y < higher_height))) and inserter_functions.should_cell_be_enabled(inserter, {x = x, y = y}) then
                 local directional_color
-                if slim and directional_slim_inserter then
+                if directional_inserters then
                     if inserter.direction == defines.direction.north then
                         if y < 0 then
                             directional_color = "pickup"
@@ -209,7 +209,9 @@ function world_editor.update_all(inserter, event)
         local storage = storage_functions.ensure_data(player.index)
         if storage.selected_inserter.inserter ~= nil and storage.selected_inserter.inserter == inserter then
             ---@diagnostic disable-next-line: param-type-mismatch
-            world_editor.update_positions(player.index, inserter, event)
+            world_editor.clear_positions(player.index)
+            world_editor.draw_positions(player.index, inserter)
+            -- world_editor.update_positions(player.index, inserter, event)
         end
     end
 end
@@ -218,8 +220,8 @@ end
 function world_editor.update_all_positions(inserter)
     local player_storage
     for _, player in pairs(game.players) do
-        player_storage = storage.SI_Storage[player.index]
         storage_functions.ensure_data(player.index)
+        player_storage = storage.SI_Storage[player.index]
         if player_storage.is_selected == true and math2d.position.equal(player_storage.selected_inserter.position, inserter.position) then
             world_editor.clear_positions(player.index)
             world_editor.draw_positions(player.index, inserter)
