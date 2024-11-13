@@ -1,5 +1,3 @@
-local util = require("__core__/lualib/util")
-
 local storage_functions = {}
 
 storage.SI_Storage = storage.SI_Storage or {}

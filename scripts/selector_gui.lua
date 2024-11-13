@@ -1,11 +1,11 @@
 local directional_inserters = settings.startup["si-directional-inserters"].value
-local directional_slim_inserters = settings.startup["si-directional-inserters"].value
+local directional_slim_inserters = settings.startup["si-directional-slim-inserters"].value
 local offset_selector = settings.startup["si-offset-selector"].value
 
 local gui_builder = require("__yafla__/scripts/experimental/gui_builder")
 local gui_helper = require("__yafla__/scripts/experimental/gui_helper")
-local inserter_functions = require("scripts.inserter_functions")
 local tecnology_functions = require("scripts.technology_functions")
+local inserter_functions = require("scripts.inserter_functions")
 
 local gui = {}
 
@@ -35,14 +35,43 @@ function gui.generate_slim_inserter_grid(inserter)
                     -- }
                 )
             else
+                local directional_color
+                if directional_slim_inserters then
+                    if inserter.direction == defines.direction.north then
+                        if y < 0 then
+                            directional_color = "pickup"
+                        else
+                            directional_color = "drop"
+                        end
+                    elseif inserter.direction == defines.direction.south then
+                        if y < 0 then
+                            directional_color = "drop"
+                        else
+                            directional_color = "pickup"
+                        end
+                    elseif inserter.direction == defines.direction.east then
+                        if x < 0 then
+                            directional_color = "drop"
+                        else
+                            directional_color = "pickup"
+                        end
+                    elseif inserter.direction == defines.direction.west then
+                        if x < 0 then
+                            directional_color = "pickup"
+                        else
+                            directional_color = "drop"
+                        end
+                    end
+                end
+
                 if (x ~= 0 and not vertical) or (y ~= 0 and vertical) then
                     if not vertical and x > 0 then
                         if (inserter_functions.should_cell_be_enabled(inserter, {x = x-1, y = y})) then
                             table.insert(table_position,
                                 SPRITE_BUTTON {
                                     name = tostring(x-1) .. "_" .. tostring(y),
-                                    style = directional_slim_inserters and (inserter.direction == 2 and "slot_sized_button_pickup" or "slot_sized_button_drop") or "slot_sized_button",
-                                    on_click = directional_slim_inserters and (inserter.direction == 2 and "change_drop" or "change_pickup") or "change_pickup_drop",
+                                    style = directional_slim_inserters and "slot_sized_button_"..directional_color or "slot_sized_button",
+                                    on_click = directional_slim_inserters and "change_"..directional_color or "change_pickup_drop",
                                     size = { 32, 32 }
                                 }
                             )
@@ -58,8 +87,8 @@ function gui.generate_slim_inserter_grid(inserter)
                             table.insert(table_position,
                                 SPRITE_BUTTON {
                                     name = tostring(x) .. "_" .. tostring(y-1),
-                                    style = directional_slim_inserters and (inserter.direction == 4 and "slot_sized_button_pickup" or "slot_sized_button_drop") or "slot_sized_button",
-                                    on_click = directional_slim_inserters and (inserter.direction == 4 and "change_drop" or "change_pickup") or "change_pickup_drop",
+                                    style = directional_slim_inserters and "slot_sized_button_"..directional_color or "slot_sized_button",
+                                    on_click = directional_slim_inserters and "change_"..directional_color or "change_pickup_drop",
                                     size = { 32, 32 }
                                 }
                             )
@@ -75,8 +104,8 @@ function gui.generate_slim_inserter_grid(inserter)
                             table.insert(table_position,
                                 SPRITE_BUTTON {
                                     name = tostring(x) .. "_" .. tostring(y),
-                                    style = directional_slim_inserters and ((inserter.direction == 6 or inserter.direction == 0) and "slot_sized_button_pickup" or "slot_sized_button_drop") or "slot_sized_button",
-                                    on_click = directional_slim_inserters and ((inserter.direction == 6 or inserter.direction == 0) and "change_drop" or "change_pickup") or "change_pickup_drop",
+                                    style = directional_slim_inserters and "slot_sized_button_"..directional_color or "slot_sized_button",
+                                    on_click = directional_slim_inserters and "change_"..directional_color or "change_pickup_drop",
                                     size = { 32, 32 }
                                 }
                             )
@@ -91,7 +120,6 @@ function gui.generate_slim_inserter_grid(inserter)
                 else
                     table.insert(table_position,
                         EMPTY_WIDGET {
-                            --name = tostring(x) .. "_" .. tostring(y),
                             size = { 32, 32 }
                         }
                     )
@@ -151,16 +179,16 @@ function gui.generate_x_y_inserter_grid(inserter)
                     if directional_inserters then
                         if inserter.direction == defines.direction.north then
                             style = y > 0 and "slot_sized_button_drop" or "slot_sized_button_pickup"
-                            on_click = y > 0 and "change_pickup" or "change_drop"
+                            on_click = y > 0 and "change_drop" or "change_pickup"
                         elseif inserter.direction == defines.direction.south then
                             style = y > 0 and "slot_sized_button_pickup" or "slot_sized_button_drop"
-                            on_click = y > 0 and "change_drop" or "change_pickup"
+                            on_click = y > 0 and "change_pickup" or "change_drop"
                         elseif inserter.direction == defines.direction.east then
                             style = x > 0 and "slot_sized_button_pickup" or "slot_sized_button_drop"
-                            on_click = x > 0 and "change_drop" or "change_pickup"
+                            on_click = x > 0 and "change_pickup" or "change_drop"
                         elseif inserter.direction == defines.direction.west then
                             style = x > 0 and "slot_sized_button_drop" or "slot_sized_button_pickup"
-                            on_click = x > 0 and "change_pickup" or "change_drop"
+                            on_click = x > 0 and "change_drop" or "change_pickup"
                         end
                     end
                     table.insert(table_position,
@@ -272,7 +300,7 @@ function gui.delete(player)
         player.gui.relative.inserter_config.destroy()
     end
     if player.gui.relative.smart_inserters then
-        player.gui.relative.smart_inserters.destroy()
+        gui_builder.delete(player.gui.relative.smart_inserters)
     end
 end
 
@@ -350,8 +378,9 @@ function gui.update(player, inserter, event)
     local p_name = res.pickup.x.."_"..res.pickup.y
     local do_name = res.drop_offset.x.."_"..res.drop_offset.y
     local po_name = res.pickup_offset.x.."_"..res.pickup_offset.y
+
+    ----Clean up sprites
     if event then
-        ----Clean up sprites
         if event.old_drop ~= nil then
             local button = event.old_drop.x.."_"..event.old_drop.y
             local old = gui_helper.find_element_recursive(player.gui.relative.smart_inserters, button)
@@ -359,7 +388,6 @@ function gui.update(player, inserter, event)
                 old.sprite = ""
             end
         end
-
         if event.old_pickup ~= nil then
             local button = event.old_pickup.x.."_"..event.old_pickup.y       
             local old = gui_helper.find_element_recursive(player.gui.relative.smart_inserters, button)
@@ -374,13 +402,11 @@ function gui.update(player, inserter, event)
                 local button = event.old_drop_offset.x.."_"..event.old_drop_offset.y
                 offset_flow.flow_drop.table_drop[button].sprite = ""
             end
-    
             if event.old_pickup_offset ~= nil then
                 local button = event.old_pickup_offset.x.."_"..event.old_pickup_offset.y
                 offset_flow.flow_pickup.table_pickup[button].sprite = ""
             end
         end
-
     end
 
     ----Positions
@@ -633,8 +659,8 @@ local function change_drop_offset(event)
 end
 
 gui_builder.register_handler("change_pickup_drop", change_pickup_drop)
-gui_builder.register_handler("change_pickup", change_drop)
-gui_builder.register_handler("change_drop", change_pickup)
+gui_builder.register_handler("change_pickup", change_pickup)
+gui_builder.register_handler("change_drop", change_drop)
 gui_builder.register_handler("change_pickup_offset", change_pickup_offset)
 gui_builder.register_handler("change_drop_offset", change_drop_offset)
 

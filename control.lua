@@ -4,6 +4,7 @@
 local util = require("__core__/lualib/util")
 local math2d = require("__yafla__/scripts/extended_math2d")
 
+
 -- ------------------------------
 -- Internal Dependencies
 -- ------------------------------
@@ -16,18 +17,18 @@ local storage_functions = require("scripts.storage_functions")
 local si_util = require("scripts.si_util")
 local events = require("scripts.events")
 
+
 -- ------------------------------
 -- Settings
 -- ------------------------------
 local offset_selector = settings.startup["si-offset-selector"].value
 local directional_inserters = settings.startup["si-directional-inserters"].value
-local directional_slim_inserters = settings.startup["si-directional-inserters"].value
+local directional_slim_inserters = settings.startup["si-directional-slim-inserters"].value
 
 
 -- ------------------------------
 -- Event Handlers
 -- ------------------------------
-
 local function on_init()
     storage.SI_Storage = storage.SI_Storage or {}
     storage_functions.populate_storage()
@@ -651,7 +652,7 @@ local function on_built_entity(event)
     local player = game.get_player(event.player_index)
     if player == nil then return end
     local inserter = storage.SI_Storage[event.player_index].selected_inserter.inserter
-    local slim = inserter_functions.is_slim_inserter(inserter)
+    local slim = inserter_functions.is_slim(inserter)
     local update = string.find(entity.ghost_name, "d", 13) == 13 and "drop" or "pickup"
     local arm_positions = inserter_functions.get_arm_positions(inserter)
     arm_positions[update] = math2d.position.subtract(entity.position, inserter.position)

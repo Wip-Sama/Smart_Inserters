@@ -3,8 +3,9 @@ local technology_functions = require("scripts.technology_functions")
 local events = require("scripts.events")
 
 local single_line_inserters = settings.startup["si-single-line-inserters"].value
-local directional_inserters = settings.startup["si-directional-inserters"].value
 local single_line_slim_inserters = settings.startup["si-single-line-slim-inserters"].value
+local directional_inserters = settings.startup["si-directional-inserters"].value
+local directional_slim_inserters = settings.startup["si-directional-slim-inserters"].value
 
 local inserter_functions = {}
 
@@ -406,7 +407,7 @@ function inserter_functions.should_cell_be_enabled(inserter, position)
         return false
     end
 
-    if directional_inserters and not slim then
+    if (directional_inserters and not slim) or (directional_slim_inserters and slim) then
         if position.y == 0 and ((inserter.direction == defines.direction.north) or (inserter.direction == defines.direction.south)) then
             return false
         elseif position.x == 0 and ((inserter.direction == defines.direction.east) or (inserter.direction == defines.direction.west)) then

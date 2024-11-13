@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.11
+Date: 2024-11-13
+  Bugfixes:
+    - Directional slim inserters did not work properly
+    - Fixed some handlers related bugs (required yafla >= 0.1.9)
+---------------------------------------------------------------------------------------------------
 Version: 2.0.10
 Date: 2024-10-27
   Changes:

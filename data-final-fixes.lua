@@ -3,7 +3,7 @@
 local chases_belt_items = settings.startup["si-inserters-chase-belt-items"].value
 
 local inserter_functions = require("scripts.inserter_functions")
-local disable_inserter_consumption = "settings.startup["si-disable-inserters-consumption"].value
+local disable_inserter_consumption = settings.startup["si-disable-inserters-consumption"].value
 
 local long_inserters = {}
 for _, inserter in pairs(data.raw.inserter) do

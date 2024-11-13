@@ -107,7 +107,7 @@ function world_editor.draw_positions(player_index, inserter)
 
     local max_inserter_range, min_inserter_range = inserter_functions.get_max_and_min_inserter_range(inserter)
     local slim = inserter_functions.is_slim(inserter)
-    
+
     local width, height = math.ceil(inserter.tile_width), math.ceil(inserter.tile_height)
 
     local lower_width = width%2==0 and width/2 or width/2-0.5
