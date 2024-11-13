@@ -1,11 +1,16 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.10
+Date: 2024-10-27
+  Changes:
+    - Sprites are now defaulted to high contrast sprites
+    - Split directional and single line inserter to allow for fine control over slim and non slim inserters (by default for the slim one these settings are enabled)
+    - Removed a row/column of available position if directional inserters is enabled
+---------------------------------------------------------------------------------------------------
 Version: 2.0.9
 Date: 2024-10-27
   Added:
     - High contrast sprites
     - A setting to enable/disable high contrast sprites
-  Changes:
-    - Sprites are now defaulted to high contrast sprites
   Bugfixes:
     - Directional inserter were inverted
 ---------------------------------------------------------------------------------------------------

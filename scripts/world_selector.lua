@@ -1,4 +1,5 @@
 local directional_inserters = settings.startup["si-directional-inserters"].value
+local directional_slim_inserters = settings.startup["si-directional-slim-inserters"].value
 
 local inserter_functions = require("scripts/inserter_functions")
 local storage_functions = require("scripts/storage_functions")
@@ -101,10 +102,12 @@ function world_editor.draw_positions(player_index, inserter)
 
     local player = game.get_player(player_index)
     if player == nil then return end
-
+    
     storage_functions.ensure_data(player_index)
 
     local max_inserter_range, min_inserter_range = inserter_functions.get_max_and_min_inserter_range(inserter)
+    local slim = inserter_functions.is_slim(inserter)
+    
     local width, height = math.ceil(inserter.tile_width), math.ceil(inserter.tile_height)
 
     local lower_width = width%2==0 and width/2 or width/2-0.5
@@ -124,7 +127,7 @@ function world_editor.draw_positions(player_index, inserter)
             storage.SI_Storage[player_index].selected_inserter.displayed_elements[x] = storage.SI_Storage[player_index].selected_inserter.displayed_elements[x] or {}
             if (not ((-lower_width <= x and x < higher_width) and (-lower_height <= y and y < higher_height))) and inserter_functions.should_cell_be_enabled(inserter, {x = x, y = y}) then
                 local directional_color
-                if directional_inserters then
+                if (directional_inserters and not slim) or (directional_slim_inserters and slim) then
                     if inserter.direction == defines.direction.north then
                         if y < 0 then
                             directional_color = "pickup"

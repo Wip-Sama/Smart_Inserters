@@ -90,8 +90,22 @@ data:extend({
     {
         type          = "bool-setting",
         setting_type  = "startup",
+        name          = "si-single-line-slim-inserters",
+        default_value = true,
+        order         = "dc"
+    },
+    {
+        type          = "bool-setting",
+        setting_type  = "startup",
+        name          = "si-directional-slim-inserters",
+        default_value = true,
+        order         = "dd"
+    },
+    {
+        type          = "bool-setting",
+        setting_type  = "startup",
         name          = "si-high-contrast-sprites",
-        default_value = false,
+        default_value = true,
         order         = "e"
-    }
+    },
 })

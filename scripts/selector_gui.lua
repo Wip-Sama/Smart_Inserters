@@ -1,4 +1,5 @@
 local directional_inserters = settings.startup["si-directional-inserters"].value
+local directional_slim_inserters = settings.startup["si-directional-inserters"].value
 local offset_selector = settings.startup["si-offset-selector"].value
 
 local gui_builder = require("__yafla__/scripts/experimental/gui_builder")
@@ -40,8 +41,8 @@ function gui.generate_slim_inserter_grid(inserter)
                             table.insert(table_position,
                                 SPRITE_BUTTON {
                                     name = tostring(x-1) .. "_" .. tostring(y),
-                                    style = directional_inserters and (inserter.direction == 2 and "slot_sized_button_pickup" or "slot_sized_button_drop") or "slot_sized_button",
-                                    on_click = directional_inserters and (inserter.direction == 2 and "change_drop" or "change_pickup") or "change_pickup_drop",
+                                    style = directional_slim_inserters and (inserter.direction == 2 and "slot_sized_button_pickup" or "slot_sized_button_drop") or "slot_sized_button",
+                                    on_click = directional_slim_inserters and (inserter.direction == 2 and "change_drop" or "change_pickup") or "change_pickup_drop",
                                     size = { 32, 32 }
                                 }
                             )
@@ -57,8 +58,8 @@ function gui.generate_slim_inserter_grid(inserter)
                             table.insert(table_position,
                                 SPRITE_BUTTON {
                                     name = tostring(x) .. "_" .. tostring(y-1),
-                                    style = directional_inserters and (inserter.direction == 4 and "slot_sized_button_pickup" or "slot_sized_button_drop") or "slot_sized_button",
-                                    on_click = directional_inserters and (inserter.direction == 4 and "change_drop" or "change_pickup") or "change_pickup_drop",
+                                    style = directional_slim_inserters and (inserter.direction == 4 and "slot_sized_button_pickup" or "slot_sized_button_drop") or "slot_sized_button",
+                                    on_click = directional_slim_inserters and (inserter.direction == 4 and "change_drop" or "change_pickup") or "change_pickup_drop",
                                     size = { 32, 32 }
                                 }
                             )
@@ -74,8 +75,8 @@ function gui.generate_slim_inserter_grid(inserter)
                             table.insert(table_position,
                                 SPRITE_BUTTON {
                                     name = tostring(x) .. "_" .. tostring(y),
-                                    style = directional_inserters and ((inserter.direction == 6 or inserter.direction == 0) and "slot_sized_button_pickup" or "slot_sized_button_drop") or "slot_sized_button",
-                                    on_click = directional_inserters and ((inserter.direction == 6 or inserter.direction == 0) and "change_drop" or "change_pickup") or "change_pickup_drop",
+                                    style = directional_slim_inserters and ((inserter.direction == 6 or inserter.direction == 0) and "slot_sized_button_pickup" or "slot_sized_button_drop") or "slot_sized_button",
+                                    on_click = directional_slim_inserters and ((inserter.direction == 6 or inserter.direction == 0) and "change_drop" or "change_pickup") or "change_pickup_drop",
                                     size = { 32, 32 }
                                 }
                             )

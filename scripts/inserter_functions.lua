@@ -3,6 +3,8 @@ local technology_functions = require("scripts.technology_functions")
 local events = require("scripts.events")
 
 local single_line_inserters = settings.startup["si-single-line-inserters"].value
+local directional_inserters = settings.startup["si-directional-inserters"].value
+local single_line_slim_inserters = settings.startup["si-single-line-slim-inserters"].value
 
 local inserter_functions = {}
 
@@ -292,7 +294,7 @@ function inserter_functions.should_cell_be_enabled(inserter, position)
     position = math2d.position.ensure_xy(position)
 
     local max_range, min_range = inserter_functions.get_max_and_min_inserter_range(inserter)
-
+    local slim = inserter_functions.is_slim(inserter)
     --Equal
     --Tech range for everyone
     local default_range = 0
@@ -316,7 +318,7 @@ function inserter_functions.should_cell_be_enabled(inserter, position)
     elseif position.y >= higher_height then
         --This +1 is used to avoid shifting teh position into the base range
         --Example: ian base 6 inserter, higher = 3, base = -3->2, position 3-3 = 0 (in base), 3-3+1 = 1 not in base
-        --Remember taht base conversion goes from n*m to 1x1 so base is only 0
+        --Remember that base conversion goes from n*m to 1x1 so base is only 0
         position.y = position.y - higher_height + 1
     end
 
@@ -373,7 +375,19 @@ function inserter_functions.should_cell_be_enabled(inserter, position)
         default_range = inserter_functions.inseter_default_range(inserter_functions.get_prototype(inserter))
     end
 
-    if single_line_inserters then
+    if single_line_slim_inserters and slim then
+        if inserter.tile_width > 0 then
+            if position.x ~= 0 then
+                return false
+            end
+        elseif inserter.tile_height > 0 then
+            if position.y ~= 0 then
+                return false
+            end
+        end
+    end
+
+    if single_line_inserters and not slim then
         if inserter.direction == defines.direction.north or inserter.direction == defines.direction.south then
             if position.x ~= 0 then
                 return false
@@ -390,6 +404,14 @@ function inserter_functions.should_cell_be_enabled(inserter, position)
     distance = math.max(math.floor(distance), 1)
     if distance > max_range or distance < min_range then
         return false
+    end
+
+    if directional_inserters and not slim then
+        if position.y == 0 and ((inserter.direction == defines.direction.north) or (inserter.direction == defines.direction.south)) then
+            return false
+        elseif position.x == 0 and ((inserter.direction == defines.direction.east) or (inserter.direction == defines.direction.west)) then
+            return false
+        end
     end
 
     return technology_functions.check_tech(inserter.force, position, default_range)

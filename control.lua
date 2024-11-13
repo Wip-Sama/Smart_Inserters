@@ -21,6 +21,8 @@ local events = require("scripts.events")
 -- ------------------------------
 local offset_selector = settings.startup["si-offset-selector"].value
 local directional_inserters = settings.startup["si-directional-inserters"].value
+local directional_slim_inserters = settings.startup["si-directional-inserters"].value
+
 
 -- ------------------------------
 -- Event Handlers
@@ -649,6 +651,7 @@ local function on_built_entity(event)
     local player = game.get_player(event.player_index)
     if player == nil then return end
     local inserter = storage.SI_Storage[event.player_index].selected_inserter.inserter
+    local slim = inserter_functions.is_slim_inserter(inserter)
     local update = string.find(entity.ghost_name, "d", 13) == 13 and "drop" or "pickup"
     local arm_positions = inserter_functions.get_arm_positions(inserter)
     arm_positions[update] = math2d.position.subtract(entity.position, inserter.position)
@@ -656,7 +659,7 @@ local function on_built_entity(event)
     arm_positions[update].y = arm_positions[update].y - (inserter.tile_height ~= 1 and 0.5 or 0)
     local check_directional_slim = true
 
-    if directional_inserters then
+    if (directional_inserters and not slim) or (directional_slim_inserters and slim) then
         if inserter.direction == defines.direction.north then
             if arm_positions[update].y < 0 then
                 check_directional_slim = ("pickup" == update)
