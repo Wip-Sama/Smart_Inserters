@@ -436,7 +436,7 @@ end
 ---@param event InserterArmChanged?
 function gui.update_all(inserter, event)
     for _, player in pairs(game.players) do
-        if (inserter and player.opened == inserter) or (not inserter and player.opened and player.opened.type and player.opened.type == "inserter") then
+        if (inserter and player.opened == inserter) or (not inserter and player.opened and player.opened.type and player.opened.type ~= nil and player.opened.type == "inserter") then
             ---@diagnostic disable-next-line: param-type-mismatch
             -- gui.update(player, player.opened, event)
             gui.delete(player)
@@ -447,6 +447,9 @@ function gui.update_all(inserter, event)
 end
 
 local function change_pickup_drop(event)
+    if event.element == nil or event.player_index == nil then
+        return
+    end
     ---@type LuaPlayer | nil
     local player = game.get_player(event.player_index)
 
@@ -464,6 +467,9 @@ local function change_pickup_drop(event)
     --- @type LuaEntity
     --- @diagnostic disable-next-line: assign-type-mismatch
     local inserter = player.opened
+    if inserter_functions.is_inserter(inserter) == false then
+        return
+    end
 
     local inserter_pos = inserter_functions.get_arm_positions(inserter)
     local pos = string.find(sprite_button.name, "_")
@@ -523,6 +529,9 @@ local function change_pickup_drop(event)
 end
 
 local function change_drop(event)
+    if event.element == nil or event.player_index == nil then
+        return
+    end
     ---@type LuaPlayer | nil
     local player = game.get_player(event.player_index)
 
@@ -559,6 +568,9 @@ local function change_drop(event)
 end
 
 local function change_pickup(event)
+    if event.element == nil or event.player_index == nil then
+        return
+    end
     ---@type LuaPlayer | nil
     local player = game.get_player(event.player_index)
 
@@ -595,6 +607,9 @@ local function change_pickup(event)
 end
 
 local function change_pickup_offset(event)
+    if event.element == nil or event.player_index == nil then
+        return
+    end
     ---@type LuaPlayer | nil
     local player = game.get_player(event.player_index)
 
@@ -627,6 +642,9 @@ local function change_pickup_offset(event)
 end
 
 local function change_drop_offset(event)
+    if event.element == nil or event.player_index == nil then
+        return
+    end
     ---@type LuaPlayer | nil
     local player = game.get_player(event.player_index)
 

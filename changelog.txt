@@ -1,6 +1,12 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.12
+Date: 2024-11-16
+  Bugfixes:
+    - Tried to patch a set of crash taht involves other mods gui (this is just a patch not a fix, I'm not dure if teh bug is fixed since I can not reproduce it)
+    - Bumped yafla dependency to 0.1.9 (I forgot to do it in the last update)
+---------------------------------------------------------------------------------------------------
 Version: 2.0.11
-Date: 2024-11-13
+Date: 2024-11-14
   Bugfixes:
     - Directional slim inserters did not work properly
     - Fixed some handlers related bugs (required yafla >= 0.1.9)
