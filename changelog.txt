@@ -1,4 +1,12 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.13
+Date: 2024-11-21
+  Changes:
+    - Hidden long inserter from factoriopedia when "Disable long inserter" is enabled (https://mods.factorio.com/mod/Smart_Inserters/discussion/673c8eba2735c617045563f5)
+    - Hidden long inserter entities when "Disable long inserter" is enabled (https://mods.factorio.com/mod/Smart_Inserters/discussion/673c8eba2735c617045563f5)
+  Bugfixes:
+    - crash on multiplayer when some palyer where in unsupported inventories (https://mods.factorio.com/mod/Smart_Inserters/discussion/673e66f7ca09f2d747c2b864, https://mods.factorio.com/mod/Smart_Inserters/discussion/6735efaf9477b5edd9be8058, https://mods.factorio.com/mod/Smart_Inserters/discussion/672e7dde0836644d01fcd65e)
+---------------------------------------------------------------------------------------------------
 Version: 2.0.12
 Date: 2024-11-16
   Bugfixes:

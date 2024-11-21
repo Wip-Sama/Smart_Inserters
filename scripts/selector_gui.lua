@@ -436,7 +436,7 @@ end
 ---@param event InserterArmChanged?
 function gui.update_all(inserter, event)
     for _, player in pairs(game.players) do
-        if (inserter and player.opened == inserter) or (not inserter and player.opened and player.opened.type and player.opened.type ~= nil and player.opened.type == "inserter") then
+        if (inserter and player.opened == inserter) or (not inserter and player.opened and player.opened.object_name == "LuaEntity" and player.opened.type == "inserter") then
             ---@diagnostic disable-next-line: param-type-mismatch
             -- gui.update(player, player.opened, event)
             gui.delete(player)

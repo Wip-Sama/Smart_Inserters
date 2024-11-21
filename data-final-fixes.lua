@@ -29,10 +29,11 @@ if settings.startup["si-disable-long-inserters"].value then
 	for _, item in pairs(data.raw.item) do
 		if item.place_result ~= nil then
 			for _, inserter in pairs(data.raw.inserter) do
-				local inserter = inserter.name
-				if item.place_result == inserter then
-					if inserter_functions.is_inserter_long(data.raw.inserter[inserter]) then
-						table.insert(long_inserters, inserter)
+				if item.place_result == inserter.name then
+					if inserter_functions.is_inserter_long(data.raw.inserter[inserter.name]) then
+						table.insert(long_inserters, inserter.name)
+						inserter.hidden_in_factoriopedia = true
+						inserter.hidden = true
 					end
 				end
 			end
