@@ -446,43 +446,51 @@ function gui.update_all(inserter, event)
     end
 end
 
-local function change_pickup_drop(event)
+local function change_position_validation(event)
     if event.element == nil or event.player_index == nil then
-        return
+        return false
     end
+
     ---@type LuaPlayer | nil
     local player = game.get_player(event.player_index)
-
-    assert(player~=nil, "Player "..event.player_index.." is nil")
-
     ---@diagnostic disable-next-line: param-type-mismatch
-    if player.opened==nil and not inserter_functions.is_inserter(player.opened) then
-        return
+    if player == nil or player.opened == nil or inserter_functions.is_inserter(player.opened) == false then
+        return false
     end
-    --assert(player.opened~=nil and inserter_functions.is_inserter(player.opened), "Opened is nil")
 
     ---@type LuaGuiElement
     local sprite_button = event.element
-
-    --- @type LuaEntity
-    --- @diagnostic disable-next-line: assign-type-mismatch
-    local inserter = player.opened
-    if inserter_functions.is_inserter(inserter) == false then
-        return
+    if sprite_button.type ~= "sprite-button" or not string.find(sprite_button.name, "_") then
+        game.print("[Smart Inserters] An event to change the inserter position was called by "+sprite_button.get_mod()+":"+sprite_button.name+" please report this to the mod author.")
+        return false
     end
 
-    local inserter_pos = inserter_functions.get_arm_positions(inserter)
+    return true
+end
+
+local function calculate_button_pos(sprite_button)
+    --local sprite_button = event.element
     local pos = string.find(sprite_button.name, "_")
     local x = string.sub(sprite_button.name, 0, pos-1)
     local y = string.sub(sprite_button.name, pos+1, #sprite_button.name)
-    local button_pos = { x = tonumber(x), y = tonumber(y) }
+    --local button_pos = { x = tonumber(x), y = tonumber(y) }
+    return { x = tonumber(x), y = tonumber(y) }
+end
+
+local function change_pickup_drop(event)
+    if not change_position_validation(event) then
+        return
+    end
+
+    local inserter = game.get_player(event.player_index).opened
+    local button_pos = calculate_button_pos(event.element) --sprite_button
+
+    local inserter_pos = inserter_functions.get_arm_positions(inserter)
 
     --- @type ChangeArmPosition
     local positions = {
         pickup = nil,
         drop = nil,
-        pickup_offset = nil,
-        drop_offset = nil
     }
 
     -- se è stata selezionata la stessa cella ignorare
@@ -524,114 +532,48 @@ local function change_pickup_drop(event)
         end
     end
 
-
     inserter_functions.set_arm_positions(positions, inserter)
 end
 
 local function change_drop(event)
-    if event.element == nil or event.player_index == nil then
+    if not change_position_validation(event) then
         return
     end
-    ---@type LuaPlayer | nil
-    local player = game.get_player(event.player_index)
 
-    assert(player~=nil, "Player "..event.player_index.." is nil")
-
-    ---@diagnostic disable-next-line: param-type-mismatch
-    if player.opened==nil and not inserter_functions.is_inserter(player.opened) then
-        return
-    end
-    --assert(player.opened~=nil and inserter_functions.is_inserter(player.opened), "Opened is nil")
-
-    ---@type LuaGuiElement
-    local sprite_button = event.element
-
-    --- @type LuaEntity
-    --- @diagnostic disable-next-line: assign-type-mismatch
-    local inserter = player.opened
-
-    local pos = string.find(sprite_button.name, "_")
-    local x = string.sub(sprite_button.name, 0, pos-1)
-    local y = string.sub(sprite_button.name, pos+1, #sprite_button.name)
-    local button_pos = { x = tonumber(x), y = tonumber(y) }
+    local inserter = game.get_player(event.player_index).opened
+    local button_pos = calculate_button_pos(event.element) --sprite_button
 
     --- @type ChangeArmPosition
     local positions = {
-        pickup = nil,
-        drop = nil,
-        pickup_offset = nil,
-        drop_offset = nil
+        drop = button_pos,
     }
 
-    positions.drop = button_pos
     inserter_functions.set_arm_positions(positions, inserter)
 end
 
 local function change_pickup(event)
-    if event.element == nil or event.player_index == nil then
+    if not change_position_validation(event) then
         return
     end
-    ---@type LuaPlayer | nil
-    local player = game.get_player(event.player_index)
 
-    assert(player~=nil, "Player "..event.player_index.." is nil")
-
-    ---@diagnostic disable-next-line: param-type-mismatch
-    if player.opened==nil and not inserter_functions.is_inserter(player.opened) then
-        return
-    end
-    --assert(player.opened~=nil and inserter_functions.is_inserter(player.opened), "Opened is nil")
-
-    ---@type LuaGuiElement
-    local sprite_button = event.element
-
-    --- @type LuaEntity
-    --- @diagnostic disable-next-line: assign-type-mismatch
-    local inserter = player.opened
-
-    local pos = string.find(sprite_button.name, "_")
-    local x = string.sub(sprite_button.name, 0, pos-1)
-    local y = string.sub(sprite_button.name, pos+1, #sprite_button.name)
-    local button_pos = { x = tonumber(x), y = tonumber(y) }
+    local inserter = game.get_player(event.player_index).opened
+    local button_pos = calculate_button_pos(event.element) --sprite_button
 
     --- @type ChangeArmPosition
     local positions = {
-        pickup = nil,
-        drop = nil,
-        pickup_offset = nil,
-        drop_offset = nil
+        pickup = button_pos,
     }
 
-    positions.pickup = button_pos
     inserter_functions.set_arm_positions(positions, inserter)
 end
 
 local function change_pickup_offset(event)
-    if event.element == nil or event.player_index == nil then
+    if not change_position_validation(event) then
         return
     end
-    ---@type LuaPlayer | nil
-    local player = game.get_player(event.player_index)
 
-    assert(player~=nil, "Player "..event.player_index.." is nil")
-
-    ---@diagnostic disable-next-line: param-type-mismatch
-    if player.opened==nil and not inserter_functions.is_inserter(player.opened) then
-        return
-    end
-    --assert(player.opened~=nil and inserter_functions.is_inserter(player.opened), "Opened is nil")
-
-    ---@type LuaGuiElement
-    local sprite_button = event.element
-
-    --- @type LuaEntity
-    --- @diagnostic disable-next-line: assign-type-mismatch
-    local inserter = player.opened
-
-    local pos = string.find(sprite_button.name, "_")
-    local x = string.sub(sprite_button.name, 0, pos-1)
-    local y = string.sub(sprite_button.name, pos+1, #sprite_button.name)
-    local button_pos = { x = tonumber(x), y = tonumber(y) }
+    local inserter = game.get_player(event.player_index).opened
+    local button_pos = calculate_button_pos(event.element) --sprite_button
 
     --- @type ChangeArmPosition
     local positions = {
@@ -642,31 +584,12 @@ local function change_pickup_offset(event)
 end
 
 local function change_drop_offset(event)
-    if event.element == nil or event.player_index == nil then
+    if not change_position_validation(event) then
         return
     end
-    ---@type LuaPlayer | nil
-    local player = game.get_player(event.player_index)
 
-    assert(player~=nil, "Player "..event.player_index.." is nil")
-
-    ---@diagnostic disable-next-line: param-type-mismatch
-    if player.opened==nil and not inserter_functions.is_inserter(player.opened) then
-        return
-    end
-    --assert(player.opened~=nil and inserter_functions.is_inserter(player.opened), "Opened is nil")
-
-    ---@type LuaGuiElement
-    local sprite_button = event.element
-
-    --- @type LuaEntity
-    --- @diagnostic disable-next-line: assign-type-mismatch
-    local inserter = player.opened
-
-    local pos = string.find(sprite_button.name, "_")
-    local x = string.sub(sprite_button.name, 0, pos-1)
-    local y = string.sub(sprite_button.name, pos+1, #sprite_button.name)
-    local button_pos = { x = tonumber(x), y = tonumber(y) }
+    local inserter = game.get_player(event.player_index).opened
+    local button_pos = calculate_button_pos(event.element) --sprite_button
 
     --- @type ChangeArmPosition
     local positions = {
