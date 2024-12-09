@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.14
+Date: 2024-12-09
+  Changes:
+    - Welcome message will now appear only once per game/configuration changes (after a cutscene) (https://github.com/Wip-Sama/Smart_Inserters/issues/6#issuecomment-2527526230)
+---------------------------------------------------------------------------------------------------
 Version: 2.0.13
 Date: 2024-11-21
   Changes:
