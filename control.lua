@@ -27,6 +27,11 @@ local directional_slim_inserters = settings.startup["si-directional-slim-inserte
 
 
 -- ------------------------------
+-- Storage
+-- ------------------------------
+storage.welcomed = storage.welcomed or false
+
+-- ------------------------------
 -- Event Handlers
 -- ------------------------------
 local function on_init()
@@ -36,12 +41,15 @@ local function on_init()
 end
 
 local function welcome()
+    if storage.welcomed then return end
     game.print({ "smart-inserters.welcome" })
+    storage.welcomed = true
     --game.print({ "smart-inserters.experimental" })
 end
 
 local function on_configuration_changed(event)
     storage.SI_Storage = storage.SI_Storage or {}
+    storage.welcomed = false
     storage_functions.populate_storage()
     technology_functions.migrate_all()
     --game.print({ "smart-inserters.experimental" })
