@@ -483,6 +483,9 @@ local function change_pickup_drop(event)
     end
 
     local inserter = game.get_player(event.player_index).opened
+    if inserter.valid == false then
+        return
+    end
     local button_pos = calculate_button_pos(event.element) --sprite_button
 
     local inserter_pos = inserter_functions.get_arm_positions(inserter)
@@ -541,6 +544,9 @@ local function change_drop(event)
     end
 
     local inserter = game.get_player(event.player_index).opened
+    if inserter.valid == false then
+        return
+    end
     local button_pos = calculate_button_pos(event.element) --sprite_button
 
     --- @type ChangeArmPosition
@@ -557,6 +563,9 @@ local function change_pickup(event)
     end
 
     local inserter = game.get_player(event.player_index).opened
+    if inserter.valid == false then
+        return
+    end
     local button_pos = calculate_button_pos(event.element) --sprite_button
 
     --- @type ChangeArmPosition
@@ -573,6 +582,9 @@ local function change_pickup_offset(event)
     end
 
     local inserter = game.get_player(event.player_index).opened
+    if inserter.valid == false then
+        return
+    end
     local button_pos = calculate_button_pos(event.element) --sprite_button
 
     --- @type ChangeArmPosition
@@ -589,6 +601,9 @@ local function change_drop_offset(event)
     end
 
     local inserter = game.get_player(event.player_index).opened
+    if inserter.valid == false then
+        return
+    end
     local button_pos = calculate_button_pos(event.element) --sprite_button
 
     --- @type ChangeArmPosition

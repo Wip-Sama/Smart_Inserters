@@ -156,6 +156,10 @@ local function on_rotation_adjust(event)
     assert(player, "[control.lua:on_rotation_adjust] Player is nil")
     local inserter = player.selected
 
+    if inserter.valid == false then
+        return
+    end
+
     if inserter_functions.is_inserter(inserter) then
         assert(inserter, "[control.lua:on_rotation_adjust] Inserter is nil")
         if technology_functions.get_diagonal_increment(inserter.force) < 1 then
@@ -455,6 +459,10 @@ local function on_distance_adjust(event)
     assert(player, "[control.lua:on_distance_adjust] Player is nil")
     local inserter = player.selected
 
+    if inserter.valid == false then
+        return
+    end
+
     if inserter_functions.is_inserter(inserter) then
         assert(inserter, "[control.lua:on_offset_adjust] Inserter is nil")
         ---@diagnostic disable-next-line: param-type-mismatch
@@ -588,6 +596,10 @@ local function on_offset_adjust(event)
     assert(player, "[control.lua:on_offset_adjust] Player is nil")
     local inserter = player.selected
 
+    if inserter.valid == false then
+        return
+    end
+
     if inserter_functions.is_inserter(inserter) then
         assert(inserter, "[control.lua:on_offset_adjust] Inserter is nil")
         ---@diagnostic disable-next-line: param-type-mismatch
@@ -660,6 +672,9 @@ local function on_built_entity(event)
     local player = game.get_player(event.player_index)
     if player == nil then return end
     local inserter = storage.SI_Storage[event.player_index].selected_inserter.inserter
+    if inserter.valid == false then
+        return
+    end
     local slim = inserter_functions.is_slim(inserter)
     local update = string.find(entity.ghost_name, "d", 13) == 13 and "drop" or "pickup"
     local arm_positions = inserter_functions.get_arm_positions(inserter)
