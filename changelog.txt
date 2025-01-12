@@ -1,4 +1,18 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.15
+Date: 2025-01-12
+  Changes:
+    - Changed suggestion for "si-inserters-chase-belt-items"
+  Bugfixes:
+    - Patched a crash when editing an inserter position with the on a space platform too soon after an inserter was placed
+  Note:
+    - The bug patched here is not properly fixed, but I'm playing the game rigth noe and I need that thing to stop crashign so I made this fix, a proper solution will come in the future If I do not forget about this thing
+---------------------------------------------------------------------------------------------------
+Version: 2.0.14
+Date: 2024-12-09
+  Changes:
+    - Welcome message will now appear only once per game/configuration changes (after a cutscene) (https://github.com/Wip-Sama/Smart_Inserters/issues/6#issuecomment-2527526230)
+---------------------------------------------------------------------------------------------------
 Version: 2.0.13
 Date: 2024-11-21
   Changes:

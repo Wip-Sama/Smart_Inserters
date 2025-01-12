@@ -1,4 +1,5 @@
-*.psd
+*.psd export-ignore
+*test export-ignore
 *test
 # Compiled Lua sources
 luac.out
