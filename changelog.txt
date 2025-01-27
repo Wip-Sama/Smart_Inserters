@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.16
+Date: 2025-01-27
+  Changes:
+    - Blacklist miniloader redux entities (by: hgschmie)
+  Bugfixes:
+    - Crash when adjusting drop-offset while not on an inserter (shortcut)
+---------------------------------------------------------------------------------------------------
 Version: 2.0.15
 Date: 2025-01-12
   Changes:
