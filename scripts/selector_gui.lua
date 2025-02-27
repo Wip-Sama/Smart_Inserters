@@ -230,14 +230,25 @@ function gui.create_pickup_drop_editor(inserter)
             caption = { "gui-smart-inserters.position" },
             style = "heading_2_label"
         },
-        TABLE {
-            name = "table_position",
-            horizontal_spacing = 1,
-            vertical_spacing = 1,
-            column_count = max_inserter_range*2+width,
-            --3 if I want to use the 3x3 table approach, it could be useful for slim inserter so need to keep an eye on it
-            --column_count = 3,
-            grid
+        FLOW {
+            direction = "horizontal",
+            EMPTY_WIDGET {
+                name = "pusher_left",
+                horizontally_stretchable = true
+            },
+            TABLE {
+                name = "table_position",
+                horizontal_spacing = 1,
+                vertical_spacing = 1,
+                column_count = max_inserter_range*2+width,
+                --3 if I want to use the 3x3 table approach, it could be useful for slim inserter so need to keep an eye on it
+                --column_count = 3,
+                grid
+            },
+            EMPTY_WIDGET {
+                name = "pusher_right",
+                horizontally_stretchable = true
+            }
         }
     }
 end

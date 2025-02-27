@@ -51,7 +51,7 @@ function si_util.enabled_cell_matrix(force, vertical, orizontal, slim)
 end
 
 function si_util.check_blacklist(entity)
-    --What an ugly ass piece of code... I rellay hate checking strings in this way to filter something, it's reliability is below 0...
+    --What an ugly ass piece of code... I really hate checking strings in this way to filter something, it's reliability is below 0...
     local prototype = prototypes.get_history(entity.type, entity.name)
 
     for _, v in pairs(si_util.blacklist.mods) do

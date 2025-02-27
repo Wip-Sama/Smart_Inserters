@@ -1,4 +1,15 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.17
+Date: ????
+  Changes:
+    - now the main selector gui is always centered horizontally (https://mods.factorio.com/mod/Smart_Inserters/discussion/679ae7bfc0f9c654c0016a6a)
+    - removed a duplicate line in the old changelog.
+    - now tecnologies are aldo disabled when not needed (https://mods.factorio.com/mod/Smart_Inserters/discussion/67c0305e148652f4987d7d0c)
+  Note:
+    - From my understanding ther's still a bug that crashes the game on space platforms but I can't reproduce it anymore, if you find it, please report it to me, it's something that has to do with the in-world selector.
+  Planned:
+    - A settings for other mods to disable the in-world selector and maybe redirect the shortcut to their mods.
+---------------------------------------------------------------------------------------------------
 Version: 2.0.16
 Date: 2025-01-27
   Changes:
@@ -116,7 +127,6 @@ Date: 2024-10-20
     - Shift inveert right/lesft click
     - Control on any will switch pick and drop
     - Offset will not change when changing position/rotation (may change)
-    - Shortcut now support slim and oddly shaped inserters
     - New UI for the in-world selector
   Added:
     - Rebase setting / incremental-with-rebase / inserter-with-rebase, the rabese setting will prevent an inserter to move it's range below is default range, so a long inserter wont' be able to place to the tiles adjacent itself
