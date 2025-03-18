@@ -80,10 +80,10 @@ end
 
 local max_inserter_range = settings.startup["si-max-inserters-range"].value
 
-data.raw.technology["si-unlock-range-" .. max_inserter_range].hidden = not (settings.startup["si-range-adder"].value == "incremental")
-data.raw.technology["si-unlock-range-" .. max_inserter_range].enabled = settings.startup["si-range-adder"].value == "incremental"
-
 for i = max_inserter_range+1, 5 do
     data.raw.technology["si-unlock-range-" .. i].hidden = true
     data.raw.technology["si-unlock-range-" .. i].enabled = false
 end
+
+data.raw.technology["si-unlock-range-" .. math.min(max_inserter_range, 5)].hidden = not (settings.startup["si-range-adder"].value == "incremental")
+data.raw.technology["si-unlock-range-" .. math.min(max_inserter_range, 5)].enabled = settings.startup["si-range-adder"].value == "incremental"
