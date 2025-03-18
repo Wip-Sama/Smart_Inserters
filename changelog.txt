@@ -1,6 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.0.18
+Date: 2025-03-01
+  Bugfixes:
+    - Max range 6 would crash the game (https://mods.factorio.com/mod/Smart_Inserters/discussion/67c24f37ed958ee1fb878c2b)
+---------------------------------------------------------------------------------------------------
 Version: 2.0.17
-Date: ????
+Date: 2025-02-28
   Changes:
     - now the main selector gui is always centered horizontally (https://mods.factorio.com/mod/Smart_Inserters/discussion/679ae7bfc0f9c654c0016a6a)
     - removed a duplicate line in the old changelog.
