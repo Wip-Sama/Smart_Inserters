@@ -16,6 +16,7 @@ local world_editor = require("scripts.world_selector")
 local storage_functions = require("scripts.storage_functions")
 local si_util = require("scripts.si_util")
 local events = require("scripts.events")
+local circuits = require("scripts.circuits")
 
 
 -- ------------------------------
@@ -65,6 +66,7 @@ end
 
 local function on_gui_opened(event)
     local player = game.get_player(event.player_index)
+    circuits.on_gui_opened(event)
     if player and event.entity and inserter_functions.is_inserter(event.entity) then
         if player.gui.relative.smart_inserters then
             selector_gui.delete(player)

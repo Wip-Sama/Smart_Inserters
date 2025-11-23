@@ -1,4 +1,20 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.1.0
+Date: 2025-11-xx
+  Added:
+    - Controllable inserter with circuit network
+  Notes:
+    - Check the world settings if the game is laggy
+---------------------------------------------------------------------------------------------------
+Version: 2.0.20
+Date: 2025-08-28
+  Added:
+    - Ukrainian localization (by: Anton Fedorenko)
+    - Turkish localization (by: erdoboioioi)
+    - Chinese Simplified localization (by: Lucas Sma)
+  Notes:
+    - I'm truly sorry for how long it took me to update the mod with the localizations, I have no exuses I totally forgot about crowdin, Ill try my best to avoid this happening again in the future!
+---------------------------------------------------------------------------------------------------
 Version: 2.0.19
 Date: 2025-03-18
   Changes:

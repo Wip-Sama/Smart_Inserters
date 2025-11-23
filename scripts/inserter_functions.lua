@@ -210,7 +210,7 @@ function inserter_functions.get_arm_positions(inserter)
         return offset_vec
     end
 
-    local function convert_offset(offset)
+    local function convert_offset(offset) --Normalize offset to 0.25, 0.5, 0.75
         local offset_vec = { x = 0.5, y = 0.5 }
 
         if offset.x > 0.55 then
