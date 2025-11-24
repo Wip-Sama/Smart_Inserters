@@ -7,8 +7,8 @@ local math2d = require("__yafla__/scripts/extended_math2d")
 
 ---@type tech_lookup_table
 tech_lookup_table = tech_lookup_table or {}
-local tech = {}
 local util = require("__core__/lualib/util")
+local tech = {}
 
 ---@param position Position
 ---@param base Position

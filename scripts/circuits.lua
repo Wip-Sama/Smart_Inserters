@@ -1,4 +1,5 @@
 local inserter_functions = require("scripts.inserter_functions")
+local storage_functions  = require("scripts.storage_functions")
 local actions            = require("__yafla__/scripts/actions")
 
 local circuits = {}
@@ -22,40 +23,69 @@ function circuits.on_gui_opened(event)
     end
 end
 
-actions.loop_action(60, function()
-    for _, surface in pairs(game.surfaces) do
-        local inserters = surface.find_entities_filtered{type = "inserter"}
-        for _, inserter in pairs(inserters) do
-            if inserter_functions.is_inserter(inserter) then
-                local circuit_connection = inserter.get_signals(
-                    defines.wire_connector_id.circuit_green,
-                    defines.wire_connector_id.circuit_red
-                )
-                if circuit_connection then
-                    local dummy_signal = {
-                        signal = {
-                            type="virtual",
-                            name="horizontal" --vertical
-                        },
-                        count=0
-                    }
+local function update_arm_position_from_circuit(inserter)
+    if inserter_functions.is_inserter(inserter) then
+        local circuit_connection = inserter.get_signals(
+            defines.wire_connector_id.circuit_green,
+            defines.wire_connector_id.circuit_red
+        )
+        if circuit_connection then
+            local arm_position = inserter_functions.get_arm_positions(inserter)
 
-                    local arm_position = inserter_functions.get_arm_positions(inserter)
-
-                    for _, signal in pairs(circuit_connection) do
-                        if signal.signal.name == "signal-left-right-arrow" then
-                            arm_position.pickup.x = signal.count
-                        elseif signal.signal.name == "signal-up-down-arrow" then
-                            arm_position.pickup.y = signal.count
-                        end
-                    end
-
-                    inserter_functions.set_arm_positions(arm_position, inserter)
-
+            for _, signal in pairs(circuit_connection) do
+                if signal.signal.name       == "si-vertical-pickup"             then
+                    arm_position.pickup.y = signal.count
+                elseif signal.signal.name   == "si-vertical-drop"               then
+                    arm_position.drop.y = signal.count
+                elseif signal.signal.name   == "si-horizontal-pickup"           then
+                    arm_position.drop.x = signal.count
+                elseif signal.signal.name   == "si-horizontal-drop"             then
+                    arm_position.drop.x = signal.count
+                elseif signal.signal.name   == "si-vertical-pickup-offset"      then
+                    arm_position.pickup_offset.y = signal.count
+                elseif signal.signal.name   == "si-vertical-drop-offset"        then
+                    arm_position.drop_offset.y = signal.count
+                elseif signal.signal.name   == "si-horizontal-pickup-offset"    then
+                    arm_position.pickup_offset.x = signal.count
+                elseif signal.signal.name   == "si-horizontal-drop-offset"      then
+                    arm_position.drop_offset.x = signal.count
                 end
             end
+
+            inserter_functions.set_arm_positions(arm_position, inserter)
         end
     end
-end, nil, nil)
+end
+
+local function update_inserters_from_circuit_network()
+    for _, data in pairs(storage.SI_Storage["inserter_connected_to_circuit_networks"]) do
+        local surface = game.get_surface(data["inserter_surface"])
+        if surface then
+            local inserter = surface.find_entity(data["inserter_name"], data["inserter_position"])
+            if inserter then
+                update_arm_position_from_circuit(inserter)
+            else
+                --Inserter not found, remove from storage
+                storage.SI_Storage["inserter_connected_to_circuit_networks"][data["inserter_name"] .. serpent.line(data["inserter_position"])] = nil
+            end
+        else
+            --Surface not found, remove from storage
+            storage.SI_Storage["inserter_connected_to_circuit_networks"][data["inserter_name"] .. serpent.line(data["inserter_position"])] = nil
+        end
+    end
+end
+
+function circuits.update_circuit_configuration()
+    storage_functions.ensure_circuit_network_data()
+
+    actions.stop_loop_action(storage.SI_Storage["circuit_check_interval_loop_id"])
+    actions.stop_loop_action(storage.SI_Storage["inserter_scan_loop_id"])
+    storage.SI_Storage["circuit_check_interval_loop_id"] = nil
+    storage.SI_Storage["inserter_scan_loop_id"] = nil
+
+    if not storage.SI_Storage["enable_circuit_control"] then return end
+    storage.SI_Storage["circuit_check_interval_loop_id"] = actions.loop_action(storage.SI_Storage["circuit_check_interval"], update_inserters_from_circuit_network, nil, nil)
+    storage.SI_Storage["inserter_scan_loop_id"] = nil
+end
 
 return circuits

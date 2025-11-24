@@ -2,8 +2,8 @@ local directional_inserters = settings.startup["si-directional-inserters"].value
 local directional_slim_inserters = settings.startup["si-directional-slim-inserters"].value
 local offset_selector = settings.startup["si-offset-selector"].value
 
-local gui_builder = require("__yafla__/scripts/experimental/gui_builder")
 local gui_helper = require("__yafla__/scripts/experimental/gui_helper")
+local gui_builder = require("__yafla__/scripts/experimental/gui_builder")
 local tecnology_functions = require("scripts.technology_functions")
 local inserter_functions = require("scripts.inserter_functions")
 

@@ -64,6 +64,10 @@ local function on_research_changes(event)
     -- technology_functions.generate_Tech_lookup_table(event.research.force)
 end
 
+local function on_runtime_mod_setting_changed(event)
+    storage_functions.ensure_circuit_network_data()
+end
+
 local function on_gui_opened(event)
     local player = game.get_player(event.player_index)
     circuits.on_gui_opened(event)
@@ -820,10 +824,12 @@ script.on_event(defines.events.on_player_cursor_stack_changed, on_player_cursor_
 script.on_event("smart-inserters-in-world-inserter-configurator-pickup", on_in_world_editor)   --[DONE]
 script.on_event("smart-inserters-in-world-inserter-configurator-drop", on_in_world_editor)     --[DONE]
 
--- Optimization
-script.on_event(defines.events.on_research_finished, on_research_changes)
-script.on_event(defines.events.on_research_reversed, on_research_changes)
+-- Circuit control
+script.on_event(defines.events.on_runtime_mod_setting_changed, on_runtime_mod_setting_changed) --[DONE]
 
+-- Optimization
+script.on_event(defines.events.on_research_finished, on_research_changes) --[TODO]
+script.on_event(defines.events.on_research_reversed, on_research_changes) --[TODO]
 
 -- TODO: optimize should cell be enabled
 -- compatibility with renai trasportation

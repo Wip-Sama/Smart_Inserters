@@ -108,4 +108,20 @@ data:extend({
         default_value = true,
         order         = "e"
     },
+        {
+        type          = "bool-setting",
+        setting_type  = "runtime-global",
+        name          = "si-enable-circuit-control",
+        default_value = true,
+        order = "a"
+    },
+    {
+        type          = "int-setting",
+        setting_type  = "runtime-global",
+        name          = "si-circuit-check-interval",
+        default_value = 60, -- Once a second
+        minimum_value = 1,
+        maximum_value = 21600, -- Once an hour
+        order = "a"
+    }
 })
