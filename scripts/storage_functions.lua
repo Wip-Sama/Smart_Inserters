@@ -31,7 +31,7 @@ function storage_functions.ensure_circuit_network_data()
     storage.SI_Storage["enable_circuit_control"] = settings.global["si-enable-circuit-control"].value
     storage.SI_Storage["circuit_check_interval"] = math.floor(tonumber(settings.global["si-circuit-check-interval"].value) or 60)
     --[[
-    {
+    list of {
         inserter_position = {x, y},
         inserter_surface = "surface_id"
     }

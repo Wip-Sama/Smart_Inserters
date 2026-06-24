@@ -3,7 +3,7 @@
 -- ------------------------------
 local util = require("__core__/lualib/util")
 local math2d = require("__yafla__/scripts/extended_math2d")
-
+local custom_events = require("__yafla__/scripts/experimental/custom_events")
 
 -- ------------------------------
 -- Internal Dependencies
@@ -70,7 +70,7 @@ end
 
 local function on_gui_opened(event)
     local player = game.get_player(event.player_index)
-    circuits.on_gui_opened(event)
+    circuits.on_gui_opened(event) -- Here only for debug
     if player and event.entity and inserter_functions.is_inserter(event.entity) then
         if player.gui.relative.smart_inserters then
             selector_gui.delete(player)
@@ -168,6 +168,8 @@ local function on_rotation_adjust(event)
 
     if inserter_functions.is_inserter(inserter) then
         assert(inserter, "[control.lua:on_rotation_adjust] Inserter is nil")
+
+        ---@diagnostic disable-next-line: param-type-mismatch
         if technology_functions.get_diagonal_increment(inserter.force) < 1 then
             ---@diagnostic disable-next-line: missing-fields
             player.create_local_flying_text({
@@ -471,6 +473,7 @@ local function on_distance_adjust(event)
 
     if inserter_functions.is_inserter(inserter) then
         assert(inserter, "[control.lua:on_offset_adjust] Inserter is nil")
+
         ---@diagnostic disable-next-line: param-type-mismatch
         if (technology_functions.get_actual_increment(inserter.force) < 1) or (technology_functions.get_diagonal_increment(inserter.force) < 1) then
             player.create_local_flying_text({
@@ -606,6 +609,8 @@ local function on_offset_adjust(event)
         return
     end
 
+
+
     if inserter_functions.is_inserter(inserter) then
         assert(inserter, "[control.lua:on_offset_adjust] Inserter is nil")
         ---@diagnostic disable-next-line: param-type-mismatch
@@ -616,6 +621,7 @@ local function on_offset_adjust(event)
                 color = { 0.8, 0.8, 0.8 }
             })
             return
+        ---@diagnostic disable-next-line: param-type-mismatch
         elseif not technology_functions.check_offset_tech(inserter.force) then
             player.create_local_flying_text({
                 position = inserter.position,
@@ -781,6 +787,34 @@ local function on_player_cursor_stack_changed(event)
     end
 end
 
+
+local function on_circuit_network_changed(event)
+    if not storage.SI_Storage["enable_circuit_control"] then return end
+
+    --[[
+    storage.SI_Storage["inserter_connected_to_circuit_networks"] is a list of {
+        inserter_position = {x, y},
+        inserter_surface = "surface_id"
+    }
+    --]]
+
+    --get event.entity, check if it's inserter
+    --if it is check if it's present in storage.SI_Storage["inserter_connected_to_circuit_networks"]
+    --if it is not add it
+    table.insert(storage.SI_Storage["inserter_connected_to_circuit_networks"], {
+        inserter_position = event.inserter_position,
+        inserter_surface = event.inserter_surface
+    })
+
+
+    --TODO: a way to check if the entity was removed 
+    --if it was removed check it it's an inserter
+    --if it is check if it's present in storage.SI_Storage["inserter_connected_to_circuit_networks"]
+    --if it is remove it
+    storage.SI_Storage["inserter_connected_to_circuit_networks"][data["inserter_name"] .. serpent.line(data["inserter_position"])] = nil
+
+end
+
 -- ------------------------------
 -- Event Handlers registration
 -- ------------------------------
@@ -830,6 +864,7 @@ script.on_event(defines.events.on_runtime_mod_setting_changed, on_runtime_mod_se
 -- Optimization
 script.on_event(defines.events.on_research_finished, on_research_changes) --[TODO]
 script.on_event(defines.events.on_research_reversed, on_research_changes) --[TODO]
+script.on_event(custom_events.yafla_on_circuit_network_changed, on_circuit_network_changed) --[TODO]
 
 -- TODO: optimize should cell be enabled
 -- compatibility with renai trasportation

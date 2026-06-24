@@ -4,8 +4,11 @@ local actions            = require("__yafla__/scripts/actions")
 
 local circuits = {}
 
+--TODO: check what happens when I remove a a conenction from an inserter
+--TODO: block player changes if a circuit network is connected to the inserter and the "enable_circuit_control" setting is enabled
+
 function circuits.on_gui_opened(event)
-    local player = game.players[event.player_index]
+    local player = game.get_player(event.player_index)
     if event.gui_type == defines.gui_type.entity and event.entity and inserter_functions.is_inserter(event.entity) then
         local circuit_connection = event.entity.get_signals(
             defines.wire_connector_id.circuit_green,
@@ -31,6 +34,7 @@ local function update_arm_position_from_circuit(inserter)
         )
         if circuit_connection then
             local arm_position = inserter_functions.get_arm_positions(inserter)
+            local current_arm_position = table.deepcopy(arm_position)
 
             for _, signal in pairs(circuit_connection) do
                 if signal.signal.name       == "si-vertical-pickup"             then
@@ -38,7 +42,7 @@ local function update_arm_position_from_circuit(inserter)
                 elseif signal.signal.name   == "si-vertical-drop"               then
                     arm_position.drop.y = signal.count
                 elseif signal.signal.name   == "si-horizontal-pickup"           then
-                    arm_position.drop.x = signal.count
+                    arm_position.pickup.x = signal.count
                 elseif signal.signal.name   == "si-horizontal-drop"             then
                     arm_position.drop.x = signal.count
                 elseif signal.signal.name   == "si-vertical-pickup-offset"      then
@@ -50,6 +54,18 @@ local function update_arm_position_from_circuit(inserter)
                 elseif signal.signal.name   == "si-horizontal-drop-offset"      then
                     arm_position.drop_offset.x = signal.count
                 end
+            end
+
+            --if the insteter position is already correct, skip the update to prevent unnecessary arm movement
+            if current_arm_position.pickup.x == arm_position.pickup.x and
+               current_arm_position.pickup.y == arm_position.pickup.y and
+               current_arm_position.drop.x == arm_position.drop.x and
+               current_arm_position.drop.y == arm_position.drop.y and
+               current_arm_position.pickup_offset.x == arm_position.pickup_offset.x and
+               current_arm_position.pickup_offset.y == arm_position.pickup_offset.y and
+               current_arm_position.drop_offset.x == arm_position.drop_offset.x and
+               current_arm_position.drop_offset.y == arm_position.drop_offset.y then
+                return
             end
 
             inserter_functions.set_arm_positions(arm_position, inserter)
