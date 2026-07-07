@@ -1,4 +1,12 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.1.0
+Date: ????
+  Changes:
+    - Added filters for some events callback
+    - Reduced call to the c++ factorio api 
+  Removed:
+    - extend_table and merge_tables internal functions (moved to YAFLA)
+---------------------------------------------------------------------------------------------------
 Version: 2.0.21
 Date: 2026-06-24
   Changes:

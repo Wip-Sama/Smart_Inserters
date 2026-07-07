@@ -12,18 +12,6 @@ local si_util = {
     }
 }
 
-function si_util.extend_table(target, source)
-    for _, value in ipairs(source) do
-        table.insert(target, value)
-    end
-end
-
-function si_util.merge_tables(target, source)
-    for key, value in pairs(source) do
-        target[key] = value
-    end
-end
-
 function si_util.enabled_cell_matrix(force, vertical, orizontal, slim)
     local enabled_matrix = tech.get_Tech_lookup_table(force)
     if slim then

@@ -333,9 +333,19 @@ local function on_rotation_adjust(event)
         absolute_position = absolute_position or math2d.position.abs(position)
         radius = radius or math.max(absolute_position.x, absolute_position.y)
 
+        local cached_props = {
+            tile_width = inserter.tile_width,
+            tile_height = inserter.tile_height,
+            direction = inserter.direction,
+            force = inserter.force,
+            prototype = inserter_functions.get_prototype(inserter),
+            slim = inserter_functions.is_slim(inserter)
+        }
+        cached_props.max_range, cached_props.min_range = inserter_functions.get_max_and_min_inserter_range(inserter)
+
         local count = 0
         local shift = { x = move.x, y = move.y }
-        while not inserter_functions.should_cell_be_enabled(inserter, { x = arms[update].x + shift.x, y = arms[update].y + shift.y }) do
+        while not inserter_functions.should_cell_be_enabled(inserter, { x = arms[update].x + shift.x, y = arms[update].y + shift.y }, cached_props) do
             shift.x = shift.x + move.x
             shift.y = shift.y + move.y
             count = count + 1
@@ -728,11 +738,18 @@ local function on_entity_destroyed(event)
     if not inserter_functions.is_inserter(event.entity) then
         return
     end
-    for player_index, player in pairs(game.players) do
-        storage_functions.ensure_data(player_index)
-        if storage.SI_Storage[player_index].is_selected == true and math2d.position.equal(storage.SI_Storage[player_index].selected_inserter.position, event.entity.position) then
-            --world_editor.clear_positions(player_index)
-            player_functions.safely_change_cursor(player)
+    
+    local target_pos = event.entity.position
+    for player_index, player_data in pairs(storage.SI_Storage) do
+        if player_data.is_selected and player_data.selected_inserter and player_data.selected_inserter.inserter and player_data.selected_inserter.inserter.valid then
+            if math2d.position.equal(player_data.selected_inserter.inserter.position, target_pos) then
+                local player = game.get_player(player_index)
+                if player then
+                    player_functions.safely_change_cursor(player)
+                end
+                player_data.selected_inserter.inserter = nil
+                player_data.is_selected = false
+            end
         end
     end
 end
@@ -806,17 +823,26 @@ script.on_event("smart-inserters-pickup-distance-adjust", on_distance_adjust)   
 script.on_event("smart-inserters-pickup-distance-adjust-reverse", on_distance_adjust) --[UNTESTED]
 script.on_event("smart-inserters-pickup-offset-adjust", on_offset_adjust)             --[UNTESTED]
 
+local ghost_filter = {
+    {filter = "ghost_name", name = "si-in-world-drop-entity"},
+    {filter = "ghost_name", name = "si-in-world-pickup-entity"}
+}
+local inserter_filter = {
+    {filter = "type", type = "inserter"},
+    {filter = "ghost_type", type = "inserter"}
+}
+
 -- World editor events
-script.on_event(defines.events.on_built_entity, on_built_entity)                               --[DONE]
-script.on_event(defines.events.script_raised_built, on_built_entity)                           --[DONE]
-script.on_event(defines.events.script_raised_destroy, on_entity_destroyed)                     --[DONE]
-script.on_event(defines.events.on_player_mined_entity, on_entity_destroyed)                    --[DONE]
-script.on_event(defines.events.on_robot_mined_entity, on_entity_destroyed)                     --[DONE]
---script.on_event(defines.events.on_entity_died, on_entity_destroyed)
---script.on_event(defines.events.on_entity_destroyed, on_entity_destroyed)
-script.on_event(defines.events.on_player_cursor_stack_changed, on_player_cursor_stack_changed) --[DONE]
-script.on_event("smart-inserters-in-world-inserter-configurator-pickup", on_in_world_editor)   --[DONE]
-script.on_event("smart-inserters-in-world-inserter-configurator-drop", on_in_world_editor)     --[DONE]
+script.on_event(defines.events.on_built_entity, on_built_entity, ghost_filter)                                --[DONE]
+script.on_event(defines.events.script_raised_built, on_built_entity, ghost_filter)                            --[DONE]
+script.on_event(defines.events.script_raised_destroy, on_entity_destroyed, inserter_filter)                   --[DONE]
+script.on_event(defines.events.on_player_mined_entity, on_entity_destroyed, inserter_filter)                  --[DONE]
+script.on_event(defines.events.on_robot_mined_entity, on_entity_destroyed, inserter_filter)                   --[DONE]
+script.on_event(defines.events.on_entity_died, on_entity_destroyed)                                           --[UNTESTED]
+script.on_event(defines.events.on_entity_destroyed, on_entity_destroyed)                                      --[UNTESTED]
+script.on_event(defines.events.on_player_cursor_stack_changed, on_player_cursor_stack_changed)                --[DONE]
+script.on_event("smart-inserters-in-world-inserter-configurator-pickup", on_in_world_editor)                  --[DONE]
+script.on_event("smart-inserters-in-world-inserter-configurator-drop", on_in_world_editor)                    --[DONE]
 
 -- Optimization
 script.on_event(defines.events.on_research_finished, on_research_changes)

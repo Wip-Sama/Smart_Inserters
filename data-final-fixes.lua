@@ -11,7 +11,7 @@ local long_inserters = {}
 for name, inserter in pairs(data.raw.inserter) do
 	if si_util.check_prototype_blacklist(name) then
 		inserter.allow_custom_vectors = true
-		inserter.extension_speed = inserter.extension_speed * 2
+		inserter.extension_speed = (inserter.extension_speed or 1) * 2
 		if disable_inserter_consumption then
 			inserter.energy_per_movement = "0J"
 			inserter.energy_per_rotation = "0J"

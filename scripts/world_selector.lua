@@ -219,15 +219,17 @@ function world_editor.update_all(inserter, event)
     end
 end
 
----@param inserter any
+---@param inserter LuaEntity
 function world_editor.update_all_positions(inserter)
     local player_storage
     for _, player in pairs(game.players) do
         storage_functions.ensure_data(player.index)
         player_storage = storage.SI_Storage[player.index]
-        if player_storage.is_selected == true and math2d.position.equal(player_storage.selected_inserter.position, inserter.position) then
-            world_editor.clear_positions(player.index)
-            world_editor.draw_positions(player.index, inserter)
+        if player_storage.is_selected == true and player_storage.selected_inserter and player_storage.selected_inserter.inserter and player_storage.selected_inserter.inserter.valid then
+            if math2d.position.equal(player_storage.selected_inserter.inserter.position, inserter.position) then
+                world_editor.clear_positions(player.index)
+                world_editor.draw_positions(player.index, inserter)
+            end
         end
     end
 end

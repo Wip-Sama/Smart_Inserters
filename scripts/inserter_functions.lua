@@ -1,4 +1,6 @@
 local math2d = require("__yafla__/scripts/extended_math2d")
+local extended_table = require("__yafla__/scripts/extended_table")
+
 local technology_functions = require("scripts.technology_functions")
 local events = require("scripts.events")
 
@@ -19,35 +21,36 @@ function inserter_functions.inserter_in_result(result, long_inserters)
 end
 
 function inserter_functions.inserter_in_results(results, long_inserters)
-	for _, linserter in pairs(long_inserters) do
-		for _, reciperecult in pairs(results) do
-			if reciperecult == nil then break end
-			if type(reciperecult) == "table" then
-				for _, singleresult in pairs(reciperecult) do
-					if type(singleresult) == "string" and singleresult == linserter then
-						return true
-					end
+    local li_set = extended_table.to_set(long_inserters)
+    
+	for _, reciperecult in pairs(results) do
+		if reciperecult == nil then break end
+		if type(reciperecult) == "table" then
+			for _, singleresult in pairs(reciperecult) do
+				if type(singleresult) == "string" and li_set[singleresult] then
+					return true
 				end
-			elseif reciperecult == linserter then
-				return true
 			end
+		elseif li_set[reciperecult] then
+			return true
 		end
 	end
 	return false
 end
 
+--- Calculates the maximum distance required to reach the inserter's drop or pickup position, effectively acting as its default range.
+--- If tile_width or tile_height are not provided by the prototype, they default to 1, because Factorio defaults missing dimensions to a 1x1 footprint.
 ---@param inserter LuaEntityPrototype
 ---@return number
 function inserter_functions.inseter_default_range(inserter)
 	local width, height = inserter.tile_width, inserter.tile_height
-	--width, height = inserter.tile_width, inserter.tile_height
 
-	if not width then
-		width = 0
+    if not width then
+		width = 1
 	end
 
 	if not height then
-		height = 0
+		height = 1
 	end
 
 	local lower_width = width%2==0 and width/2 or width/2-0.5
@@ -290,17 +293,30 @@ end
 
 ---@param inserter LuaEntity
 ---@param position Position
+---@param cached_props table?
 ---@return boolean
-function inserter_functions.should_cell_be_enabled(inserter, position)
+function inserter_functions.should_cell_be_enabled(inserter, position, cached_props)
     position = math2d.position.ensure_xy(position)
-
-    local max_range, min_range = inserter_functions.get_max_and_min_inserter_range(inserter)
-    local slim = inserter_functions.is_slim(inserter)
+    cached_props = cached_props or {}
+    
     --Equal
     --Tech range for everyone
+    local max_range = cached_props.max_range
+    local min_range = cached_props.min_range
+    if not max_range or not min_range then
+        max_range, min_range = inserter_functions.get_max_and_min_inserter_range(inserter)
+    end
+
+    local slim = cached_props.slim
+    if slim == nil then slim = inserter_functions.is_slim(inserter) end
+    
     local default_range = 0
 
-    local width, height = inserter.tile_width, inserter.tile_height
+    local width = cached_props.tile_width or inserter.tile_width
+    local height = cached_props.tile_height or inserter.tile_height
+    local direction = cached_props.direction or inserter.direction
+    local force = cached_props.force or inserter.force
+    local prototype = cached_props.prototype or inserter_functions.get_prototype(inserter)
 
     local lower_width = width % 2 == 0 and width / 2 or width / 2 - 0.5
     local higher_width = width % 2 == 0 and width / 2 or width / 2 + 0.5
@@ -333,7 +349,7 @@ function inserter_functions.should_cell_be_enabled(inserter, position)
 
     --Inserter
     --Tech range up to inserter range
-    if settings.startup["si-range-adder"].value == "inserter" and inserter_functions.get_prototype(inserter) then
+    if settings.startup["si-range-adder"].value == "inserter" and prototype then
         if not (math.max(math.abs(position.x), math.abs(position.y)) <= max_range) then
             return false
         end
@@ -341,8 +357,8 @@ function inserter_functions.should_cell_be_enabled(inserter, position)
 
     --Incremental
     --Inserter base range + tech range
-    if settings.startup["si-range-adder"].value == "incremental" and inserter_functions.get_prototype(inserter) then
-        default_range = inserter_functions.inseter_default_range(inserter_functions.get_prototype(inserter))
+    if settings.startup["si-range-adder"].value == "incremental" and prototype then
+        default_range = inserter_functions.inseter_default_range(prototype)
     end
 
     --Rebase
@@ -353,7 +369,7 @@ function inserter_functions.should_cell_be_enabled(inserter, position)
         elseif math.abs(position.x) < min_range and math.abs(position.y) < min_range then
             return false
         end
-        default_range = inserter_functions.inseter_default_range(inserter_functions.get_prototype(inserter))
+        default_range = inserter_functions.inseter_default_range(prototype)
     end
 
     --inserter min range up to max range + incremet
@@ -363,7 +379,7 @@ function inserter_functions.should_cell_be_enabled(inserter, position)
         elseif math.abs(position.x) < min_range and math.abs(position.y) < min_range then
             return false
         end
-        default_range = inserter_functions.inseter_default_range(inserter_functions.get_prototype(inserter))
+        default_range = inserter_functions.inseter_default_range(prototype)
     end
 
     --inserter min range up to max range + incremet
@@ -373,30 +389,22 @@ function inserter_functions.should_cell_be_enabled(inserter, position)
         elseif math.abs(position.x) < min_range and math.abs(position.y) < min_range then
             return false
         end
-        default_range = inserter_functions.inseter_default_range(inserter_functions.get_prototype(inserter))
+        default_range = inserter_functions.inseter_default_range(prototype)
     end
 
     if single_line_slim_inserters and slim then
-        if inserter.tile_width > 0 then
-            if position.x ~= 0 then
-                return false
-            end
-        elseif inserter.tile_height > 0 then
-            if position.y ~= 0 then
-                return false
-            end
+        if width > 0 then
+            if position.x ~= 0 then return false end
+        elseif height > 0 then
+            if position.y ~= 0 then return false end
         end
     end
 
     if single_line_inserters and not slim then
-        if inserter.direction == defines.direction.north or inserter.direction == defines.direction.south then
-            if position.x ~= 0 then
-                return false
-            end
-        elseif inserter.direction == defines.direction.east or inserter.direction == defines.direction.west then
-            if position.y ~= 0 then
-                return false
-            end
+        if direction == defines.direction.north or direction == defines.direction.south then
+            if position.x ~= 0 then return false end
+        elseif direction == defines.direction.east or direction == defines.direction.west then
+            if position.y ~= 0 then return false end
         end
     end
 
@@ -408,14 +416,14 @@ function inserter_functions.should_cell_be_enabled(inserter, position)
     end
 
     if (directional_inserters and not slim) or (directional_slim_inserters and slim) then
-        if position.y == 0 and ((inserter.direction == defines.direction.north) or (inserter.direction == defines.direction.south)) then
+        if position.y == 0 and ((direction == defines.direction.north) or (direction == defines.direction.south)) then
             return false
-        elseif position.x == 0 and ((inserter.direction == defines.direction.east) or (inserter.direction == defines.direction.west)) then
+        elseif position.x == 0 and ((direction == defines.direction.east) or (direction == defines.direction.west)) then
             return false
         end
     end
 
-    return technology_functions.check_tech(inserter.force, position, default_range)
+    return technology_functions.check_tech(force, position, default_range)
 end
 
 ---Return max and min inserter range considering the unlocked technologies and settings
