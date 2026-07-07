@@ -1,8 +1,45 @@
 ---------------------------------------------------------------------------------------------------
-Version: 2.0.16
+Version: 2.0.21
 Date: 2026-06-24
   Changes:
     - Patch for Factorio 2.1
+---------------------------------------------------------------------------------------------------
+Version: 2.0.20
+Date: 2025-08-28
+  Added:
+    - Ukrainian localization (by: Anton Fedorenko)
+    - Turkish localization (by: erdoboioioi)
+    - Chinese Simplified localization (by: Lucas Sma)
+  Notes:
+    - I'm truly sorry for how long it took me to update the mod with the localizations, I have no exuses I totally forgot about crowdin, Ill try my best to avoid this happening again in the future!
+---------------------------------------------------------------------------------------------------
+Version: 2.0.19
+Date: 2025-03-18
+  Changes:
+    - New thumbnail just because I can
+---------------------------------------------------------------------------------------------------
+Version: 2.0.18
+Date: 2025-03-01
+  Bugfixes:
+    - Max range 6 would crash the game (https://mods.factorio.com/mod/Smart_Inserters/discussion/67c24f37ed958ee1fb878c2b)
+---------------------------------------------------------------------------------------------------
+Version: 2.0.17
+Date: 2025-02-28
+  Changes:
+    - now the main selector gui is always centered horizontally (https://mods.factorio.com/mod/Smart_Inserters/discussion/679ae7bfc0f9c654c0016a6a)
+    - removed a duplicate line in the old changelog.
+    - now tecnologies are aldo disabled when not needed (https://mods.factorio.com/mod/Smart_Inserters/discussion/67c0305e148652f4987d7d0c)
+  Note:
+    - From my understanding ther's still a bug that crashes the game on space platforms but I can't reproduce it anymore, if you find it, please report it to me, it's something that has to do with the in-world selector.
+  Planned:
+    - A settings for other mods to disable the in-world selector and maybe redirect the shortcut to their mods.
+---------------------------------------------------------------------------------------------------
+Version: 2.0.16
+Date: 2025-01-27
+  Changes:
+    - Blacklist miniloader redux entities (by: hgschmie)
+  Bugfixes:
+    - Crash when adjusting drop-offset while not on an inserter (shortcut)
 ---------------------------------------------------------------------------------------------------
 Version: 2.0.15
 Date: 2025-01-12
@@ -114,7 +151,6 @@ Date: 2024-10-20
     - Shift inveert right/lesft click
     - Control on any will switch pick and drop
     - Offset will not change when changing position/rotation (may change)
-    - Shortcut now support slim and oddly shaped inserters
     - New UI for the in-world selector
   Added:
     - Rebase setting / incremental-with-rebase / inserter-with-rebase, the rabese setting will prevent an inserter to move it's range below is default range, so a long inserter wont' be able to place to the tiles adjacent itself

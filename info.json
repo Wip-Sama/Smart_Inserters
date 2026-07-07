@@ -1,16 +1,16 @@
 {
-	"name": "Smart_Inserters",
-	"version": "2.0.16",
-	"title": "Smart Inserters",
-	"author": "WipMod",
-	"description": "Change pickup/drop/offsets for each inserter, custom inserter lenght and much more!",
-	"factorio_version": "2.1",
-	"contact": "https://t.me/smastermega",
-	"dependencies": [
-		"base >= 2.1.0",
-		"yafla >= 0.1.9",
-		"!Side Inserters",
-		"!bobinserters",
-		"!Inserter_Config"
-	]
+  "name": "Smart_Inserters",
+  "version": "2.0.21",
+  "title": "Smart Inserters",
+  "author": "WipMod",
+  "description": "Change pickup/drop/offsets for each inserter, custom inserter lenght and much more!",
+  "factorio_version": "2.1",
+  "contact": "https://t.me/smastermega",
+  "dependencies": [
+    "base >= 2.1.0",
+    "yafla >= 0.1.9",
+    "!Side Inserters",
+    "!bobinserters",
+    "!Inserter_Config"
+  ]
 }

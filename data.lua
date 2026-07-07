@@ -108,6 +108,7 @@ data:extend({
 		  count_button_color = { 0, 0, 0 },
 		  mode = {"blueprint"},
 		  ignore_cannot_select_entities = true,
+		  ignore_cannot_select_tiles = true,
 		  cursor_box_type = "logistics",
 		},
 		alt_select = {
@@ -115,6 +116,7 @@ data:extend({
 		  count_button_color = { 0, 0, 0 },
 		  mode = {"blueprint"},
 		  ignore_cannot_select_entities = true,
+		  ignore_cannot_select_tiles = true,
 		  cursor_box_type = "logistics",
 		},
 	},
@@ -166,6 +168,7 @@ data:extend({
 			count_button_color = { 0, 0, 0 },
 			mode = {"blueprint"},
 			ignore_cannot_select_entities = true,
+			ignore_cannot_select_tiles = true,
 			cursor_box_type = "logistics",
 		},
 			alt_select = {
@@ -173,6 +176,7 @@ data:extend({
 			count_button_color = { 0, 0, 0 },
 			mode = {"blueprint"},
 			ignore_cannot_select_entities = true,
+			ignore_cannot_select_tiles = true,
 			cursor_box_type = "logistics",
 		},
 	},
