@@ -5,8 +5,10 @@ local single_line_inserters = settings.startup["si-single-line-inserters"].value
 
 local si_util = {
     blacklist = {
-        mods = { "miniloader", "RenaiTransportation", "GhostOnWater" },
-        entities = {}
+        mods = { "miniloader", "RenaiTransportation", "GhostOnWater", "miniloader-redux" },
+        entities = {
+            'hps__ml-', -- miniloader-redux
+        }
     }
 }
 
@@ -53,13 +55,25 @@ function si_util.check_blacklist(entity)
     local prototype = prototypes.get_history(entity.type, entity.name)
 
     for _, v in pairs(si_util.blacklist.mods) do
-        if string.find(prototype.created, v) then
+        if string.find(prototype.created, v) == 1 then
             return false
         end
     end
 
     for _, v in pairs(si_util.blacklist.entities) do
-        if string.find(entity.name, v) then
+        if string.find(entity.name, v) == 1 then
+            return false
+        end
+    end
+
+    return true
+end
+
+function si_util.check_prototype_blacklist(name)
+    if not name then return false end
+
+    for _, v in pairs(si_util.blacklist.entities) do
+        if name:find(v) == 1 then
             return false
         end
     end
