@@ -274,6 +274,7 @@ function inserter_functions.set_arm_positions(positions, inserter)
     -- Fix stuff with rail and pickup --https://mods.factorio.com/mod/Smart_Inserters/discussion/656b192ef49ec2e9ceac7eac
     local direction = inserter.direction
     inserter.direction = (inserter.direction + 2) % 4
+    -- inserter.direction = (inserter.direction + 8) % 16
     inserter.direction = direction
 
     script.raise_event(events.on_inserter_arm_changed, {
@@ -467,6 +468,42 @@ function inserter_functions.cast_to_1x1_inserter(inserter)
 
     local lower_height = height%2==0 and height/2 or height/2-0.5
     local higher_height = height%2==0 and height/2 or height/2+0.5
+end
+
+---@param pos Position
+---@param source_dir defines.direction
+---@param dest_dir defines.direction
+---@return Position
+function inserter_functions.rotate_relative_position(pos, source_dir, dest_dir)
+    local delta = (dest_dir - source_dir) % 16
+    if delta < 0 then delta = delta + 16 end
+    
+    if delta == 4 then
+        return { x = -pos.y, y = pos.x }
+    elseif delta == 8 then
+        return { x = -pos.x, y = -pos.y }
+    elseif delta == 12 then
+        return { x = pos.y, y = -pos.x }
+    else
+        return { x = pos.x, y = pos.y }
+    end
+end
+
+---@param pos Position
+---@param max_range number
+---@return Position, boolean
+function inserter_functions.clamp_position_to_range(pos, max_range)
+    local clamped = false
+    local new_x = pos.x
+    local new_y = pos.y
+    
+    if pos.x > max_range then new_x = max_range; clamped = true end
+    if pos.x < -max_range then new_x = -max_range; clamped = true end
+    
+    if pos.y > max_range then new_y = max_range; clamped = true end
+    if pos.y < -max_range then new_y = -max_range; clamped = true end
+    
+    return { x = new_x, y = new_y }, clamped
 end
 
 return inserter_functions

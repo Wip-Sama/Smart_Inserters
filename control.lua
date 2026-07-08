@@ -37,6 +37,7 @@ storage.welcomed = storage.welcomed or false
 -- ------------------------------
 local function on_init()
     storage.SI_Storage = storage.SI_Storage or {}
+    storage.pasting_states = storage.pasting_states or {}
     storage_functions.populate_storage()
     technology_functions.migrate_all()
     copy_gui.create_all()
@@ -51,6 +52,7 @@ end
 
 local function on_configuration_changed(event)
     storage.SI_Storage = storage.SI_Storage or {}
+    storage.pasting_states = storage.pasting_states or {}
     storage.welcomed = false
     storage_functions.populate_storage()
     technology_functions.migrate_all()
@@ -117,42 +119,181 @@ local function on_player_rotated_entity(event)
 end
 
 local function on_entity_settings_pasted(event)
+    storage.pasting_states = storage.pasting_states or {}
     local player = game.get_player(event.player_index)
-    if player and inserter_functions.is_inserter(event.source) and inserter_functions.is_inserter(event.destination) then
-        -- local dir = event.entity.direction
-        -- event.entity.direction = event.previous_direction
-        -- local old_res = inserter_functions.get_arm_positions(event.entity)
-        -- event.entity.direction = dir
+    if not (player and inserter_functions.is_inserter(event.source) and inserter_functions.is_inserter(event.destination)) then return end
 
-        --local res = inserter_functions.get_arm_positions(event.destination)
-        --inserter_functions.set_arm_positions(res, event.destination)
-        --Verificare che gli inserter hanno la stessa base, se no adattare x e y
-        ---- x/y se in base ignora, se fuori base [[  avvicina alla base/riporta allo 0  ]]
-        --Verificare se le posizioni sono valide per entrambi gli inserter
-        ---- Se non sono valide: [[  resettare/  lasciare le vecchie/  adattarle  ]] (una di queste)
-        script.raise_event(events.on_inserter_arm_changed, {
-            entity = event.entity,
-        })
+    local source = event.source
+    local dest = event.destination
+    local snapshot = storage.pasting_states[event.player_index]
+    if not snapshot then return end
+    
+    local preset_data = storage.SI_Storage[event.player_index].presets[storage.SI_Storage[event.player_index].active_preset_index].settings
+
+    if preset_data.si_direction then
+        dest.direction = source.direction
+    else
+        dest.direction = snapshot.direction
     end
+
+    local dest_dir_diff = (dest.direction - snapshot.direction) % 16
+    if dest_dir_diff < 0 then dest_dir_diff = dest_dir_diff + 16 end
+
+    local function rotate_offset(offset, delta)
+        local dx = offset.x - 0.5
+        local dy = offset.y - 0.5
+        if delta == 4 then return { x = -dy + 0.5, y = dx + 0.5 }
+        elseif delta == 8 then return { x = -dx + 0.5, y = -dy + 0.5 }
+        elseif delta == 12 then return { x = dy + 0.5, y = -dx + 0.5 }
+        else return { x = offset.x, y = offset.y } end
+    end
+
+    local source_arms = inserter_functions.get_arm_positions(source)
+    local dest_arms = util.copy(snapshot.arms)
+    
+    if dest_dir_diff ~= 0 then
+        dest_arms.drop = inserter_functions.rotate_relative_position(dest_arms.drop, snapshot.direction, dest.direction)
+        dest_arms.pickup = inserter_functions.rotate_relative_position(dest_arms.pickup, snapshot.direction, dest.direction)
+        dest_arms.drop_offset = rotate_offset(dest_arms.drop_offset, dest_dir_diff)
+        dest_arms.pickup_offset = rotate_offset(dest_arms.pickup_offset, dest_dir_diff)
+    end
+
+    local max_range, min_range = inserter_functions.get_max_and_min_inserter_range(dest)
+    local clamped_any = false
+
+    local source_diff = (dest.direction - source.direction) % 16
+    if source_diff < 0 then source_diff = source_diff + 16 end
+
+    if preset_data.drop then
+        local raw_drop = { x = source_arms.drop.x, y = source_arms.drop.y }
+        if preset_data.relative_si_direction then
+            raw_drop = inserter_functions.rotate_relative_position(raw_drop, source.direction, dest.direction)
+        end
+        local clamped_pos, clamped = inserter_functions.clamp_position_to_range(raw_drop, max_range)
+        dest_arms.drop = clamped_pos
+        if clamped then clamped_any = true end
+    end
+
+    if preset_data.pickup then
+        local raw_pickup = { x = source_arms.pickup.x, y = source_arms.pickup.y }
+        if preset_data.relative_si_direction then
+            raw_pickup = inserter_functions.rotate_relative_position(raw_pickup, source.direction, dest.direction)
+        end
+        local clamped_pos, clamped = inserter_functions.clamp_position_to_range(raw_pickup, max_range)
+        dest_arms.pickup = clamped_pos
+        if clamped then clamped_any = true end
+    end
+
+    if preset_data.drop_offset then
+        local raw_offset = { x = source_arms.drop_offset.x, y = source_arms.drop_offset.y }
+        if preset_data.relative_si_direction then
+            raw_offset = rotate_offset(raw_offset, source_diff)
+        end
+        dest_arms.drop_offset = raw_offset
+    end
+    
+    if preset_data.pickup_offset then
+        local raw_offset = { x = source_arms.pickup_offset.x, y = source_arms.pickup_offset.y }
+        if preset_data.relative_si_direction then
+            raw_offset = rotate_offset(raw_offset, source_diff)
+        end
+        dest_arms.pickup_offset = raw_offset
+    end
+
+    if inserter_functions.should_cell_be_enabled(dest, dest_arms.drop) and inserter_functions.should_cell_be_enabled(dest, dest_arms.pickup) then
+        inserter_functions.set_arm_positions(dest_arms, dest)
+    else
+        inserter_functions.set_arm_positions(snapshot.arms, dest)
+    end
+
+    if clamped_any then
+        player.create_local_flying_text({
+            text = {"flying-text-smart-inserters.position-clamped"},
+            position = dest.position,
+            color = {r=1, g=0.2, b=0.2}
+        })
+        player.print({"smart-inserters.position-clamped", "[gps=" .. dest.position.x .. "," .. dest.position.y .. "," .. dest.surface.name .. "]"})
+    end
+
+    if not preset_data.inserter_filter_mode then
+        dest.inserter_filter_mode = snapshot.inserter_filter_mode
+    end
+    
+    if not preset_data.filtered_stuff then
+        if dest.filter_slot_count > 0 then
+            for i = 1, dest.filter_slot_count do
+                dest.set_filter(i, snapshot.filters[i])
+            end
+        end
+    end
+    
+    if not preset_data.inserter_stack_size_override then
+        dest.inserter_stack_size_override = snapshot.inserter_stack_size_override
+    end
+    
+    if not preset_data.inserter_target_pickup_count then
+        dest.inserter_target_pickup_count = snapshot.inserter_target_pickup_count
+    end
+    
+    if not preset_data.inserter_spoil_priority then
+        dest.inserter_spoil_priority = snapshot.inserter_spoil_priority
+    end
+
+    local cb = dest.get_control_behavior()
+    if cb and snapshot.control_behavior then
+        if not preset_data.circuit_set_filters then cb.circuit_set_filters = snapshot.control_behavior.circuit_set_filters end
+        if not preset_data.circuit_read_hand_contents then cb.circuit_read_hand_contents = snapshot.control_behavior.circuit_read_hand_contents end
+        if not preset_data.circuit_hand_read_mode then cb.circuit_hand_read_mode = snapshot.control_behavior.circuit_hand_read_mode end
+        if not preset_data.circuit_set_stack_size then cb.circuit_set_stack_size = snapshot.control_behavior.circuit_set_stack_size end
+        if not preset_data.circuit_stack_control_signal then cb.circuit_stack_control_signal = snapshot.control_behavior.circuit_stack_control_signal end
+        if not preset_data.circuit_enable_disable then cb.circuit_enable_disable = snapshot.control_behavior.circuit_enable_disable end
+        if not preset_data.circuit_condition then cb.circuit_condition = snapshot.control_behavior.circuit_condition end
+    end
+
+    storage.pasting_states[event.player_index] = nil
+
+    script.raise_event(events.on_inserter_arm_changed, {
+        entity = dest
+    })
 end
 
 local function on_pre_entity_settings_pasted(event)
+    storage.pasting_states = storage.pasting_states or {}
     local player = game.get_player(event.player_index)
     if player and inserter_functions.is_inserter(event.source) and inserter_functions.is_inserter(event.destination) then
-        local old_res = inserter_functions.get_arm_positions(event.destination)
-
-        --Verificare che gli inserter hanno la stessa base, se no adattare x e y
-        ---- x/y se in base ignora, se fuori base [[  avvicina alla base/riporta allo 0  ]]
-        --Verificare se le posizioni sono valide per entrambi gli inserter
-        ---- Se non sono valide: [[  resettare/  lasciare le vecchie/  adattarle  ]] (una di queste)
-        script.raise_event(events.on_inserter_arm_changed, {
-            entity = event.destination,
-            old_drop = old_res.drop,
-            old_pickup = old_res.pickup,
-            old_drop_offset = old_res.drop_offset,
-            old_pickup_offset = old_res.pickup_offset,
-            do_not_popolate = true
-        })
+        local dest = event.destination
+        
+        storage.pasting_states[event.player_index] = {
+            direction = dest.direction,
+            arms = inserter_functions.get_arm_positions(dest),
+            
+            inserter_filter_mode = dest.inserter_filter_mode,
+            filters = {},
+            inserter_stack_size_override = dest.inserter_stack_size_override,
+            inserter_target_pickup_count = dest.inserter_target_pickup_count,
+            inserter_spoil_priority = dest.inserter_spoil_priority,
+            
+            control_behavior = nil
+        }
+        
+        if dest.filter_slot_count > 0 then
+            for i = 1, dest.filter_slot_count do
+                storage.pasting_states[event.player_index].filters[i] = dest.get_filter(i)
+            end
+        end
+        
+        local cb = dest.get_control_behavior()
+        if cb then
+            storage.pasting_states[event.player_index].control_behavior = {
+                circuit_set_filters = cb.circuit_set_filters,
+                circuit_read_hand_contents = cb.circuit_read_hand_contents,
+                circuit_hand_read_mode = cb.circuit_hand_read_mode,
+                circuit_set_stack_size = cb.circuit_set_stack_size,
+                circuit_stack_control_signal = cb.circuit_stack_control_signal,
+                circuit_enable_disable = cb.circuit_enable_disable,
+                circuit_condition = cb.circuit_condition
+            }
+        end
     end
 end
 
@@ -759,6 +900,21 @@ local function on_entity_destroyed(event)
     end
 end
 
+local function on_gui_checked_state_changed(event)
+    local element = event.element
+    if not element or not element.valid then return end
+    if element.get_mod() == "Smart_Inserters" and element.type == "checkbox" then
+        local player_index = event.player_index
+        if storage.SI_Storage and storage.SI_Storage[player_index] then
+            local active_idx = storage.SI_Storage[player_index].active_preset_index
+            local preset = storage.SI_Storage[player_index].presets[active_idx]
+            if preset and preset.settings[element.name] ~= nil then
+                preset.settings[element.name] = element.state
+            end
+        end
+    end
+end
+
 local function on_in_world_editor(event)
     local player = game.get_player(event.player_index)
     local update = string.find(event.input_name, "d", 48) == 48 and "drop" or "pickup"
@@ -811,6 +967,7 @@ script.on_event(defines.events.on_cutscene_finished, welcome)        --[DONE]
 -- Gui events
 script.on_event(defines.events.on_gui_opened, on_gui_opened)                                 --[DONE]
 script.on_event(defines.events.on_gui_closed, on_gui_closed)                                 --[DONE]
+script.on_event(defines.events.on_gui_checked_state_changed, on_gui_checked_state_changed)
 script.on_event(events.on_inserter_arm_changed, on_inserter_arm_changed)                     --[DONE]
 script.on_event(defines.events.on_player_rotated_entity, on_player_rotated_entity)           --[PROBABLY INCOMPLETE]
 script.on_event(defines.events.on_entity_settings_pasted, on_entity_settings_pasted)         --[PROBABLY INCOMPLETE]

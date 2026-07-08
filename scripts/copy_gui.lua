@@ -52,7 +52,7 @@ local function Config_checkbox(elem_name, player_index)
         caption = { "gui-copy-smart-inserters.si-" .. caption_key },
         tooltip = { "gui-copy-smart-inserters.si-" .. caption_key .. "-tooltip" },
         state = storage.SI_Storage[player_index].presets[active_idx].settings[elem_name],
-        actions = { on_checked_state_changed = "si_update_checkbox_status" }
+        on_checked_state_changed = "si_update_checkbox_status"
     }
 end
 
@@ -252,8 +252,12 @@ local function si_reset_checkbox_status(event)
             if tab_content.type == "flow" then
                 for _, child in pairs(tab_content.children) do
                     if child.type == "checkbox" then
-                        child.state = true
-                        storage.SI_Storage[player_index].presets[active_idx].settings[child.name] = true
+                        local new_val = true
+                        if child.name == "si_direction" then
+                            new_val = false
+                        end
+                        child.state = new_val
+                        storage.SI_Storage[player_index].presets[active_idx].settings[child.name] = new_val
                     end
                 end
             end

@@ -8,7 +8,7 @@ function storage_functions.get_default_copy_settings()
         drop_offset = true,
         pickup = true,
         pickup_offset = true,
-        si_direction = true,
+        si_direction = false,
         relative_si_direction = true,
 
         inserter_filter_mode = true,
