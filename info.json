@@ -8,7 +8,7 @@
   "contact": "https://t.me/smastermega",
   "dependencies": [
     "base >= 2.1.0",
-    "yafla >= 0.1.9",
+    "yafla >= 0.2.0",
     "!Side Inserters",
     "!bobinserters",
     "!Inserter_Config"
