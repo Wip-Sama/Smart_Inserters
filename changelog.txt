@@ -1,6 +1,10 @@
 ---------------------------------------------------------------------------------------------------
 Version: 2.1.0
-Date: ????
+Date: 2026-07-08
+  Added:
+    - Optional mod setting to swap left/right click for pickup/drop position selection
+  Fixed:
+    - Some technologies were incorrectly checkes with some settings (https://mods.factorio.com/mod/Smart_Inserters/discussion/686830768ca48a8f99acda50)
   Changes:
     - Added filters for some events callback
     - Reduced call to the c++ factorio api 

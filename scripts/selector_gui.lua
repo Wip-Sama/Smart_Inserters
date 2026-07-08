@@ -493,7 +493,8 @@ local function change_pickup_drop(event)
         return
     end
 
-    local inserter = game.get_player(event.player_index).opened
+    local player = game.get_player(event.player_index)
+    local inserter = player.opened
     if inserter == nil or inserter.valid == false then
         return
     end
@@ -507,38 +508,48 @@ local function change_pickup_drop(event)
         drop = nil,
     }
 
+    local swap = player.mod_settings["si-swap-clicks"].value
+    local local_button = event.button
+    if swap then
+        if local_button == defines.mouse_button_type.left then
+            local_button = defines.mouse_button_type.right
+        elseif local_button == defines.mouse_button_type.right then
+            local_button = defines.mouse_button_type.left
+        end
+    end
+
     -- se è stata selezionata la stessa cella ignorare
     -- se è stata selezionata un'altra cella spostare su quella
     -- aggiornare tutte le interfacce / rilasciare l'evento di update
-    if (not event.shift and event.button == defines.mouse_button_type.left) or (event.shift and event.button == defines.mouse_button_type.right) then
+    if (not event.shift and local_button == defines.mouse_button_type.left) or (event.shift and local_button == defines.mouse_button_type.right) then
         --Drop
         positions.drop = button_pos
 
         if (event.control) then
             if (event.shift) then
-                if (event.button == defines.mouse_button_type.right) then
+                if (local_button == defines.mouse_button_type.right) then
                     positions.drop = inserter_pos.pickup
                     positions.pickup = inserter_pos.drop
                 end
             else
-                if (event.button == defines.mouse_button_type.left) then
+                if (local_button == defines.mouse_button_type.left) then
                     positions.drop = inserter_pos.pickup
                     positions.pickup = inserter_pos.drop
                 end
             end
         end
-    elseif (not event.shift and event.button == defines.mouse_button_type.right) or (event.shift and event.button == defines.mouse_button_type.left) then
+    elseif (not event.shift and local_button == defines.mouse_button_type.right) or (event.shift and local_button == defines.mouse_button_type.left) then
         --pickup
         positions.pickup = button_pos
 
         if (event.control) then
             if (event.shift) then
-                if (event.button == defines.mouse_button_type.left) then
+                if (local_button == defines.mouse_button_type.left) then
                     positions.drop = inserter_pos.pickup
                     positions.pickup = inserter_pos.drop
                 end
             else
-                if (event.button == defines.mouse_button_type.right) then
+                if (local_button == defines.mouse_button_type.right) then
                     positions.drop = inserter_pos.pickup
                     positions.pickup = inserter_pos.drop
                 end

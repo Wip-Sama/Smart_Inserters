@@ -136,6 +136,11 @@ function tech.get_diagonal_increment(force)
     return 0
 end
 
+--- Checks if a specific cell position is reachable based on unlocked range technologies.
+--- Calculates the distance to the target cell (using Chebyshev distance).
+--- Depending on the 'si-range-adder' mod setting (e.g., 'incremental' vs 'equal'),
+--- it verifies if the force has researched the corresponding technology tier required
+--- to cover either the absolute distance or the increment over the inserter's base range.
 ---@param force LuaForce
 ---@param cell_position Position
 ---@param distance_offset number
@@ -155,21 +160,21 @@ function tech.check_range_tech(force, cell_position, distance_offset)
     if settings.startup["si-range-adder"].value == "incremental" or settings.startup["si-range-adder"].value == "incremental-with-rebase" then
         cell_position = math2d.position.abs(cell_position)
         distance_offset = distance_offset or 0
-        local distance = math.max(cell_position.x, cell_position.y) - distance_offset
-        distance = math.max(math.floor(distance), 1)
-        if distance == 1 then
+        local req_increment = math.max(cell_position.x, cell_position.y) - distance_offset
+        
+        if req_increment <= 0 then
             return true
         end
 
-        if force.technologies["si-unlock-range-" .. math.min(5, distance)] and force.technologies["si-unlock-range-" .. math.min(5, distance)].researched and force.technologies["si-unlock-range-" .. math.min(5, distance)].prototype.hidden == false then
+        if force.technologies["si-unlock-range-5"] and force.technologies["si-unlock-range-5"].researched and force.technologies["si-unlock-range-5"].prototype.hidden == false and req_increment <= 5 then
             return true
-        elseif force.technologies["si-unlock-range-4"] and force.technologies["si-unlock-range-4"].researched and force.technologies["si-unlock-range-4"].prototype.hidden == false then
+        elseif force.technologies["si-unlock-range-4"] and force.technologies["si-unlock-range-4"].researched and force.technologies["si-unlock-range-4"].prototype.hidden == false and req_increment <= 4 then
             return true
-        elseif force.technologies["si-unlock-range-3"] and force.technologies["si-unlock-range-3"].researched and force.technologies["si-unlock-range-3"].prototype.hidden == false then
+        elseif force.technologies["si-unlock-range-3"] and force.technologies["si-unlock-range-3"].researched and force.technologies["si-unlock-range-3"].prototype.hidden == false and req_increment <= 3 then
             return true
-        elseif force.technologies["si-unlock-range-2"] and force.technologies["si-unlock-range-2"].researched and force.technologies["si-unlock-range-2"].prototype.hidden == false then
+        elseif force.technologies["si-unlock-range-2"] and force.technologies["si-unlock-range-2"].researched and force.technologies["si-unlock-range-2"].prototype.hidden == false and req_increment <= 2 then
             return true
-        elseif force.technologies["si-unlock-range-1"] and force.technologies["si-unlock-range-1"].researched and force.technologies["si-unlock-range-1"].prototype.hidden == false then
+        elseif force.technologies["si-unlock-range-1"] and force.technologies["si-unlock-range-1"].researched and force.technologies["si-unlock-range-1"].prototype.hidden == false and req_increment <= 1 then
             return true
         end
     else
@@ -189,7 +194,7 @@ function tech.check_range_tech(force, cell_position, distance_offset)
     return distance <= 1
 end
 
---Distance offset is to trick the function into ticking that incremental range is in inserter_range
+--- Distance offset is to trick the function into ticking that incremental range is in inserter_range
 ---@param force LuaForce
 ---@param cell_position Position
 ---@param distance_offset number
