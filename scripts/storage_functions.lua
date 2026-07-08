@@ -2,6 +2,31 @@ local storage_functions = {}
 
 storage.SI_Storage = storage.SI_Storage or {}
 
+function storage_functions.get_default_copy_settings()
+    return {
+        drop = true,
+        drop_offset = true,
+        pickup = true,
+        pickup_offset = true,
+        si_direction = true,
+        relative_si_direction = true,
+
+        inserter_filter_mode = true,
+        filtered_stuff = true,
+        inserter_stack_size_override = true,
+        inserter_target_pickup_count = true,
+        inserter_spoil_priority = true,
+
+        circuit_set_filters = true,
+        circuit_read_hand_contents = true,
+        circuit_hand_read_mode = true,
+        circuit_set_stack_size = true,
+        circuit_stack_control_signal = true,
+        circuit_enable_disable = true,
+        circuit_condition = true
+    }
+end
+
 ---@param player_index number
 function storage_functions.add_player(player_index)
     storage.SI_Storage[player_index] = {}
@@ -42,27 +67,12 @@ function storage_functions.add_player(player_index)
         }
     }
 
-    storage.SI_Storage[player_index].copy_settings = {
-        drop = true,
-        drop_offset = true,
-        pickup = true,
-        pickup_offset = true,
-        si_direction = true,
-        relative_si_direction = true,
-
-        inserter_filter_mode = true,
-        filtered_stuff = true,
-        inserter_stack_size_override = true,
-        inserter_target_pickup_count = true,
-        inserter_spoil_priority = true,
-
-        circuit_set_filters = true,
-        circuit_read_hand_contents = true,
-        circuit_hand_read_mode = true,
-        circuit_set_stack_size = true,
-        circuit_stack_control_signal = true,
-        circuit_enable_disable = true,
-        circuit_condition = true
+    storage.SI_Storage[player_index].active_preset_index = 1
+    storage.SI_Storage[player_index].presets = {
+        {
+            name = "Preset 1",
+            settings = storage_functions.get_default_copy_settings()
+        }
     }
 end
 
