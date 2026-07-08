@@ -60,11 +60,11 @@ local function Tab_content(tab_name, player_index)
     for _, elem_name in ipairs(elements[tab_name]) do
         table.insert(children, Config_checkbox(elem_name, player_index))
     end
-    
+
     return FLOW {
         name = tab_name .. "_flow",
         direction = "vertical",
-        style = "relative_gui_left_flow",
+        style = "relative_gui_right_flow",
         table.unpack(children)
     }
 end
