@@ -108,6 +108,13 @@ data:extend({
         default_value = true,
         order         = "e"
     },
+    {
+        type          = "bool-setting",
+        setting_type  = "runtime-per-user",
+        name          = "si-swap-clicks",
+        default_value = false,
+        order         = "f"
+    },
         {
         type          = "bool-setting",
         setting_type  = "runtime-global",

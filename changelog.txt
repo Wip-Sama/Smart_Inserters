@@ -1,10 +1,30 @@
 ---------------------------------------------------------------------------------------------------
-Version: 2.1.0
-Date: 2025-11-xx
+---------------------------------------------------------------------------------------------------
+Version: 2.1.1
+Date: xxxx
   Added:
     - Controllable inserter with circuit network
   Notes:
     - Check the world settings if the game is laggy
+---------------------------------------------------------------------------------------------------
+Version: 2.1.0
+Date: 2026-07-08
+  Added:
+    - Optional mod setting to swap left/right click for pickup/drop position selection
+    - Copy/paste configurator
+  Fixed:
+    - Some technologies were incorrectly checkes with some settings (https://mods.factorio.com/mod/Smart_Inserters/discussion/686830768ca48a8f99acda50)
+  Changes:
+    - Added filters for some events callback
+    - Reduced call to the c++ factorio api 
+    - Updated the settings description for the max inserter range
+  Removed:
+    - extend_table and merge_tables internal functions (moved to YAFLA)
+---------------------------------------------------------------------------------------------------
+Version: 2.0.21
+Date: 2026-06-24
+  Changes:
+    - Patch for Factorio 2.1
 ---------------------------------------------------------------------------------------------------
 Version: 2.0.20
 Date: 2025-08-28

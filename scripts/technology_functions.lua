@@ -80,7 +80,7 @@ function tech.check_offset_tech(force)
         return true
     end
 
-    return force.technologies["si-unlock-offsets"].researched
+    return force.technologies["si-unlock-offsets"] and force.technologies["si-unlock-offsets"].researched
 end
 
 ---@param force LuaForce
@@ -91,9 +91,9 @@ function tech.check_diagonal_tech(force, cell_position)
         return true
     end
 
-    local cross_unlocked = force.technologies["si-unlock-cross"].researched
-    local x_diagonals_unlocked = force.technologies["si-unlock-x-diagonals"].researched
-    local all_diagonals_unlocked = force.technologies["si-unlock-all-diagonals"].researched
+    local cross_unlocked = force.technologies["si-unlock-cross"] and force.technologies["si-unlock-cross"].researched
+    local x_diagonals_unlocked = force.technologies["si-unlock-x-diagonals"] and force.technologies["si-unlock-x-diagonals"].researched
+    local all_diagonals_unlocked = force.technologies["si-unlock-all-diagonals"] and force.technologies["si-unlock-all-diagonals"].researched
 
     return cross_unlocked and (cell_position.x == 0 or cell_position.y == 0) or
         x_diagonals_unlocked and math.abs(cell_position.x) == math.abs(cell_position.y) or
@@ -106,15 +106,15 @@ function tech.get_actual_increment(force)
     if not range_technologies then
         return 5
     end
-    if force.technologies["si-unlock-range-5"].researched and force.technologies["si-unlock-range-5"].prototype.hidden == false then
+    if force.technologies["si-unlock-range-5"] and force.technologies["si-unlock-range-5"].researched and force.technologies["si-unlock-range-5"].prototype.hidden == false then
         return 5
-    elseif force.technologies["si-unlock-range-4"].researched and force.technologies["si-unlock-range-4"].prototype.hidden == false then
+    elseif force.technologies["si-unlock-range-4"] and force.technologies["si-unlock-range-4"].researched and force.technologies["si-unlock-range-4"].prototype.hidden == false then
         return 4
-    elseif force.technologies["si-unlock-range-3"].researched and force.technologies["si-unlock-range-3"].prototype.hidden == false then
+    elseif force.technologies["si-unlock-range-3"] and force.technologies["si-unlock-range-3"].researched and force.technologies["si-unlock-range-3"].prototype.hidden == false then
         return 3
-    elseif force.technologies["si-unlock-range-2"].researched and force.technologies["si-unlock-range-2"].prototype.hidden == false then
+    elseif force.technologies["si-unlock-range-2"] and force.technologies["si-unlock-range-2"].researched and force.technologies["si-unlock-range-2"].prototype.hidden == false then
         return 2
-    elseif force.technologies["si-unlock-range-1"].researched and force.technologies["si-unlock-range-1"].prototype.hidden == false then
+    elseif force.technologies["si-unlock-range-1"] and force.technologies["si-unlock-range-1"].researched and force.technologies["si-unlock-range-1"].prototype.hidden == false then
         return 1
     end
     return 0
@@ -126,16 +126,21 @@ function tech.get_diagonal_increment(force)
     if not diagonal_technologies then
         return 3
     end
-    if force.technologies["si-unlock-all-diagonals"].researched and force.technologies["si-unlock-all-diagonals"].prototype.hidden == false then
+    if force.technologies["si-unlock-all-diagonals"] and force.technologies["si-unlock-all-diagonals"].researched and force.technologies["si-unlock-all-diagonals"].prototype.hidden == false then
         return 3
-    elseif force.technologies["si-unlock-x-diagonals"].researched and force.technologies["si-unlock-x-diagonals"].prototype.hidden == false then
+    elseif force.technologies["si-unlock-x-diagonals"] and force.technologies["si-unlock-x-diagonals"].researched and force.technologies["si-unlock-x-diagonals"].prototype.hidden == false then
         return 2
-    elseif force.technologies["si-unlock-cross"].researched and force.technologies["si-unlock-cross"].prototype.hidden == false then
+    elseif force.technologies["si-unlock-cross"] and force.technologies["si-unlock-cross"].researched and force.technologies["si-unlock-cross"].prototype.hidden == false then
         return 1
     end
     return 0
 end
 
+--- Checks if a specific cell position is reachable based on unlocked range technologies.
+--- Calculates the distance to the target cell (using Chebyshev distance).
+--- Depending on the 'si-range-adder' mod setting (e.g., 'incremental' vs 'equal'),
+--- it verifies if the force has researched the corresponding technology tier required
+--- to cover either the absolute distance or the increment over the inserter's base range.
 ---@param force LuaForce
 ---@param cell_position Position
 ---@param distance_offset number
@@ -155,33 +160,33 @@ function tech.check_range_tech(force, cell_position, distance_offset)
     if settings.startup["si-range-adder"].value == "incremental" or settings.startup["si-range-adder"].value == "incremental-with-rebase" then
         cell_position = math2d.position.abs(cell_position)
         distance_offset = distance_offset or 0
-        local distance = math.max(cell_position.x, cell_position.y) - distance_offset
-        distance = math.max(math.floor(distance), 1)
-        if distance == 1 then
+        local req_increment = math.max(cell_position.x, cell_position.y) - distance_offset
+        
+        if req_increment <= 0 then
             return true
         end
 
-        if force.technologies["si-unlock-range-" .. math.min(5, distance)].researched and force.technologies["si-unlock-range-" .. math.min(5, distance)].prototype.hidden == false then
+        if force.technologies["si-unlock-range-5"] and force.technologies["si-unlock-range-5"].researched and force.technologies["si-unlock-range-5"].prototype.hidden == false and req_increment <= 5 then
             return true
-        elseif force.technologies["si-unlock-range-4"].researched and force.technologies["si-unlock-range-4"].prototype.hidden == false then
+        elseif force.technologies["si-unlock-range-4"] and force.technologies["si-unlock-range-4"].researched and force.technologies["si-unlock-range-4"].prototype.hidden == false and req_increment <= 4 then
             return true
-        elseif force.technologies["si-unlock-range-3"].researched and force.technologies["si-unlock-range-3"].prototype.hidden == false then
+        elseif force.technologies["si-unlock-range-3"] and force.technologies["si-unlock-range-3"].researched and force.technologies["si-unlock-range-3"].prototype.hidden == false and req_increment <= 3 then
             return true
-        elseif force.technologies["si-unlock-range-2"].researched and force.technologies["si-unlock-range-2"].prototype.hidden == false then
+        elseif force.technologies["si-unlock-range-2"] and force.technologies["si-unlock-range-2"].researched and force.technologies["si-unlock-range-2"].prototype.hidden == false and req_increment <= 2 then
             return true
-        elseif force.technologies["si-unlock-range-1"].researched and force.technologies["si-unlock-range-1"].prototype.hidden == false then
+        elseif force.technologies["si-unlock-range-1"] and force.technologies["si-unlock-range-1"].researched and force.technologies["si-unlock-range-1"].prototype.hidden == false and req_increment <= 1 then
             return true
         end
     else
-        if force.technologies["si-unlock-range-5"].researched and force.technologies["si-unlock-range-5"].prototype.hidden == false and distance <= 6 then
+        if force.technologies["si-unlock-range-5"] and force.technologies["si-unlock-range-5"].researched and force.technologies["si-unlock-range-5"].prototype.hidden == false and distance <= 6 then
             return true
-        elseif force.technologies["si-unlock-range-4"].researched and force.technologies["si-unlock-range-4"].prototype.hidden == false and distance <= 5 then
+        elseif force.technologies["si-unlock-range-4"] and force.technologies["si-unlock-range-4"].researched and force.technologies["si-unlock-range-4"].prototype.hidden == false and distance <= 5 then
             return true
-        elseif force.technologies["si-unlock-range-3"].researched and force.technologies["si-unlock-range-3"].prototype.hidden == false and distance <= 4 then
+        elseif force.technologies["si-unlock-range-3"] and force.technologies["si-unlock-range-3"].researched and force.technologies["si-unlock-range-3"].prototype.hidden == false and distance <= 4 then
             return true
-        elseif force.technologies["si-unlock-range-2"].researched and force.technologies["si-unlock-range-2"].prototype.hidden == false and distance <= 3 then
+        elseif force.technologies["si-unlock-range-2"] and force.technologies["si-unlock-range-2"].researched and force.technologies["si-unlock-range-2"].prototype.hidden == false and distance <= 3 then
             return true
-        elseif force.technologies["si-unlock-range-1"].researched and force.technologies["si-unlock-range-1"].prototype.hidden == false and distance <= 2 then
+        elseif force.technologies["si-unlock-range-1"] and force.technologies["si-unlock-range-1"].researched and force.technologies["si-unlock-range-1"].prototype.hidden == false and distance <= 2 then
             return true
         end
     end
@@ -189,7 +194,7 @@ function tech.check_range_tech(force, cell_position, distance_offset)
     return distance <= 1
 end
 
---Distance offset is to trick the function into ticking that incremental range is in inserter_range
+--- Distance offset is to trick the function into ticking that incremental range is in inserter_range
 ---@param force LuaForce
 ---@param cell_position Position
 ---@param distance_offset number
@@ -216,15 +221,15 @@ local function validate_tech_lookup_table(force)
     if not tech_lookup_table[force.index] then
         return false
     end
-    if tech_lookup_table[force.index].diagonal[3] ~= force.technologies["si-unlock-all-diagonals"].researched then
+    if not force.technologies["si-unlock-all-diagonals"] or tech_lookup_table[force.index].diagonal[3] ~= force.technologies["si-unlock-all-diagonals"].researched then
         return false
-    elseif tech_lookup_table[force.index].diagonal[2] ~= force.technologies["si-unlock-x-diagonals"].researched then
+    elseif not force.technologies["si-unlock-x-diagonals"] or tech_lookup_table[force.index].diagonal[2] ~= force.technologies["si-unlock-x-diagonals"].researched then
         return false
-    elseif tech_lookup_table[force.index].diagonal[1] ~= force.technologies["si-unlock-cross"].researched then
+    elseif not force.technologies["si-unlock-cross"] or tech_lookup_table[force.index].diagonal[1] ~= force.technologies["si-unlock-cross"].researched then
         return false
     end
     for t = 1, 5 do
-        if tech_lookup_table[force.index].range[t] ~= force.technologies["si-unlock-range-" .. tostring(t)].researched then
+        if not force.technologies["si-unlock-range-" .. tostring(t)] or tech_lookup_table[force.index].range[t] ~= force.technologies["si-unlock-range-" .. tostring(t)].researched then
             return false
         end
     end
@@ -237,20 +242,20 @@ function tech.generate_tech_lookup_table(force)
     tech_lookup_table[force.index] = {
         range = {},
         diagonal = {
-            force.technologies["si-unlock-cross"].researched,
-            force.technologies["si-unlock-x-diagonals"].researched,
-            force.technologies["si-unlock-all-diagonals"].researched
+            force.technologies["si-unlock-cross"] and force.technologies["si-unlock-cross"].researched,
+            force.technologies["si-unlock-x-diagonals"] and force.technologies["si-unlock-x-diagonals"].researched,
+            force.technologies["si-unlock-all-diagonals"] and force.technologies["si-unlock-all-diagonals"].researched
         },
         check = {}
     }
     for t = 1, 5 do
-        tech_lookup_table[force.index].range[t] = force.technologies["si-unlock-range-" .. tostring(t)].researched
+        tech_lookup_table[force.index].range[t] = force.technologies["si-unlock-range-" .. tostring(t)] and force.technologies["si-unlock-range-" .. tostring(t)].researched
     end
 
     if range_technologies then
         --5 is the max tech
         for t = 5, 1, -1 do
-            if force.technologies["si-unlock-range-" .. math.min(5, t)].researched and force.technologies["si-unlock-range-" .. math.min(5, t)].prototype.hidden == false then
+            if force.technologies["si-unlock-range-" .. math.min(5, t)] and force.technologies["si-unlock-range-" .. math.min(5, t)].researched and force.technologies["si-unlock-range-" .. math.min(5, t)].prototype.hidden == false then
                 max_inserter_range = math.min(4, t)+1
                 break
             end
@@ -301,11 +306,17 @@ function tech.migrate_all()
         for i = 1, 3 do
             local tech_name = "si-unlock-range-" .. i
             local original_tech_name = i == 1 and "near-inserters" or "long-inserters-" .. (i - 1)
-            force.technologies[tech_name].researched = force.technologies[original_tech_name].researched or force.technologies[tech_name].researched
+            if force.technologies[tech_name] then
+                force.technologies[tech_name].researched = (force.technologies[original_tech_name] and force.technologies[original_tech_name].researched) or force.technologies[tech_name].researched
+            end
         end
 
-        force.technologies["si-unlock-cross"].researched = force.technologies["more-inserters-1"].researched or force.technologies["si-unlock-cross"].researched
-        force.technologies["si-unlock-x-diagonals"].researched = force.technologies["more-inserters-2"].researched or force.technologies["si-unlock-x-diagonals"].researched
+        if force.technologies["si-unlock-cross"] then
+            force.technologies["si-unlock-cross"].researched = (force.technologies["more-inserters-1"] and force.technologies["more-inserters-1"].researched) or force.technologies["si-unlock-cross"].researched
+        end
+        if force.technologies["si-unlock-x-diagonals"] then
+            force.technologies["si-unlock-x-diagonals"].researched = (force.technologies["more-inserters-2"] and force.technologies["more-inserters-2"].researched) or force.technologies["si-unlock-x-diagonals"].researched
+        end
     end
 end
 
