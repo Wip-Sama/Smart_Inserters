@@ -67,6 +67,7 @@ local function Tab_content(tab_name, player_index)
         direction = "vertical",
         style = "relative_gui_right_flow",
         horizontally_stretchable = true,
+        padding = 8,
         table.unpack(children)
     }
 end
@@ -122,7 +123,6 @@ function copy_gui.add_gui(player)
         }
     }, player.index)
 
-    -- Add tabs natively since yafla does not fully support tabbed pane natively yet
     -- Middle Bar: Preset selector
     local preset_names = {}
     for _, p in ipairs(player_storage.presets) do
@@ -144,6 +144,7 @@ function copy_gui.add_gui(player)
             TEXTFIELD {
                 name = "si_preset_name",
                 text = active_name,
+                icon_selector = true,
                 on_text_changed = "si_rename_preset"
             },
             SPRITE_BUTTON {
