@@ -12,6 +12,58 @@ function storage_functions.add_player(player_index)
         ---@type table<table<RenderedPosition>>
         displayed_elements = {}
     }
+
+    storage.SI_Storage[player_index].copy_event = {
+        tick = 0,
+        drop = {},
+        pickup = {},
+        si_direction = 0,
+        relative_si_direction = 0,
+        destination_behavior = {
+            circuit_set_filters = 0,
+            circuit_read_hand_contents = 0,
+            circuit_hand_read_mode = 0,
+            circuit_set_stack_size = 0,
+            circuit_stack_control_signal = 0,
+            circuit_enable_disable = 0,
+            circuit_condition = 0
+        },
+        inserter_target_pickup_count = {},
+        inserter_stack_size_override = {},
+        inserter_filter_mode = {},
+        inserter_spoil_priority = {},
+
+        filtered_slots = {
+            { copy = true, item = "" },
+            { copy = true, item = "" },
+            { copy = true, item = "" },
+            { copy = true, item = "" },
+            { copy = true, item = "" }
+        }
+    }
+
+    storage.SI_Storage[player_index].copy_settings = {
+        drop = true,
+        drop_offset = true,
+        pickup = true,
+        pickup_offset = true,
+        si_direction = true,
+        relative_si_direction = true,
+
+        inserter_filter_mode = true,
+        filtered_stuff = true,
+        inserter_stack_size_override = true,
+        inserter_target_pickup_count = true,
+        inserter_spoil_priority = true,
+
+        circuit_set_filters = true,
+        circuit_read_hand_contents = true,
+        circuit_hand_read_mode = true,
+        circuit_set_stack_size = true,
+        circuit_stack_control_signal = true,
+        circuit_enable_disable = true,
+        circuit_condition = true
+    }
 end
 
 function storage_functions.populate_storage()
@@ -20,6 +72,38 @@ function storage_functions.populate_storage()
         storage_functions.add_player(player_index)
     end
     rendering.clear("Smart_Inserters")
+end
+
+function storage_functions.purge_copy_event_data(player_index)
+    storage_functions.ensure_data(player_index)
+    local filtered_slots = storage.SI_Storage[player_index].copy_event.filtered_slots
+    storage.SI_Storage[player_index].copy_event = {
+        tick = 0,
+        drop = {},
+        pickup = {},
+        si_direction = 0,
+        relative_si_direction = 0,
+        destination_behavior = {
+            circuit_set_filters = 0,
+            circuit_read_hand_contents = 0,
+            circuit_hand_read_mode = 0,
+            circuit_set_stack_size = 0,
+            circuit_stack_control_signal = 0,
+            circuit_enable_disable = 0,
+            circuit_condition = 0
+        },
+        inserter_target_pickup_count = {},
+        inserter_stack_size_override = {},
+        inserter_filter_mode = {},
+        inserter_spoil_priority = {},
+        filtered_slots = {
+            { copy = filtered_slots[1].copy, item = "" },
+            { copy = filtered_slots[2].copy, item = "" },
+            { copy = filtered_slots[3].copy, item = "" },
+            { copy = filtered_slots[4].copy, item = "" },
+            { copy = filtered_slots[5].copy, item = "" }
+        }
+    }
 end
 
 ---@param player_index number

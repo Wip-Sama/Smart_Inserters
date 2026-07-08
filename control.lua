@@ -14,6 +14,7 @@ local inserter_functions = require("scripts.inserter_functions")
 local player_functions = require("scripts.player_functions")
 local world_editor = require("scripts.world_selector")
 local storage_functions = require("scripts.storage_functions")
+local copy_gui = require("scripts.copy_gui")
 local si_util = require("scripts.si_util")
 local events = require("scripts.events")
 
@@ -38,6 +39,7 @@ local function on_init()
     storage.SI_Storage = storage.SI_Storage or {}
     storage_functions.populate_storage()
     technology_functions.migrate_all()
+    copy_gui.create_all()
 end
 
 local function welcome()
@@ -52,11 +54,14 @@ local function on_configuration_changed(event)
     storage.welcomed = false
     storage_functions.populate_storage()
     technology_functions.migrate_all()
+    copy_gui.create_all()
     --game.print({ "smart-inserters.experimental" })
 end
 
 local function on_player_created(event)
-    storage_functions.add_player(game.get_player(event.player_index))
+    local player = game.get_player(event.player_index)
+    storage_functions.add_player(player)
+    copy_gui.create(player)
 end
 
 local function on_research_changes(event)
@@ -839,7 +844,7 @@ script.on_event(defines.events.script_raised_destroy, on_entity_destroyed, inser
 script.on_event(defines.events.on_player_mined_entity, on_entity_destroyed, inserter_filter)                  --[DONE]
 script.on_event(defines.events.on_robot_mined_entity, on_entity_destroyed, inserter_filter)                   --[DONE]
 script.on_event(defines.events.on_entity_died, on_entity_destroyed)                                           --[UNTESTED]
-script.on_event(defines.events.on_entity_destroyed, on_entity_destroyed)                                      --[UNTESTED]
+--script.on_event(defines.events.on_entity_destroyed, on_entity_destroyed)                                      --[UNTESTED]
 script.on_event(defines.events.on_player_cursor_stack_changed, on_player_cursor_stack_changed)                --[DONE]
 script.on_event("smart-inserters-in-world-inserter-configurator-pickup", on_in_world_editor)                  --[DONE]
 script.on_event("smart-inserters-in-world-inserter-configurator-drop", on_in_world_editor)                    --[DONE]
