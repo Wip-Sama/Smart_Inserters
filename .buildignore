@@ -1,0 +1,12 @@
+# Ignore version control
+.git
+.gitignore
+
+# Ignore build script itself
+package_mod.py
+
+# Ignore other files
+*.kra
+*.psd
+*.xlsx
+dev_scripts/
