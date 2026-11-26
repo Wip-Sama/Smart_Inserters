@@ -5,7 +5,7 @@ local single_line_inserters = settings.startup["si-single-line-inserters"].value
 
 local si_util = {
     blacklist = {
-        mods = { "miniloader", "RenaiTransportation", "GhostOnWater", "miniloader-redux" },
+        mods = { "miniloader", "RenaiTransportation", "GhostOnWater", "miniloader-redux", "VehicleWagon2" },
         entities = {
             'hps__ml-', -- miniloader-redux
         }
@@ -40,7 +40,11 @@ end
 
 function si_util.check_blacklist(entity)
     --What an ugly ass piece of code... I really hate checking strings in this way to filter something, it's reliability is below 0...
-    local prototype = prototypes.get_history(entity.type, entity.name)
+    local entity_type, name = entity.type, entity.name
+    if entity_type == "entity-ghost" then
+        entity_type, name = entity.ghost_type, entity.ghost_name
+    end
+    local prototype = prototypes.get_history(entity_type, name)
 
     for _, v in pairs(si_util.blacklist.mods) do
         if string.find(prototype.created, v) == 1 then
@@ -49,7 +53,7 @@ function si_util.check_blacklist(entity)
     end
 
     for _, v in pairs(si_util.blacklist.entities) do
-        if string.find(entity.name, v) == 1 then
+        if string.find(name, v) == 1 then
             return false
         end
     end
