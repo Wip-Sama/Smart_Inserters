@@ -72,7 +72,7 @@ end
 
 local function on_gui_opened(event)
     local player = game.get_player(event.player_index)
-    if player and event.entity and inserter_functions.is_inserter(event.entity) then
+    if player and event.entity and inserter_functions.is_inserter(event.entity) and si_util.check_blacklist(event.entity) then
         if player.gui.relative.smart_inserters then
             selector_gui.delete(player)
         end
@@ -121,7 +121,7 @@ end
 local function on_entity_settings_pasted(event)
     storage.pasting_states = storage.pasting_states or {}
     local player = game.get_player(event.player_index)
-    if not (player and inserter_functions.is_inserter(event.source) and inserter_functions.is_inserter(event.destination)) then return end
+    if not (player and inserter_functions.is_inserter(event.source) and inserter_functions.is_inserter(event.destination) and si_util.check_blacklist(event.destination)) then return end
 
     local source = event.source
     local dest = event.destination
@@ -260,7 +260,7 @@ end
 local function on_pre_entity_settings_pasted(event)
     storage.pasting_states = storage.pasting_states or {}
     local player = game.get_player(event.player_index)
-    if player and inserter_functions.is_inserter(event.source) and inserter_functions.is_inserter(event.destination) then
+    if player and inserter_functions.is_inserter(event.source) and inserter_functions.is_inserter(event.destination) and si_util.check_blacklist(event.destination) then
         local dest = event.destination
         
         storage.pasting_states[event.player_index] = {
@@ -306,7 +306,7 @@ local function on_rotation_adjust(event)
         return
     end
 
-    if inserter_functions.is_inserter(inserter) then
+    if inserter_functions.is_inserter(inserter) and si_util.check_blacklist(inserter) then
         assert(inserter, "[control.lua:on_rotation_adjust] Inserter is nil")
         if technology_functions.get_diagonal_increment(inserter.force) < 1 then
             ---@diagnostic disable-next-line: missing-fields
@@ -619,7 +619,7 @@ local function on_distance_adjust(event)
         return
     end
 
-    if inserter_functions.is_inserter(inserter) then
+    if inserter_functions.is_inserter(inserter) and si_util.check_blacklist(inserter) then
         assert(inserter, "[control.lua:on_offset_adjust] Inserter is nil")
         ---@diagnostic disable-next-line: param-type-mismatch
         if (technology_functions.get_actual_increment(inserter.force) < 1) or (technology_functions.get_diagonal_increment(inserter.force) < 1) then
@@ -756,7 +756,7 @@ local function on_offset_adjust(event)
         return
     end
 
-    if inserter_functions.is_inserter(inserter) then
+    if inserter_functions.is_inserter(inserter) and si_util.check_blacklist(inserter) then
         assert(inserter, "[control.lua:on_offset_adjust] Inserter is nil")
         ---@diagnostic disable-next-line: param-type-mismatch
         if not offset_selector then
